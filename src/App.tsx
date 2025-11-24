@@ -26,6 +26,9 @@ import WorkOrders from './pages/operations/WorkOrders';
 import Products from './pages/catalog/Products';
 import Inventory from './pages/inventory/Inventory';
 
+// Financial Pages
+import { FinancialDashboard } from './pages/financial/Dashboard';
+
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     <div className="text-center py-12">
@@ -85,7 +88,7 @@ function App() {
                         <Route path="/work-orders" element={<WorkOrders />} />
                         <Route path="/products" element={<Products />} />
                         <Route path="/inventory" element={<Inventory />} />
-                        <Route path="/financial" element={<PlaceholderPage title="Financeiro" />} />
+                        <Route path="/financial" element={<FinancialDashboard />} />
                         <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
                     </Route>
 
