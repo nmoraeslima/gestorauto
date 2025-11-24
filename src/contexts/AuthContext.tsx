@@ -130,88 +130,157 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await loadUserData(authUser);
         }
     };
-}, []); // Dependency array must be empty to avoid infinite loop
 
-// Cadastro (cria empresa + usuário + perfil)
-const signUp = async (data: SignUpData) => {
-    try {
-        // 1. Criar empresa usando função PostgreSQL (bypassa RLS)
-        const { data: companyId, error: companyError } = await supabase
-            .rpc('create_company_for_signup', {
-                p_name: data.company_name,
-                p_slug: data.company_slug,
-                p_email: data.email,
-                p_phone: data.phone || null,
-            });
+    // Inicialização da autenticação
+    useEffect(() => {
+        let mounted = true;
 
-        if (companyError) {
-            console.error('Company creation error:', companyError);
-            toast.error('Erro ao criar empresa: ' + companyError.message);
-            return { error: companyError as unknown as AuthError };
+        const initializeAuth = async () => {
+            try {
+                // 1. Tentar obter a sessão inicial com timeout
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Auth timeout')), 5000)
+                );
+
+                const sessionPromise = supabase.auth.getSession();
+
+                const { data: { session } } = await Promise.race([
+                    sessionPromise,
+                    timeoutPromise
+                ]) as any;
+
+                if (mounted) {
+                    setSession(session);
+                    if (session?.user) {
+                        await loadUserData(session.user);
+                    }
+                }
+            } catch (error) {
+                console.error('Error initializing auth:', error);
+                if (error instanceof Error && error.message === 'Auth timeout') {
+                    console.warn('Auth initialization timed out, forcing local cleanup');
+                    void supabase.auth.signOut();
+                    if (mounted) {
+                        setSession(null);
+                        setUser(null);
+                    }
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        initializeAuth();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (!mounted) return;
+
+            console.log('Auth state changed:', event);
+
+            try {
+                setSession(session);
+
+                if (event === 'SIGNED_IN') {
+                    if (session?.user) {
+                        await loadUserData(session.user);
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                    setSession(null);
+                }
+            } catch (error) {
+                console.error('Error in auth state change:', error);
+            }
+        });
+
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
+    }, []);
+
+    // Cadastro (cria empresa + usuário + perfil)
+    const signUp = async (data: SignUpData) => {
+        try {
+            // 1. Criar empresa usando função PostgreSQL (bypassa RLS)
+            const { data: companyId, error: companyError } = await supabase
+                .rpc('create_company_for_signup', {
+                    p_name: data.company_name,
+                    p_slug: data.company_slug,
+                    p_email: data.email,
+                    p_phone: data.phone || null,
+                });
+
+            if (companyError) {
+                console.error('Company creation error:', companyError);
+                toast.error('Erro ao criar empresa: ' + companyError.message);
+                return { error: companyError as unknown as AuthError };
+            }
+
+            toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
+            return { error: null };
+        } catch (error) {
+            console.error('Sign up error:', error);
+            toast.error('Erro inesperado ao criar conta');
+            return { error: error as AuthError };
+        }
+    };
+
+    // Login
+    const signIn = async (data: SignInData) => {
+        const { error } = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.password,
+        });
+
+        if (error) {
+            toast.error('Erro ao fazer login: ' + error.message);
+            return { error };
         }
 
-        toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
+        toast.success('Login realizado com sucesso!');
         return { error: null };
-    } catch (error) {
-        console.error('Sign up error:', error);
-        toast.error('Erro inesperado ao criar conta');
-        return { error: error as AuthError };
-    }
-};
+    };
 
-// Login
-const signIn = async (data: SignInData) => {
-    const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-    });
+    // Logout
+    const signOut = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            toast.error('Erro ao fazer logout: ' + error.message);
+        } else {
+            setUser(null);
+            setSession(null);
+            toast.success('Logout realizado com sucesso!');
+        }
+    };
 
-    if (error) {
-        toast.error('Erro ao fazer login: ' + error.message);
-        return { error };
-    }
+    // Recuperação de senha
+    const resetPassword = async (email: string) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
 
-    toast.success('Login realizado com sucesso!');
-    return { error: null };
-};
+        if (error) {
+            toast.error('Erro ao enviar email de recuperação: ' + error.message);
+            return { error };
+        }
 
-// Logout
-const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        toast.error('Erro ao fazer logout: ' + error.message);
-    } else {
-        setUser(null);
-        setSession(null);
-        toast.success('Logout realizado com sucesso!');
-    }
-};
+        toast.success('Email de recuperação enviado!');
+        return { error: null };
+    };
 
-// Recuperação de senha
-const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const value = {
+        user,
+        session,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        resetPassword,
+        refreshUserData,
+    };
 
-    if (error) {
-        toast.error('Erro ao enviar email de recuperação: ' + error.message);
-        return { error };
-    }
-
-    toast.success('Email de recuperação enviado!');
-    return { error: null };
-};
-
-const value = {
-    user,
-    session,
-    loading,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword,
-    refreshUserData,
-};
-
-return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
