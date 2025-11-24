@@ -101,10 +101,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error(`Error loading user data (Attempt ${retryCount + 1}):`, error);
 
             // Retry logic (max 3 attempts)
-            if (retryCount < 2 && (error.message === 'Database timeout' || error.message === 'Network error' || error.message?.includes('fetch'))) {
-                console.log(`Retrying loadUserData in 2 seconds...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                return loadUserData(authUser, retryCount + 1);
+            if (retryCount < 2) {
+                // Se for erro 401 (Unauthorized) ou JWT expirado, tenta renovar o token antes de tentar de novo
+                if (error.message?.includes('JWT') || error.code === 'PGRST301' || error.message?.includes('401')) {
+                    console.log('Token expired or invalid, attempting refresh...');
+                    const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+
+                    if (refreshError) {
+                        console.error('Failed to refresh session:', refreshError);
+                        // Se falhar o refresh, não adianta tentar de novo, vai para o logout
+                    } else if (session) {
+                        console.log('Session refreshed successfully, retrying loadUserData...');
+                        setSession(session);
+                        return loadUserData(authUser, retryCount + 1);
+                    }
+                }
+
+                // Se for erro de rede ou timeout, espera e tenta de novo
+                if (error.message === 'Database timeout' || error.message === 'Network error' || error.message?.includes('fetch')) {
+                    console.log(`Retrying loadUserData in 2 seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    return loadUserData(authUser, retryCount + 1);
+                }
             }
 
             // Only show toast if it's a real error, not just a network blip during refresh
@@ -155,15 +173,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
-                // REMOVIDO: Não força mais logout por timeout na inicialização
-                // if (error instanceof Error && error.message === 'Auth timeout') {
-                //     console.warn('Auth initialization timed out, forcing local cleanup');
-                //     void supabase.auth.signOut();
-                //     if (mounted) {
-                //         setSession(null);
-                //         setUser(null);
-                //     }
-                // }
             } finally {
                 if (mounted) {
                     setLoading(false);
@@ -181,9 +190,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             try {
                 setSession(session);
 
-                if (event === 'SIGNED_IN') {
+                if (event === 'TOKEN_REFRESHED') {
+                    console.log('Token refreshed successfully');
+                }
+
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                     if (session?.user) {
-                        await loadUserData(session.user);
+                        // Apenas recarrega dados se não tivermos usuário carregado ou se for login explícito
+                        // No refresh, assumimos que os dados do usuário (perfil/empresa) não mudaram drasticamente
+                        // Mas se o user estiver null (ex: refresh após F5), precisamos carregar
+                        if (!userRef.current || event === 'SIGNED_IN') {
+                            await loadUserData(session.user);
+                        }
                     }
                 } else if (event === 'SIGNED_OUT') {
                     setUser(null);
