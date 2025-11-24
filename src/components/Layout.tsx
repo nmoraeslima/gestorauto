@@ -156,6 +156,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </button>
                         </div>
 
+                        {/* Company Info Mobile */}
+                        <div className="px-6 mb-6">
+                            <div className="bg-secondary-50 rounded-lg p-3 border border-secondary-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Building2 className="w-4 h-4 text-secondary-600" />
+                                    <p className="text-sm font-semibold text-secondary-900 truncate">
+                                        {user?.company?.name}
+                                    </p>
+                                </div>
+                                <p className="text-xs text-secondary-600">
+                                    Plano: {user?.company?.subscription_plan}
+                                </p>
+                            </div>
+                        </div>
+
                         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
                             {navigation.map((item) => {
                                 const Icon = item.icon;
@@ -176,6 +191,41 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 );
                             })}
                         </nav>
+
+                        {/* User Menu Mobile */}
+                        <div className="flex-shrink-0 px-3 pb-4 border-t border-secondary-200 pt-4">
+                            <div className="relative">
+                                <button
+                                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-50 rounded-lg transition-colors duration-150"
+                                >
+                                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                        {user?.profile?.full_name?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="text-sm font-semibold text-secondary-900 truncate">
+                                            {user?.profile?.full_name}
+                                        </p>
+                                        <p className="text-xs text-secondary-600 truncate">
+                                            {user?.profile?.role}
+                                        </p>
+                                    </div>
+                                    <ChevronDown className="w-4 h-4" />
+                                </button>
+
+                                {userMenuOpen && (
+                                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
+                                        <button
+                                            onClick={handleSignOut}
+                                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Sair
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
