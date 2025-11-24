@@ -140,17 +140,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const initializeAuth = async () => {
             try {
-                // 1. Tentar obter a sessão inicial com timeout
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Auth timeout')), 20000)
-                );
+                // 1. Tentar obter a sessão inicial sem timeout artificial
+                const { data: { session }, error } = await supabase.auth.getSession();
 
-                const sessionPromise = supabase.auth.getSession();
-
-                const { data: { session } } = await Promise.race([
-                    sessionPromise,
-                    timeoutPromise
-                ]) as any;
+                if (error) {
+                    throw error;
+                }
 
                 if (mounted) {
                     setSession(session);
