@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-
 import {
     TrendingUp,
     TrendingDown,
     DollarSign,
     Calendar,
     AlertCircle,
-    CreditCard,
-    Wallet
+    Wallet,
+    LayoutDashboard
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinancialTransaction, TransactionType, TransactionStatus } from '@/types/database';
 import { TransactionModal } from '@/components/financial/TransactionModal';
+import { Receivables } from './Receivables';
+import { Payables } from './Payables';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '@/utils/format';
 
@@ -25,11 +26,12 @@ interface FinancialStats {
     overdueCount: number;
 }
 
+type TabType = 'dashboard' | 'receivables' | 'payables';
+
 export const FinancialDashboard: React.FC = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
-    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabType>('dashboard');
     const [stats, setStats] = useState<FinancialStats>({
         totalIncome: 0,
         totalExpense: 0,
@@ -101,36 +103,8 @@ export const FinancialDashboard: React.FC = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex h-64 items-center justify-center">
-                <div className="loading-spinner" />
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Visão geral das suas finanças
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <button onClick={() => setIsIncomeModalOpen(true)} className="btn-primary">
-                        <TrendingUp className="h-5 w-5" />
-                        <span className="hidden sm:inline">Contas a Receber</span>
-                    </button>
-                    <button onClick={() => setIsExpenseModalOpen(true)} className="btn-secondary">
-                        <TrendingDown className="h-5 w-5" />
-                        <span className="hidden sm:inline">Contas a Pagar</span>
-                    </button>
-                </div>
-            </div>
-
+    const renderDashboardContent = () => (
+        <>
             {/* Alertas */}
             {stats.overdueCount > 0 && (
                 <div className="rounded-lg bg-red-50 border border-red-200 p-4">
@@ -274,8 +248,8 @@ export const FinancialDashboard: React.FC = () => {
                                         </td>
                                         <td>
                                             <span className={`badge ${transaction.status === 'paid' ? 'badge-green' :
-                                                transaction.status === 'pending' ? 'badge-yellow' :
-                                                    'badge-gray'
+                                                    transaction.status === 'pending' ? 'badge-yellow' :
+                                                        'badge-gray'
                                                 }`}>
                                                 {transaction.status === 'paid' ? 'Pago' :
                                                     transaction.status === 'pending' ? 'Pendente' :
@@ -289,22 +263,71 @@ export const FinancialDashboard: React.FC = () => {
                     </div>
                 )}
             </div>
+        </>
+    );
 
-            {/* Modals */}
-            <TransactionModal
-                isOpen={isIncomeModalOpen}
-                onClose={() => setIsIncomeModalOpen(false)}
-                transaction={null}
-                type={TransactionType.INCOME}
-                onSuccess={loadFinancialData}
-            />
-            <TransactionModal
-                isOpen={isExpenseModalOpen}
-                onClose={() => setIsExpenseModalOpen(false)}
-                transaction={null}
-                type={TransactionType.EXPENSE}
-                onSuccess={loadFinancialData}
-            />
+    if (loading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <div className="loading-spinner" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Gerencie suas finanças de forma completa
+                    </p>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+                <nav className="-mb-px flex gap-6">
+                    <button
+                        onClick={() => setActiveTab('dashboard')}
+                        className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'dashboard'
+                                ? 'border-primary-500 text-primary-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        <LayoutDashboard className="h-5 w-5" />
+                        <span className="hidden sm:inline">Dashboard</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('receivables')}
+                        className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'receivables'
+                                ? 'border-primary-500 text-primary-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        <TrendingUp className="h-5 w-5" />
+                        Contas a Receber
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('payables')}
+                        className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'payables'
+                                ? 'border-primary-500 text-primary-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        <TrendingDown className="h-5 w-5" />
+                        Contas a Pagar
+                    </button>
+                </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div>
+                {activeTab === 'dashboard' && renderDashboardContent()}
+                {activeTab === 'receivables' && <Receivables />}
+                {activeTab === 'payables' && <Payables />}
+            </div>
         </div>
     );
 };
