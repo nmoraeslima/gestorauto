@@ -41,43 +41,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             console.log('Loading user data for:', authUser.id);
 
-            // Buscar perfil
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', authUser.id)
-                .single();
+            // Timeout para operações de banco de dados
+            const dbTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Database timeout')), 8000)
+            );
 
-            if (profileError) {
-                console.error('Profile error:', profileError);
-                throw new Error(`Erro ao carregar perfil: ${profileError.message}`);
-            }
+            const fetchData = async () => {
+                // Buscar perfil
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', authUser.id)
+                    .single();
 
-            if (!profile) {
-                console.error('Profile not found for user:', authUser.id);
-                throw new Error('Perfil não encontrado. Por favor, entre em contato com o suporte.');
-            }
+                if (profileError) {
+                    console.error('Profile error:', profileError);
+                    throw new Error(`Erro ao carregar perfil: ${profileError.message}`);
+                }
 
-            console.log('Profile loaded:', profile);
+                if (!profile) {
+                    console.error('Profile not found for user:', authUser.id);
+                    throw new Error('Perfil não encontrado. Por favor, entre em contato com o suporte.');
+                }
 
-            // Buscar empresa
-            const { data: company, error: companyError } = await supabase
-                .from('companies')
-                .select('*')
-                .eq('id', profile.company_id)
-                .single();
+                console.log('Profile loaded:', profile);
 
-            if (companyError) {
-                console.error('Company error:', companyError);
-                throw new Error(`Erro ao carregar empresa: ${companyError.message}`);
-            }
+                // Buscar empresa
+                const { data: company, error: companyError } = await supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('id', profile.company_id)
+                    .single();
 
-            if (!company) {
-                console.error('Company not found:', profile.company_id);
-                throw new Error('Empresa não encontrada. Por favor, entre em contato com o suporte.');
-            }
+                if (companyError) {
+                    console.error('Company error:', companyError);
+                    throw new Error(`Erro ao carregar empresa: ${companyError.message}`);
+                }
 
-            console.log('Company loaded:', company);
+                if (!company) {
+                    console.error('Company not found:', profile.company_id);
+                    throw new Error('Empresa não encontrada. Por favor, entre em contato com o suporte.');
+                }
+
+                console.log('Company loaded:', company);
+
+                return { profile, company };
+            };
+
+            const { profile, company } = await Promise.race([
+                fetchData(),
+                dbTimeout
+            ]) as { profile: any, company: any };
 
             setUser({
                 id: authUser.id,
@@ -94,11 +108,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 toast.error(error.message || 'Erro ao carregar dados do usuário');
             }
 
-            // If we are already logged in (user exists) and this is just a refresh failure,
-            // don't clear the user state immediately to avoid "freeze" or flash.
-            // Only clear if we really can't recover or if it's an initial load.
+            // Se der erro de timeout ou outro erro crítico, limpamos o user para evitar estado inconsistente
+            // Mas apenas se não tivermos um user carregado (tentativa inicial)
             if (!user) {
                 setUser(null);
+                // Se for timeout, talvez valha a pena deslogar para forçar retry limpo
+                if (error.message === 'Database timeout') {
+                    await supabase.auth.signOut();
+                }
             }
         }
     };
