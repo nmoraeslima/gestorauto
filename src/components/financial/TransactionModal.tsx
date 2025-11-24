@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { TransactionType, TransactionStatus, FinancialTransaction } from '@/types/database';
@@ -29,6 +29,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         due_date: transaction?.due_date || new Date().toISOString().split('T')[0],
         status: transaction?.status || TransactionStatus.PENDING,
     });
+
+    // Verifica se a transação foi gerada automaticamente por outra rotina do sistema (ex: Ordem de Serviço)
+    const isSystemGenerated = !!transaction?.work_order_id;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -97,12 +100,21 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="label">Categoria *</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="label">Categoria *</label>
+                                {isSystemGenerated && (
+                                    <span className="text-xs text-gray-500 flex items-center gap-1" title="Campo gerado automaticamente pelo sistema">
+                                        <Lock className="w-3 h-3" />
+                                        Gerado pelo sistema
+                                    </span>
+                                )}
+                            </div>
                             <select
                                 required
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="input"
+                                className={`input ${isSystemGenerated ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
+                                disabled={isSystemGenerated}
                             >
                                 <option value="">Selecione...</option>
                                 {categories.map((cat) => (
@@ -112,14 +124,23 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                         </div>
 
                         <div>
-                            <label className="label">Descrição *</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="label">Descrição *</label>
+                                {isSystemGenerated && (
+                                    <span className="text-xs text-gray-500 flex items-center gap-1" title="Campo gerado automaticamente pelo sistema">
+                                        <Lock className="w-3 h-3" />
+                                        Gerado pelo sistema
+                                    </span>
+                                )}
+                            </div>
                             <input
                                 type="text"
                                 required
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="input"
+                                className={`input ${isSystemGenerated ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
                                 placeholder="Ex: Pagamento de serviço"
+                                disabled={isSystemGenerated}
                             />
                         </div>
 
