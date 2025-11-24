@@ -113,23 +113,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Cadastro (cria empresa + usuário + perfil)
     useEffect(() => {
+        let mounted = true;
+
         const initAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                setSession(session);
-                if (session?.user) {
-                    await loadUserData(session.user);
+                // Timeout de segurança para não ficar travado no loading
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Auth timeout')), 5000)
+                );
+
+                const sessionPromise = supabase.auth.getSession();
+
+                const { data: { session } } = await Promise.race([
+                    sessionPromise,
+                    timeoutPromise
+                ]) as any;
+
+                if (mounted) {
+                    setSession(session);
+                    if (session?.user) {
+                        await loadUserData(session.user);
+                    }
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
+                // Se der erro ou timeout, garantimos que o loading termina
+                // Se o erro for de timeout, pode ser necessário limpar a sessão
+                if (error instanceof Error && error.message === 'Auth timeout') {
+                    console.warn('Auth initialization timed out, clearing session to prevent freeze');
+                    await supabase.auth.signOut();
+                }
             } finally {
-                setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         };
 
         initAuth();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (!mounted) return;
+
             console.log('Auth state changed:', event);
 
             try {
@@ -151,11 +176,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } catch (error) {
                 console.error('Error in auth state change:', error);
             } finally {
-                setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
     }, []); // Dependency array must be empty to avoid infinite loop
 
     // Cadastro (cria empresa + usuário + perfil)
