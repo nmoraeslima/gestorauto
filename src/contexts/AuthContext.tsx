@@ -112,9 +112,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Mas apenas se não tivermos um user carregado (tentativa inicial)
             if (!user) {
                 setUser(null);
-                // Se for timeout, talvez valha a pena deslogar para forçar retry limpo
+                // Se for timeout, forçamos logout mas SEM esperar (fire and forget)
+                // pois se o banco tá travado, o signOut também pode travar
                 if (error.message === 'Database timeout') {
-                    await supabase.auth.signOut();
+                    console.warn('Database timeout, forcing local cleanup');
+                    void supabase.auth.signOut();
+                    setSession(null);
                 }
             }
         }
@@ -127,184 +130,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await loadUserData(authUser);
         }
     };
+}, []); // Dependency array must be empty to avoid infinite loop
 
-    // Cadastro (cria empresa + usuário + perfil)
-    useEffect(() => {
-        let mounted = true;
-
-        const initAuth = async () => {
-            try {
-                // Timeout de segurança para não ficar travado no loading
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Auth timeout')), 5000)
-                );
-
-                const sessionPromise = supabase.auth.getSession();
-
-                const { data: { session } } = await Promise.race([
-                    sessionPromise,
-                    timeoutPromise
-                ]) as any;
-
-                if (mounted) {
-                    setSession(session);
-                    if (session?.user) {
-                        await loadUserData(session.user);
-                    }
-                }
-            } catch (error) {
-                console.error('Error initializing auth:', error);
-                // Se der erro ou timeout, garantimos que o loading termina
-                // Se o erro for de timeout, pode ser necessário limpar a sessão
-                if (error instanceof Error && error.message === 'Auth timeout') {
-                    console.warn('Auth initialization timed out, clearing session to prevent freeze');
-                    await supabase.auth.signOut();
-                }
-            } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        initAuth();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (!mounted) return;
-
-            console.log('Auth state changed:', event);
-
-            try {
-                setSession(session);
-
-                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                    if (session?.user) {
-                        await loadUserData(session.user);
-                    }
-                } else if (event === 'SIGNED_OUT') {
-                    setUser(null);
-                    setSession(null);
-                } else if (event === 'TOKEN_REFRESHED') {
-                    // Just update the session, don't reload user data if we already have it
-                    if (!userRef.current && session?.user) {
-                        await loadUserData(session.user);
-                    }
-                }
-            } catch (error) {
-                console.error('Error in auth state change:', error);
-            } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
-            }
-        });
-
-        return () => {
-            mounted = false;
-            subscription.unsubscribe();
-        };
-    }, []); // Dependency array must be empty to avoid infinite loop
-
-    // Cadastro (cria empresa + usuário + perfil)
-    const signUp = async (data: SignUpData) => {
-        try {
-            // 1. Criar empresa usando função PostgreSQL (bypassa RLS)
-            const { data: companyId, error: companyError } = await supabase
-                .rpc('create_company_for_signup', {
-                    p_name: data.company_name,
-                    p_slug: data.company_slug,
-                    p_email: data.email,
-                    p_phone: data.phone || null,
-                });
-
-            if (companyError) {
-                console.error('Company creation error:', companyError);
-                toast.error('Erro ao criar empresa: ' + companyError.message);
-                return { error: companyError as unknown as AuthError };
-            }
-
-            // 2. Criar usuário no Supabase Auth
-            const { error: authError } = await supabase.auth.signUp({
-                email: data.email,
-                password: data.password,
-                options: {
-                    data: {
-                        full_name: data.full_name,
-                        company_id: companyId,
-                        role: 'owner',
-                    },
-                },
+// Cadastro (cria empresa + usuário + perfil)
+const signUp = async (data: SignUpData) => {
+    try {
+        // 1. Criar empresa usando função PostgreSQL (bypassa RLS)
+        const { data: companyId, error: companyError } = await supabase
+            .rpc('create_company_for_signup', {
+                p_name: data.company_name,
+                p_slug: data.company_slug,
+                p_email: data.email,
+                p_phone: data.phone || null,
             });
 
-            if (authError) {
-                // Rollback: deletar empresa se criação de usuário falhar
-                await supabase.from('companies').delete().eq('id', companyId);
-                toast.error('Erro ao criar usuário: ' + authError.message);
-                return { error: authError };
-            }
-
-            toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
-            return { error: null };
-        } catch (error) {
-            console.error('Sign up error:', error);
-            toast.error('Erro inesperado ao criar conta');
-            return { error: error as AuthError };
+        if (companyError) {
+            console.error('Company creation error:', companyError);
+            toast.error('Erro ao criar empresa: ' + companyError.message);
+            return { error: companyError as unknown as AuthError };
         }
-    };
 
-    // Login
-    const signIn = async (data: SignInData) => {
-        const { error } = await supabase.auth.signInWithPassword({
+        // 2. Criar usuário no Supabase Auth
+        const { error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
+            options: {
+                data: {
+                    full_name: data.full_name,
+                    company_id: companyId,
+                    role: 'owner',
+                },
+            },
         });
 
-        if (error) {
-            toast.error('Erro ao fazer login: ' + error.message);
-            return { error };
+        if (authError) {
+            // Rollback: deletar empresa se criação de usuário falhar
+            await supabase.from('companies').delete().eq('id', companyId);
+            toast.error('Erro ao criar usuário: ' + authError.message);
+            return { error: authError };
         }
 
-        toast.success('Login realizado com sucesso!');
+        toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
         return { error: null };
-    };
+    } catch (error) {
+        console.error('Sign up error:', error);
+        toast.error('Erro inesperado ao criar conta');
+        return { error: error as AuthError };
+    }
+};
 
-    // Logout
-    const signOut = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            toast.error('Erro ao fazer logout: ' + error.message);
-        } else {
-            setUser(null);
-            setSession(null);
-            toast.success('Logout realizado com sucesso!');
-        }
-    };
+// Login
+const signIn = async (data: SignInData) => {
+    const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+    });
 
-    // Recuperação de senha
-    const resetPassword = async (email: string) => {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-        });
+    if (error) {
+        toast.error('Erro ao fazer login: ' + error.message);
+        return { error };
+    }
 
-        if (error) {
-            toast.error('Erro ao enviar email de recuperação: ' + error.message);
-            return { error };
-        }
+    toast.success('Login realizado com sucesso!');
+    return { error: null };
+};
 
-        toast.success('Email de recuperação enviado!');
-        return { error: null };
-    };
+// Logout
+const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        toast.error('Erro ao fazer logout: ' + error.message);
+    } else {
+        setUser(null);
+        setSession(null);
+        toast.success('Logout realizado com sucesso!');
+    }
+};
 
-    const value = {
-        user,
-        session,
-        loading,
-        signUp,
-        signIn,
-        signOut,
-        resetPassword,
-        refreshUserData,
-    };
+// Recuperação de senha
+const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+    });
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    if (error) {
+        toast.error('Erro ao enviar email de recuperação: ' + error.message);
+        return { error };
+    }
+
+    toast.success('Email de recuperação enviado!');
+    return { error: null };
+};
+
+const value = {
+    user,
+    session,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    refreshUserData,
+};
+
+return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
