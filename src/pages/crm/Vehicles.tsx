@@ -114,7 +114,8 @@ export const Vehicles: React.FC = () => {
                 </div>
                 <button onClick={handleNewVehicle} className="btn-primary">
                     <Plus className="h-5 w-5" />
-                    Novo Veículo
+                    <span className="hidden sm:inline">Novo Veículo</span>
+                    <span className="sm:hidden">Novo</span>
                 </button>
             </div>
 

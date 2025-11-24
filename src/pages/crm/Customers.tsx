@@ -122,7 +122,8 @@ export const Customers: React.FC = () => {
                 </div>
                 <button onClick={handleNewCustomer} className="btn-primary">
                     <Plus className="h-5 w-5" />
-                    Novo Cliente
+                    <span className="hidden sm:inline">Novo Cliente</span>
+                    <span className="sm:hidden">Novo</span>
                 </button>
             </div>
 
@@ -224,8 +225,8 @@ export const Customers: React.FC = () => {
                                         <td>
                                             <span
                                                 className={`badge ${customer.customer_type === 'corporate'
-                                                        ? 'badge-purple'
-                                                        : 'badge-blue'
+                                                    ? 'badge-purple'
+                                                    : 'badge-blue'
                                                     }`}
                                             >
                                                 {customer.customer_type === 'corporate' ? 'Corporativo' : 'Individual'}
