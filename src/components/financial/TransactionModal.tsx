@@ -30,6 +30,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         status: transaction?.status || TransactionStatus.PENDING,
     });
 
+    React.useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                category: transaction?.category || '',
+                description: transaction?.description || '',
+                amount: transaction?.amount || 0,
+                due_date: transaction?.due_date || new Date().toISOString().split('T')[0],
+                status: transaction?.status || TransactionStatus.PENDING,
+            });
+        }
+    }, [transaction, isOpen]);
+
     // Verifica se a transação foi gerada automaticamente por outra rotina do sistema (ex: Ordem de Serviço)
     const isSystemGenerated = !!transaction?.work_order_id;
 
