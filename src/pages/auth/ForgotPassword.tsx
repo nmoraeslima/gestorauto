@@ -96,20 +96,13 @@ export const ForgotPassword: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Botão */}
+                        {/* Botão de Enviar */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full btn btn-primary py-3 text-base font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                            className={`w-full btn-primary ${loading ? 'btn-loading' : ''}`}
                         >
-                            {loading ? (
-                                <span className="flex items-center justify-center">
-                                    <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                                    Enviando...
-                                </span>
-                            ) : (
-                                'Enviar link de recuperação'
-                            )}
+                            {loading ? 'Enviando...' : 'Enviar link de recuperação'}
                         </button>
                     </form>
 

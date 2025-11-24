@@ -127,16 +127,9 @@ export const SignIn: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full btn btn-primary py-3 text-base font-semibold justify-center"
+                            className={`w-full btn-primary ${loading ? 'btn-loading' : ''}`}
                         >
-                            {loading ? (
-                                <span className="flex items-center justify-center">
-                                    <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                                    Entrando...
-                                </span>
-                            ) : (
-                                'Entrar'
-                            )}
+                            {loading ? 'Entrando...' : 'Entrar'}
                         </button>
                     </form>
 

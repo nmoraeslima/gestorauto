@@ -264,16 +264,9 @@ export const SignUp: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full btn btn-primary py-3 text-base font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                            className={`w-full btn-primary ${loading ? 'btn-loading' : ''}`}
                         >
-                            {loading ? (
-                                <span className="flex items-center justify-center">
-                                    <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                                    Criando conta...
-                                </span>
-                            ) : (
-                                'Criar conta e começar trial gratuito'
-                            )}
+                            {loading ? 'Criando conta...' : 'Criar conta e começar trial gratuito'}
                         </button>
 
                         {/* Termos */}

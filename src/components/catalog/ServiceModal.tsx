@@ -191,32 +191,5 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                                 checked={formData.is_active}
                                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor="is_active" className="ml-2 block text-sm text-secondary-900">
-                                Serviço Ativo
-                            </label>
-                        </div>
-
-                        <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="btn btn-secondary"
-                                disabled={loading}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                className="btn btn-primary"
-                                disabled={loading}
-                            >
-                                {loading ? 'Salvando...' : service ? 'Atualizar' : 'Criar Serviço'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
     );
 };

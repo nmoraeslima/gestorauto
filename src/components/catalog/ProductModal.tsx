@@ -263,35 +263,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                                     />
                                     <p className="text-xs text-neutral-500 mt-1">
                                         Você poderá ajustar o estoque posteriormente através de movimentações.
-                                    </p>
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-
-                        <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="btn btn-ghost"
-                                disabled={loading}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                className="btn btn-primary"
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        <Save className="w-4 h-4 mr-2" />
-                                        Salvar Produto
-                                    </>
-                                )}
-                            </button>
-                        </div>
                     </form>
                 </div>
             </div>
