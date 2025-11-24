@@ -41,11 +41,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             console.log(`Loading user data for: ${authUser.id} (Attempt ${retryCount + 1})`);
 
-            // Timeout para operações de banco de dados (30s)
-            const dbTimeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Database timeout')), 30000)
-            );
-
             const fetchData = async () => {
                 // Buscar perfil
                 const { data: profile, error: profileError } = await supabase
@@ -55,10 +50,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     .single();
 
                 if (profileError) {
-                    console.error('Profile error:', profileError);
+                    console.error('Profile error details:', profileError);
                     // Se for erro de conexão, lança erro para tentar novamente
-                    if (profileError.message?.includes('fetch') || profileError.message?.includes('network')) {
-                        throw new Error('Network error');
+                    if (profileError.message?.includes('fetch') || profileError.message?.includes('network') || profileError.message?.includes('Failed to fetch')) {
+                        throw new Error('Network error: Failed to connect to database');
                     }
                     throw new Error(`Erro ao carregar perfil: ${profileError.message}`);
                 }
@@ -76,9 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     .single();
 
                 if (companyError) {
-                    console.error('Company error:', companyError);
-                    if (companyError.message?.includes('fetch') || companyError.message?.includes('network')) {
-                        throw new Error('Network error');
+                    console.error('Company error details:', companyError);
+                    if (companyError.message?.includes('fetch') || companyError.message?.includes('network') || companyError.message?.includes('Failed to fetch')) {
+                        throw new Error('Network error: Failed to connect to database');
                     }
                     throw new Error(`Erro ao carregar empresa: ${companyError.message}`);
                 }
@@ -91,10 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return { profile, company };
             };
 
-            const { profile, company } = await Promise.race([
-                fetchData(),
-                dbTimeout
-            ]) as { profile: any, company: any };
+            // Removido timeout artificial para evitar cancelamento prematuro em conexões lentas
+            const { profile, company } = await fetchData();
 
             setUser({
                 id: authUser.id,
