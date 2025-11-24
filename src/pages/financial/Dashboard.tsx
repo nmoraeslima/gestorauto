@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+
 import {
     TrendingUp,
     TrendingDown,
@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinancialTransaction, TransactionType, TransactionStatus } from '@/types/database';
+import { TransactionModal } from '@/components/financial/TransactionModal';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '@/utils/format';
 
@@ -27,6 +28,8 @@ interface FinancialStats {
 export const FinancialDashboard: React.FC = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
+    const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [stats, setStats] = useState<FinancialStats>({
         totalIncome: 0,
         totalExpense: 0,
@@ -117,14 +120,14 @@ export const FinancialDashboard: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <Link to="/financial/receivables" className="btn-primary">
+                    <button onClick={() => setIsIncomeModalOpen(true)} className="btn-primary">
                         <TrendingUp className="h-5 w-5" />
                         <span className="hidden sm:inline">Contas a Receber</span>
-                    </Link>
-                    <Link to="/financial/payables" className="btn-secondary">
+                    </button>
+                    <button onClick={() => setIsExpenseModalOpen(true)} className="btn-secondary">
                         <TrendingDown className="h-5 w-5" />
                         <span className="hidden sm:inline">Contas a Pagar</span>
-                    </Link>
+                    </button>
                 </div>
             </div>
 
@@ -286,6 +289,22 @@ export const FinancialDashboard: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Modals */}
+            <TransactionModal
+                isOpen={isIncomeModalOpen}
+                onClose={() => setIsIncomeModalOpen(false)}
+                transaction={null}
+                type={TransactionType.INCOME}
+                onSuccess={loadFinancialData}
+            />
+            <TransactionModal
+                isOpen={isExpenseModalOpen}
+                onClose={() => setIsExpenseModalOpen(false)}
+                transaction={null}
+                type={TransactionType.EXPENSE}
+                onSuccess={loadFinancialData}
+            />
         </div>
     );
 };
