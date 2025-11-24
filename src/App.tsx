@@ -1,0 +1,100 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedLayout } from './components/ProtectedLayout';
+
+// Auth Pages
+import { SignIn } from './pages/auth/SignIn';
+import { SignUp } from './pages/auth/SignUp';
+import { ForgotPassword } from './pages/auth/ForgotPassword';
+
+// App Pages
+import { Dashboard } from './pages/Dashboard';
+import { SubscriptionRenew } from './pages/subscription/SubscriptionRenew';
+
+// CRM Pages
+import { Customers } from './pages/crm/Customers';
+import { Vehicles } from './pages/crm/Vehicles';
+import { Services } from './pages/catalog/Services';
+
+// Operations Pages
+import Appointments from './pages/operations/Appointments';
+import WorkOrders from './pages/operations/WorkOrders';
+
+// Inventory Pages
+import Products from './pages/catalog/Products';
+import Inventory from './pages/inventory/Inventory';
+
+// Placeholder components para páginas ainda não implementadas
+const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
+    <div className="text-center py-12">
+        <h1 className="text-3xl font-bold text-secondary-900 mb-4">{title}</h1>
+        <p className="text-secondary-600">Esta página está em desenvolvimento.</p>
+    </div>
+);
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AuthProvider>
+                <Toaster
+                    position="top-right"
+                    toastOptions={{
+                        duration: 4000,
+                        style: {
+                            background: '#fff',
+                            color: '#0f172a',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '0.75rem',
+                            padding: '1rem',
+                        },
+                        success: {
+                            iconTheme: {
+                                primary: '#22c55e',
+                                secondary: '#fff',
+                            },
+                        },
+                        error: {
+                            iconTheme: {
+                                primary: '#ef4444',
+                                secondary: '#fff',
+                            },
+                        },
+                    }}
+                />
+
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                    {/* Subscription Route (accessible even with expired subscription) */}
+                    <Route path="/subscription/renew" element={<SubscriptionRenew />} />
+
+                    {/* Protected Routes */}
+                    <Route element={<ProtectedLayout />}>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/customers" element={<Customers />} />
+                        <Route path="/vehicles" element={<Vehicles />} />
+                        <Route path="/services" element={<Services />} />
+                        <Route path="/appointments" element={<Appointments />} />
+                        <Route path="/work-orders" element={<WorkOrders />} />
+                        <Route path="/products" element={<Products />} />
+                        <Route path="/inventory" element={<Inventory />} />
+                        <Route path="/financial" element={<PlaceholderPage title="Financeiro" />} />
+                        <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
+                    </Route>
+
+                    {/* 404 */}
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+            </AuthProvider>
+        </BrowserRouter>
+    );
+}
+
+export default App;
