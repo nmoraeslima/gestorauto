@@ -37,11 +37,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [user]);
 
     // Carregar dados do perfil e empresa
-    const loadUserData = async (authUser: User) => {
+    const loadUserData = async (authUser: User, retryCount = 0) => {
         try {
-            console.log('Loading user data for:', authUser.id);
+            console.log(`Loading user data for: ${authUser.id} (Attempt ${retryCount + 1})`);
 
-            // Timeout para operações de banco de dados
+            // Timeout para operações de banco de dados (30s)
             const dbTimeout = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Database timeout')), 30000)
             );
@@ -56,6 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 if (profileError) {
                     console.error('Profile error:', profileError);
+                    // Se for erro de conexão, lança erro para tentar novamente
+                    if (profileError.message?.includes('fetch') || profileError.message?.includes('network')) {
+                        throw new Error('Network error');
+                    }
                     throw new Error(`Erro ao carregar perfil: ${profileError.message}`);
                 }
 
@@ -63,8 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.error('Profile not found for user:', authUser.id);
                     throw new Error('Perfil não encontrado. Por favor, entre em contato com o suporte.');
                 }
-
-                console.log('Profile loaded:', profile);
 
                 // Buscar empresa
                 const { data: company, error: companyError } = await supabase
@@ -75,6 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 if (companyError) {
                     console.error('Company error:', companyError);
+                    if (companyError.message?.includes('fetch') || companyError.message?.includes('network')) {
+                        throw new Error('Network error');
+                    }
                     throw new Error(`Erro ao carregar empresa: ${companyError.message}`);
                 }
 
@@ -82,8 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.error('Company not found:', profile.company_id);
                     throw new Error('Empresa não encontrada. Por favor, entre em contato com o suporte.');
                 }
-
-                console.log('Company loaded:', company);
 
                 return { profile, company };
             };
@@ -102,24 +105,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             console.log('User data loaded successfully');
         } catch (error: any) {
-            console.error('Error loading user data:', error);
+            console.error(`Error loading user data (Attempt ${retryCount + 1}):`, error);
+
+            // Retry logic (max 3 attempts)
+            if (retryCount < 2 && (error.message === 'Database timeout' || error.message === 'Network error' || error.message?.includes('fetch'))) {
+                console.log(`Retrying loadUserData in 2 seconds...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return loadUserData(authUser, retryCount + 1);
+            }
+
             // Only show toast if it's a real error, not just a network blip during refresh
             if (loading) {
                 toast.error(error.message || 'Erro ao carregar dados do usuário');
             }
 
-            // Se der erro de timeout ou outro erro crítico, limpamos o user para evitar estado inconsistente
-            // Mas apenas se não tivermos um user carregado (tentativa inicial)
+            // Se falhar após retries, forçar logout para limpar estado corrompido
             if (!user) {
+                console.warn('Critical error loading user data, forcing logout to clear state');
                 setUser(null);
-                // Se for timeout, forçamos logout mas SEM esperar (fire and forget)
-                // pois se o banco tá travado, o signOut também pode travar
-                // REMOVIDO: Não força mais logout por timeout
-                // if (error.message === 'Database timeout') {
-                //     console.warn('Database timeout, forcing local cleanup');
-                //     void supabase.auth.signOut();
-                //     setSession(null);
-                // }
+                setSession(null);
+                await supabase.auth.signOut();
+                // Redirecionar para login via window.location para garantir limpeza
+                if (window.location.pathname !== '/signin') {
+                    window.location.href = '/signin';
+                }
             }
         }
     };
