@@ -150,26 +150,6 @@ const signUp = async (data: SignUpData) => {
             return { error: companyError as unknown as AuthError };
         }
 
-        // 2. Criar usuário no Supabase Auth
-        const { error: authError } = await supabase.auth.signUp({
-            email: data.email,
-            password: data.password,
-            options: {
-                data: {
-                    full_name: data.full_name,
-                    company_id: companyId,
-                    role: 'owner',
-                },
-            },
-        });
-
-        if (authError) {
-            // Rollback: deletar empresa se criação de usuário falhar
-            await supabase.from('companies').delete().eq('id', companyId);
-            toast.error('Erro ao criar usuário: ' + authError.message);
-            return { error: authError };
-        }
-
         toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
         return { error: null };
     } catch (error) {
