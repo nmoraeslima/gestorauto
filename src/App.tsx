@@ -31,6 +31,9 @@ import { FinancialDashboard } from './pages/financial/Dashboard';
 import { Receivables } from './pages/financial/Receivables';
 import { Payables } from './pages/financial/Payables';
 
+// Settings Pages
+import { CompanySettings } from './pages/settings/CompanySettings';
+
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     <div className="text-center py-12">
@@ -93,7 +96,7 @@ function App() {
                         <Route path="/financial" element={<FinancialDashboard />} />
                         <Route path="/financial/receivables" element={<Receivables />} />
                         <Route path="/financial/payables" element={<Payables />} />
-                        <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
+                        <Route path="/settings" element={<CompanySettings />} />
                     </Route>
 
                     {/* 404 */}
