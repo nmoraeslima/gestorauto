@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
     TrendingUp,
     TrendingDown,
@@ -108,11 +109,23 @@ export const FinancialDashboard: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                    Visão geral das suas finanças
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Visão geral das suas finanças
+                    </p>
+                </div>
+                <div className="flex gap-3">
+                    <Link to="/financial/receivables" className="btn-primary">
+                        <TrendingUp className="h-5 w-5" />
+                        <span className="hidden sm:inline">Contas a Receber</span>
+                    </Link>
+                    <Link to="/financial/payables" className="btn-secondary">
+                        <TrendingDown className="h-5 w-5" />
+                        <span className="hidden sm:inline">Contas a Pagar</span>
+                    </Link>
+                </div>
             </div>
 
             {/* Alertas */}
@@ -258,8 +271,8 @@ export const FinancialDashboard: React.FC = () => {
                                         </td>
                                         <td>
                                             <span className={`badge ${transaction.status === 'paid' ? 'badge-green' :
-                                                    transaction.status === 'pending' ? 'badge-yellow' :
-                                                        'badge-gray'
+                                                transaction.status === 'pending' ? 'badge-yellow' :
+                                                    'badge-gray'
                                                 }`}>
                                                 {transaction.status === 'paid' ? 'Pago' :
                                                     transaction.status === 'pending' ? 'Pendente' :

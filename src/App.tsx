@@ -28,6 +28,8 @@ import Inventory from './pages/inventory/Inventory';
 
 // Financial Pages
 import { FinancialDashboard } from './pages/financial/Dashboard';
+import { Receivables } from './pages/financial/Receivables';
+import { Payables } from './pages/financial/Payables';
 
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -89,6 +91,8 @@ function App() {
                         <Route path="/products" element={<Products />} />
                         <Route path="/inventory" element={<Inventory />} />
                         <Route path="/financial" element={<FinancialDashboard />} />
+                        <Route path="/financial/receivables" element={<Receivables />} />
+                        <Route path="/financial/payables" element={<Payables />} />
                         <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
                     </Route>
 
