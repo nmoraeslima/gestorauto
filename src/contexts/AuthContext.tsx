@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Timeout para operações de banco de dados
             const dbTimeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Database timeout')), 8000)
+                setTimeout(() => reject(new Error('Database timeout')), 30000)
             );
 
             const fetchData = async () => {
@@ -114,11 +114,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(null);
                 // Se for timeout, forçamos logout mas SEM esperar (fire and forget)
                 // pois se o banco tá travado, o signOut também pode travar
-                if (error.message === 'Database timeout') {
-                    console.warn('Database timeout, forcing local cleanup');
-                    void supabase.auth.signOut();
-                    setSession(null);
-                }
+                // REMOVIDO: Não força mais logout por timeout
+                // if (error.message === 'Database timeout') {
+                //     console.warn('Database timeout, forcing local cleanup');
+                //     void supabase.auth.signOut();
+                //     setSession(null);
+                // }
             }
         }
     };
@@ -139,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             try {
                 // 1. Tentar obter a sessão inicial com timeout
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Auth timeout')), 5000)
+                    setTimeout(() => reject(new Error('Auth timeout')), 20000)
                 );
 
                 const sessionPromise = supabase.auth.getSession();
@@ -157,14 +158,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
-                if (error instanceof Error && error.message === 'Auth timeout') {
-                    console.warn('Auth initialization timed out, forcing local cleanup');
-                    void supabase.auth.signOut();
-                    if (mounted) {
-                        setSession(null);
-                        setUser(null);
-                    }
-                }
+                // REMOVIDO: Não força mais logout por timeout na inicialização
+                // if (error instanceof Error && error.message === 'Auth timeout') {
+                //     console.warn('Auth initialization timed out, forcing local cleanup');
+                //     void supabase.auth.signOut();
+                //     if (mounted) {
+                //         setSession(null);
+                //         setUser(null);
+                //     }
+                // }
             } finally {
                 if (mounted) {
                     setLoading(false);
