@@ -29,65 +29,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<AuthUser | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
-    const userRef = React.useRef<AuthUser | null>(null);
-
-    // Keep ref in sync with state
-    useEffect(() => {
-        userRef.current = user;
-    }, [user]);
 
     // Carregar dados do perfil e empresa
-    const loadUserData = async (authUser: User, retryCount = 0) => {
+    const loadUserData = async (authUser: User) => {
         try {
-            console.log(`Loading user data for: ${authUser.id} (Attempt ${retryCount + 1})`);
+            console.log('Loading user data for:', authUser.id);
 
-            const fetchData = async () => {
-                // Buscar perfil
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', authUser.id)
-                    .single();
+            // Buscar perfil
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authUser.id)
+                .single();
 
-                if (profileError) {
-                    console.error('Profile error details:', profileError);
-                    // Se for erro de conexão, lança erro para tentar novamente
-                    if (profileError.message?.includes('fetch') || profileError.message?.includes('network') || profileError.message?.includes('Failed to fetch')) {
-                        throw new Error('Network error: Failed to connect to database');
-                    }
-                    throw new Error(`Erro ao carregar perfil: ${profileError.message}`);
-                }
+            if (profileError) {
+                console.error('Error loading profile:', profileError);
+                throw profileError;
+            }
 
-                if (!profile) {
-                    console.error('Profile not found for user:', authUser.id);
-                    throw new Error('Perfil não encontrado. Por favor, entre em contato com o suporte.');
-                }
+            if (!profile) {
+                throw new Error('Profile not found');
+            }
 
-                // Buscar empresa
-                const { data: company, error: companyError } = await supabase
-                    .from('companies')
-                    .select('*')
-                    .eq('id', profile.company_id)
-                    .single();
+            // Buscar empresa
+            const { data: company, error: companyError } = await supabase
+                .from('companies')
+                .select('*')
+                .eq('id', profile.company_id)
+                .single();
 
-                if (companyError) {
-                    console.error('Company error details:', companyError);
-                    if (companyError.message?.includes('fetch') || companyError.message?.includes('network') || companyError.message?.includes('Failed to fetch')) {
-                        throw new Error('Network error: Failed to connect to database');
-                    }
-                    throw new Error(`Erro ao carregar empresa: ${companyError.message}`);
-                }
+            if (companyError) {
+                console.error('Error loading company:', companyError);
+                throw companyError;
+            }
 
-                if (!company) {
-                    console.error('Company not found:', profile.company_id);
-                    throw new Error('Empresa não encontrada. Por favor, entre em contato com o suporte.');
-                }
-
-                return { profile, company };
-            };
-
-            // Removido timeout artificial para evitar cancelamento prematuro em conexões lentas
-            const { profile, company } = await fetchData();
+            if (!company) {
+                throw new Error('Company not found');
+            }
 
             setUser({
                 id: authUser.id,
@@ -95,52 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 profile: profile as Profile,
                 company: company as Company,
             });
-
-            console.log('User data loaded successfully');
-        } catch (error: any) {
-            console.error(`Error loading user data (Attempt ${retryCount + 1}):`, error);
-
-            // Retry logic (max 3 attempts)
-            if (retryCount < 2) {
-                // Se for erro 401 (Unauthorized) ou JWT expirado, tenta renovar o token antes de tentar de novo
-                if (error.message?.includes('JWT') || error.code === 'PGRST301' || error.message?.includes('401')) {
-                    console.log('Token expired or invalid, attempting refresh...');
-                    const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-
-                    if (refreshError) {
-                        console.error('Failed to refresh session:', refreshError);
-                        // Se falhar o refresh, não adianta tentar de novo, vai para o logout
-                    } else if (session) {
-                        console.log('Session refreshed successfully, retrying loadUserData...');
-                        setSession(session);
-                        return loadUserData(authUser, retryCount + 1);
-                    }
-                }
-
-                // Se for erro de rede ou timeout, espera e tenta de novo
-                if (error.message === 'Database timeout' || error.message === 'Network error' || error.message?.includes('fetch')) {
-                    console.log(`Retrying loadUserData in 2 seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    return loadUserData(authUser, retryCount + 1);
-                }
-            }
-
-            // Only show toast if it's a real error, not just a network blip during refresh
-            if (loading) {
-                toast.error(error.message || 'Erro ao carregar dados do usuário');
-            }
-
-            // Se falhar após retries, forçar logout para limpar estado corrompido
-            if (!user) {
-                console.warn('Critical error loading user data, forcing logout to clear state');
-                setUser(null);
-                setSession(null);
-                await supabase.auth.signOut();
-                // Redirecionar para login via window.location para garantir limpeza
-                if (window.location.pathname !== '/signin') {
-                    window.location.href = '/signin';
-                }
-            }
+        } catch (error) {
+            console.error('Error in loadUserData:', error);
+            // Se falhar ao carregar dados críticos, infelizmente não podemos logar o usuário
+            // Mas não vamos forçar logout aqui para evitar loops. 
+            // O ProtectedRoute vai lidar com user === null
+            setUser(null);
         }
     };
 
@@ -152,23 +90,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // Inicialização da autenticação
     useEffect(() => {
         let mounted = true;
 
-        const initializeAuth = async () => {
+        // Função principal de inicialização
+        const initialize = async () => {
             try {
-                // 1. Tentar obter a sessão inicial sem timeout artificial
-                const { data: { session }, error } = await supabase.auth.getSession();
-
-                if (error) {
-                    throw error;
-                }
+                // 1. Verificar sessão atual
+                const { data: { session: initialSession } } = await supabase.auth.getSession();
 
                 if (mounted) {
-                    setSession(session);
-                    if (session?.user) {
-                        await loadUserData(session.user);
+                    setSession(initialSession);
+                    if (initialSession?.user) {
+                        await loadUserData(initialSession.user);
                     }
                 }
             } catch (error) {
@@ -180,35 +114,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         };
 
-        initializeAuth();
+        initialize();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // 2. Configurar listener de mudanças de estado
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             if (!mounted) return;
 
             console.log('Auth state changed:', event);
+            setSession(currentSession);
 
-            try {
-                setSession(session);
-
-                if (event === 'TOKEN_REFRESHED') {
-                    console.log('Token refreshed successfully');
-                }
-
-                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                    if (session?.user) {
-                        // Apenas recarrega dados se não tivermos usuário carregado ou se for login explícito
-                        // No refresh, assumimos que os dados do usuário (perfil/empresa) não mudaram drasticamente
-                        // Mas se o user estiver null (ex: refresh após F5), precisamos carregar
-                        if (!userRef.current || event === 'SIGNED_IN') {
-                            await loadUserData(session.user);
-                        }
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                if (currentSession?.user) {
+                    // Se não tivermos user carregado (ex: refresh de página), carrega.
+                    // Se já tiver user, assume que está ok (otimização), a menos que seja SIGNED_IN explícito
+                    if (!user || event === 'SIGNED_IN') {
+                        await loadUserData(currentSession.user);
                     }
-                } else if (event === 'SIGNED_OUT') {
-                    setUser(null);
-                    setSession(null);
                 }
-            } catch (error) {
-                console.error('Error in auth state change:', error);
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                setSession(null);
             }
         });
 
@@ -216,12 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             mounted = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, []); // Dependência vazia intencional
 
-    // Cadastro (cria empresa + usuário + perfil)
+    // Cadastro
     const signUp = async (data: SignUpData) => {
         try {
-            // 1. Criar empresa usando função PostgreSQL (bypassa RLS)
             const { data: companyId, error: companyError } = await supabase
                 .rpc('create_company_for_signup', {
                     p_name: data.company_name,
@@ -230,18 +154,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     p_phone: data.phone || null,
                 });
 
-            if (companyError) {
-                console.error('Company creation error:', companyError);
-                toast.error('Erro ao criar empresa: ' + companyError.message);
-                return { error: companyError as unknown as AuthError };
-            }
+            if (companyError) throw companyError;
 
             toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
             return { error: null };
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sign up error:', error);
-            toast.error('Erro inesperado ao criar conta');
-            return { error: error as AuthError };
+            toast.error('Erro ao criar conta: ' + error.message);
+            return { error };
         }
     };
 
@@ -257,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { error };
         }
 
-        toast.success('Login realizado com sucesso!');
+        // O listener onAuthStateChange vai lidar com o resto
         return { error: null };
     };
 
@@ -269,18 +189,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
             setUser(null);
             setSession(null);
-            toast.success('Logout realizado com sucesso!');
+            // toast.success('Logout realizado com sucesso!'); // Opcional, as vezes é chato
         }
     };
 
-    // Recuperação de senha
+    // Reset Password
     const resetPassword = async (email: string) => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/reset-password`,
         });
 
         if (error) {
-            toast.error('Erro ao enviar email de recuperação: ' + error.message);
+            toast.error('Erro ao enviar email: ' + error.message);
             return { error };
         }
 
