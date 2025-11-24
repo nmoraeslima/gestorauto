@@ -7,7 +7,11 @@ import { TransactionModal } from '@/components/financial/TransactionModal';
 import { formatCurrency, formatDate } from '@/utils/format';
 import toast from 'react-hot-toast';
 
-export const Receivables: React.FC = () => {
+interface ReceivablesProps {
+    onDataChange?: () => void;
+}
+
+export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -87,6 +91,7 @@ export const Receivables: React.FC = () => {
             if (error) throw error;
             toast.success('Pagamento registrado com sucesso!');
             loadTransactions();
+            onDataChange?.(); // Notify parent to refresh
         } catch (error: any) {
             console.error('Error marking as paid:', error);
             toast.error('Erro ao registrar pagamento');
@@ -105,6 +110,7 @@ export const Receivables: React.FC = () => {
             if (error) throw error;
             toast.success('Transação excluída com sucesso!');
             loadTransactions();
+            onDataChange?.(); // Notify parent to refresh
         } catch (error: any) {
             console.error('Error deleting transaction:', error);
             toast.error('Erro ao excluir transação');
@@ -253,8 +259,8 @@ export const Receivables: React.FC = () => {
                                             </td>
                                             <td>
                                                 <span className={`badge ${transaction.status === TransactionStatus.PAID ? 'badge-green' :
-                                                        transaction.status === TransactionStatus.PENDING ? 'badge-yellow' :
-                                                            'badge-gray'
+                                                    transaction.status === TransactionStatus.PENDING ? 'badge-yellow' :
+                                                        'badge-gray'
                                                     }`}>
                                                     {transaction.status === TransactionStatus.PAID ? 'Pago' :
                                                         transaction.status === TransactionStatus.PENDING ? 'Pendente' :
@@ -306,7 +312,10 @@ export const Receivables: React.FC = () => {
                 }}
                 transaction={selectedTransaction}
                 type={TransactionType.INCOME}
-                onSuccess={loadTransactions}
+                onSuccess={() => {
+                    loadTransactions();
+                    onDataChange?.(); // Notify parent to refresh
+                }}
             />
         </div>
     );

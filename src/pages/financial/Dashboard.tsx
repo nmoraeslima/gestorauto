@@ -359,8 +359,8 @@ export const FinancialDashboard: React.FC = () => {
             {/* Tab Content */}
             <div>
                 {activeTab === 'dashboard' && renderDashboardContent()}
-                {activeTab === 'receivables' && <Receivables />}
-                {activeTab === 'payables' && <Payables />}
+                {activeTab === 'receivables' && <Receivables onDataChange={loadFinancialData} />}
+                {activeTab === 'payables' && <Payables onDataChange={loadFinancialData} />}
             </div>
         </div>
     );
