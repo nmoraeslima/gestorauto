@@ -7,7 +7,8 @@ import toast from 'react-hot-toast';
 interface AuthContextType {
     user: AuthUser | null;
     session: Session | null;
-    loading: boolean;
+    loading: boolean; // Session loading
+    dataLoading: boolean; // Profile/Company loading
     signUp: (data: SignUpData) => Promise<{ error: AuthError | null }>;
     signIn: (data: SignInData) => Promise<{ error: AuthError | null }>;
     signOut: () => Promise<void>;
@@ -28,10 +29,15 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [session, setSession] = useState<Session | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Inicialmente true para verificar sessão
+    const [dataLoading, setDataLoading] = useState(false); // Loading específico de dados
 
     // Carregar dados do perfil e empresa
     const loadUserData = async (authUser: User) => {
+        // Se já estiver carregando, não inicia outro request
+        if (dataLoading) return;
+
+        setDataLoading(true);
         try {
             console.log('Loading user data for:', authUser.id);
 
@@ -42,14 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .eq('id', authUser.id)
                 .single();
 
-            if (profileError) {
-                console.error('Error loading profile:', profileError);
-                throw profileError;
-            }
-
-            if (!profile) {
-                throw new Error('Profile not found');
-            }
+            if (profileError) throw profileError;
+            if (!profile) throw new Error('Profile not found');
 
             // Buscar empresa
             const { data: company, error: companyError } = await supabase
@@ -58,14 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .eq('id', profile.company_id)
                 .single();
 
-            if (companyError) {
-                console.error('Error loading company:', companyError);
-                throw companyError;
-            }
-
-            if (!company) {
-                throw new Error('Company not found');
-            }
+            if (companyError) throw companyError;
+            if (!company) throw new Error('Company not found');
 
             setUser({
                 id: authUser.id,
@@ -75,10 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
         } catch (error) {
             console.error('Error in loadUserData:', error);
-            // Se falhar ao carregar dados críticos, infelizmente não podemos logar o usuário
-            // Mas não vamos forçar logout aqui para evitar loops. 
-            // O ProtectedRoute vai lidar com user === null
-            setUser(null);
+            // Não fazemos logout automático aqui para permitir retry manual na UI
+            toast.error('Erro ao carregar dados. Tente atualizar a página.');
+        } finally {
+            setDataLoading(false);
         }
     };
 
@@ -93,30 +87,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         let mounted = true;
 
-        // Função principal de inicialização
         const initialize = async () => {
             try {
-                // 1. Verificar sessão atual
+                // 1. Verificar sessão (rápido)
                 const { data: { session: initialSession } } = await supabase.auth.getSession();
 
                 if (mounted) {
                     setSession(initialSession);
+                    setLoading(false); // Sessão verificada, libera UI
+
+                    // 2. Se tem sessão, busca dados (assíncrono)
                     if (initialSession?.user) {
-                        await loadUserData(initialSession.user);
+                        loadUserData(initialSession.user);
                     }
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
-            } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
+                if (mounted) setLoading(false);
             }
         };
 
         initialize();
 
-        // 2. Configurar listener de mudanças de estado
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             if (!mounted) return;
 
@@ -125,15 +117,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 if (currentSession?.user) {
-                    // Se não tivermos user carregado (ex: refresh de página), carrega.
-                    // Se já tiver user, assume que está ok (otimização), a menos que seja SIGNED_IN explícito
-                    if (!user || event === 'SIGNED_IN') {
-                        await loadUserData(currentSession.user);
+                    // Se o usuário mudou ou ainda não temos dados, carrega
+                    if (!user || user.id !== currentSession.user.id) {
+                        loadUserData(currentSession.user);
                     }
                 }
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setSession(null);
+                setDataLoading(false);
             }
         });
 
@@ -141,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             mounted = false;
             subscription.unsubscribe();
         };
-    }, []); // Dependência vazia intencional
+    }, []);
 
     // Cadastro
     const signUp = async (data: SignUpData) => {
@@ -177,7 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { error };
         }
 
-        // O listener onAuthStateChange vai lidar com o resto
         return { error: null };
     };
 
@@ -189,7 +180,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
             setUser(null);
             setSession(null);
-            // toast.success('Logout realizado com sucesso!'); // Opcional, as vezes é chato
         }
     };
 
@@ -212,6 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         loading,
+        dataLoading,
         signUp,
         signIn,
         signOut,

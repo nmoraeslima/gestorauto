@@ -2,26 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { SubscriptionGuard } from './SubscriptionGuard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-    const { user, loading, signOut } = useAuth();
+    const { user, session, loading, dataLoading, signOut, refreshUserData } = useAuth();
     const location = useLocation();
     const [showExit, setShowExit] = useState(false);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
-        if (loading) {
-            timer = setTimeout(() => setShowExit(true), 5000); // Show exit button after 5s
+        // Show exit/retry options if loading takes too long (either session or data)
+        if (loading || dataLoading) {
+            timer = setTimeout(() => setShowExit(true), 5000);
         } else {
             setShowExit(false);
         }
         return () => clearTimeout(timer);
-    }, [loading]);
+    }, [loading, dataLoading]);
 
     const handleForceLogout = async () => {
         try {
@@ -29,26 +30,41 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         } catch (error) {
             console.error('Force logout error:', error);
         } finally {
-            window.location.href = '/signin'; // Hard reload to clear state
+            window.location.href = '/signin';
         }
     };
 
+    // 1. Verificando sessão (Auth Loading)
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-secondary-50 gap-4">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-                    <p className="text-secondary-600">Carregando...</p>
-                </div>
+                <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
+                <p className="text-secondary-600">Conectando...</p>
+            </div>
+        );
+    }
+
+    // 2. Sem sessão -> Login
+    if (!session) {
+        return <Navigate to="/signin" replace />;
+    }
+
+    // 3. Com sessão, carregando dados (Data Loading)
+    if (dataLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-secondary-50 gap-4">
+                <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
+                <p className="text-secondary-600">Carregando seus dados...</p>
 
                 {showExit && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <p className="text-sm text-secondary-500 mb-2">Está demorando muito?</p>
+                    <div className="flex flex-col gap-2 items-center animate-in fade-in slide-in-from-bottom-4">
+                        <p className="text-sm text-secondary-500">A conexão está lenta.</p>
                         <button
-                            onClick={handleForceLogout}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium underline underline-offset-4"
+                            onClick={() => window.location.reload()}
+                            className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
                         >
-                            Sair e tentar novamente
+                            <RefreshCw className="w-4 h-4" />
+                            Tentar novamente
                         </button>
                     </div>
                 )}
@@ -56,9 +72,35 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         );
     }
 
+    // 4. Com sessão, mas sem dados (Erro no carregamento de perfil/empresa)
     if (!user) {
-        return <Navigate to="/signin" replace />;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-secondary-50 gap-4 p-4 text-center">
+                <div className="bg-white p-6 rounded-lg shadow-sm max-w-md w-full">
+                    <h2 className="text-lg font-semibold text-red-600 mb-2">Erro ao carregar dados</h2>
+                    <p className="text-secondary-600 mb-4">
+                        Não foi possível carregar seu perfil ou empresa. Isso pode ser um problema de conexão ou permissão.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => refreshUserData()}
+                            className="w-full py-2 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Tentar Novamente
+                        </button>
+                        <button
+                            onClick={handleForceLogout}
+                            className="w-full py-2 px-4 border border-secondary-200 text-secondary-600 rounded-md hover:bg-secondary-50 transition-colors"
+                        >
+                            Sair e tentar login novamente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
+    // 5. Tudo certo -> App
     return <SubscriptionGuard>{children}</SubscriptionGuard>;
 };
