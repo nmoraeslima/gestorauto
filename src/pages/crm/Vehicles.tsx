@@ -39,7 +39,7 @@ export const Vehicles: React.FC = () => {
                 .from('vehicles')
                 .select(`
           *,
-          customer:customers(name)
+          customer:customer_id(name)
         `)
                 .order('created_at', { ascending: false });
 

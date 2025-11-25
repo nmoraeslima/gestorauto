@@ -55,7 +55,17 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
     // Reset form when vehicle changes
     useEffect(() => {
         if (vehicle) {
-            reset(vehicle);
+            // Ensure we extract the customer_id properly
+            const formData = {
+                customer_id: vehicle.customer_id,
+                brand: vehicle.brand,
+                model: vehicle.model,
+                year: vehicle.year,
+                color: vehicle.color,
+                license_plate: vehicle.license_plate,
+                notes: vehicle.notes,
+            };
+            reset(formData);
         } else {
             reset({});
         }
