@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Car, Crown } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Car, Crown, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Customer } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -163,6 +163,26 @@ export const Customers: React.FC = () => {
         }
     };
 
+    const handleActivate = async (customer: Customer) => {
+        if (!confirm(`Deseja reativar o cliente "${customer.name}"?`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('customers')
+                .update({ is_active: true })
+                .eq('id', customer.id);
+
+            if (error) throw error;
+            toast.success('Cliente reativado com sucesso');
+            loadCustomers();
+        } catch (error: any) {
+            console.error('Error activating customer:', error);
+            toast.error('Erro ao reativar cliente');
+        }
+    };
+
     const handleNewCustomer = () => {
         setSelectedCustomer(null);
         setIsModalOpen(true);
@@ -319,13 +339,23 @@ export const Customers: React.FC = () => {
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDelete(customer)}
-                                                    className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                {customer.is_active ? (
+                                                    <button
+                                                        onClick={() => handleDelete(customer)}
+                                                        className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleActivate(customer)}
+                                                        className="rounded-lg p-2 text-green-600 hover:bg-green-50"
+                                                        title="Ativar"
+                                                    >
+                                                        <Check className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
