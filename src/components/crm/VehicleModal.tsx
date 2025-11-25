@@ -52,9 +52,9 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
         }
     }, [isOpen, user]);
 
-    // Reset form when vehicle changes
+    // Reset form when vehicle changes AND customers are loaded
     useEffect(() => {
-        if (vehicle) {
+        if (vehicle && customers.length > 0) {
             // Ensure we extract the customer_id properly
             const formData = {
                 customer_id: vehicle.customer_id,
@@ -66,10 +66,10 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
                 notes: vehicle.notes,
             };
             reset(formData);
-        } else {
+        } else if (!vehicle) {
             reset({});
         }
-    }, [vehicle, reset]);
+    }, [vehicle, customers, reset]);
 
     const loadCustomers = async () => {
         try {
