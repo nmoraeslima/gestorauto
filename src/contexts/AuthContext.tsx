@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile, Company, SignUpData, SignInData, AuthUser } from '@/types/database';
+import { notificationService } from '@/services/notificationService';
 import toast from 'react-hot-toast';
 
 interface AuthContextType {
@@ -67,6 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 profile: profile as Profile,
                 company: company as Company,
             });
+
+            // Initialize notifications after successful login
+            await notificationService.registerServiceWorker();
+            const hasPermission = await notificationService.requestPermission();
+            if (hasPermission && company.id) {
+                notificationService.startPeriodicChecks(company.id);
+            }
         } catch (error) {
             console.error('Error in loadUserData:', error);
             // Não fazemos logout automático aqui para permitir retry manual na UI
@@ -174,6 +182,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Logout
     const signOut = async () => {
+        // Stop notifications
+        notificationService.stopPeriodicChecks();
+
         // Optimistic logout: Clear state immediately
         setUser(null);
         setSession(null);
