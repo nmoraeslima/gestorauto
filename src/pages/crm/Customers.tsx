@@ -15,6 +15,7 @@ export const Customers: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
     const [filterVIP, setFilterVIP] = useState<boolean | null>(null);
+    const [showInactive, setShowInactive] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -22,7 +23,7 @@ export const Customers: React.FC = () => {
         if (user?.company) {
             loadCustomers();
         }
-    }, [user]);
+    }, [user, showInactive]);
 
     useEffect(() => {
         filterCustomersList();
@@ -31,11 +32,17 @@ export const Customers: React.FC = () => {
     const loadCustomers = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            let query = supabase
                 .from('customers')
                 .select('*')
-                .is('deleted_at', null)
-                .order('created_at', { ascending: false });
+                .is('deleted_at', null);
+
+            // Filter by active status
+            if (!showInactive) {
+                query = query.eq('is_active', true);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) throw error;
             setCustomers(data || []);
@@ -82,54 +89,77 @@ export const Customers: React.FC = () => {
 
     const handleDelete = async (customer: Customer) => {
         try {
-            // First, check how many vehicles this customer has
-            const { data: vehicles, error: vehiclesError } = await supabase
-                .from('vehicles')
-                .select('id')
-                .eq('customer_id', customer.id);
+            // Check for operational dependencies in a single optimized query
+            const [vehiclesResult, appointmentsResult, workOrdersResult, transactionsResult] = await Promise.all([
+                supabase.from('vehicles').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
+                supabase.from('appointments').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
+                supabase.from('work_orders').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
+                supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
+            ]);
 
-            if (vehiclesError) throw vehiclesError;
+            const vehicleCount = vehiclesResult.count || 0;
+            const appointmentCount = appointmentsResult.count || 0;
+            const workOrderCount = workOrdersResult.count || 0;
+            const transactionCount = transactionsResult.count || 0;
 
-            const vehicleCount = vehicles?.length || 0;
+            const hasOperationalData = appointmentCount > 0 || workOrderCount > 0 || transactionCount > 0;
 
-            // Build confirmation message
-            let confirmMessage = `Tem certeza que deseja excluir o cliente "${customer.name}"?`;
-            if (vehicleCount > 0) {
-                confirmMessage += `\n\n⚠️ Este cliente possui ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} cadastrado${vehicleCount > 1 ? 's' : ''}, que também ${vehicleCount > 1 ? 'serão excluídos' : 'será excluído'}.`;
-            }
+            if (hasOperationalData) {
+                // Customer has operational data - must deactivate instead of delete
+                const confirmMessage = `Este cliente possui movimentações operacionais (${appointmentCount} agendamento${appointmentCount !== 1 ? 's' : ''}, ${workOrderCount} O.S., ${transactionCount} transação${transactionCount !== 1 ? 'ões' : ''}) e não pode ser excluído.\n\nDeseja inativar este cliente? Ele ficará oculto mas seus dados serão preservados.`;
 
-            if (!confirm(confirmMessage)) {
-                return;
-            }
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
 
-            // Delete vehicles first (if any)
-            if (vehicleCount > 0) {
-                const { error: deleteVehiclesError } = await supabase
-                    .from('vehicles')
-                    .delete()
-                    .eq('customer_id', customer.id);
+                // Deactivate customer
+                const { error } = await supabase
+                    .from('customers')
+                    .update({ is_active: false })
+                    .eq('id', customer.id);
 
-                if (deleteVehiclesError) throw deleteVehiclesError;
-            }
-
-            // Then soft delete the customer
-            const { error } = await supabase
-                .from('customers')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', customer.id);
-
-            if (error) throw error;
-
-            if (vehicleCount > 0) {
-                toast.success(`Cliente e ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} excluído${vehicleCount > 1 ? 's' : ''} com sucesso`);
+                if (error) throw error;
+                toast.success('Cliente inativado com sucesso');
             } else {
-                toast.success('Cliente excluído com sucesso');
+                // Customer can be deleted (only has vehicles or nothing)
+                let confirmMessage = `Tem certeza que deseja excluir o cliente "${customer.name}"?`;
+                if (vehicleCount > 0) {
+                    confirmMessage += `\n\n⚠️ Este cliente possui ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} cadastrado${vehicleCount > 1 ? 's' : ''}, que também ${vehicleCount > 1 ? 'serão excluídos' : 'será excluído'}.`;
+                }
+
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
+                // Delete vehicles first (if any)
+                if (vehicleCount > 0) {
+                    const { error: deleteVehiclesError } = await supabase
+                        .from('vehicles')
+                        .delete()
+                        .eq('customer_id', customer.id);
+
+                    if (deleteVehiclesError) throw deleteVehiclesError;
+                }
+
+                // Then soft delete the customer
+                const { error } = await supabase
+                    .from('customers')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', customer.id);
+
+                if (error) throw error;
+
+                if (vehicleCount > 0) {
+                    toast.success(`Cliente e ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} excluído${vehicleCount > 1 ? 's' : ''} com sucesso`);
+                } else {
+                    toast.success('Cliente excluído com sucesso');
+                }
             }
 
             loadCustomers();
         } catch (error: any) {
-            console.error('Error deleting customer:', error);
-            toast.error('Erro ao excluir cliente');
+            console.error('Error deleting/deactivating customer:', error);
+            toast.error('Erro ao processar solicitação');
         }
     };
 
@@ -204,6 +234,19 @@ export const Customers: React.FC = () => {
                             <option value="regular">Regular</option>
                         </select>
                     </div>
+
+                    {/* Show Inactive Toggle */}
+                    <div className="flex items-center">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={showInactive}
+                                onChange={(e) => setShowInactive(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            />
+                            <span className="text-sm text-gray-700">Mostrar inativos</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -241,6 +284,9 @@ export const Customers: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                                 {customer.vip && <Crown className="h-4 w-4 text-yellow-500" />}
                                                 <span className="font-medium text-gray-900">{customer.name}</span>
+                                                {!customer.is_active && (
+                                                    <span className="badge badge-gray text-xs">Inativo</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td>
