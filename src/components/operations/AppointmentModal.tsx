@@ -383,8 +383,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 <label className="label">Duração (minutos)</label>
                                 <input
                                     type="number"
-                                    min="15"
-                                    step="15"
+                                    min="1"
                                     value={formData.duration_minutes}
                                     onChange={(e) =>
                                         setFormData({
