@@ -286,7 +286,6 @@ export default function Appointments() {
                                                     <p className="font-medium">{appointment.customer?.name || '-'}</p>
                                                     {appointment.vehicle && (
                                                         <p className="text-sm text-neutral-500">
-                                                            <Car className="w-3 h-3 inline mr-1" />
                                                             {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
                                                         </p>
                                                     )}
