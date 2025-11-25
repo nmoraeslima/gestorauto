@@ -45,6 +45,10 @@ export const unmask = (value: string): string => {
     return value.replace(/\D/g, '');
 };
 
+export const unmaskLicensePlate = (value: string): string => {
+    return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+};
+
 export const validateCPF = (cpf: string): boolean => {
     const numbers = unmask(cpf);
 

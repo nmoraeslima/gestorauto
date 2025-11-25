@@ -133,71 +133,82 @@ export const Vehicles: React.FC = () => {
                 </div>
             </div>
 
-            {/* Grid */}
-            {loading ? (
-                <div className="flex h-64 items-center justify-center">
-                    <div className="loading-spinner" />
-                </div>
-            ) : filteredVehicles.length === 0 ? (
-                <div className="flex h-64 flex-col items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm">
-                    <p className="text-lg font-medium">Nenhum veículo encontrado</p>
-                    <p className="mt-1 text-sm">
-                        {searchTerm ? 'Tente ajustar a busca' : 'Comece criando seu primeiro veículo'}
-                    </p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredVehicles.map((vehicle) => (
-                        <div key={vehicle.id} className="overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md">
-                            {/* Content */}
-                            <div className="p-4">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            {vehicle.brand} {vehicle.model}
-                                        </h3>
-                                        <p className="mt-1 text-sm text-gray-500">{vehicle.customer?.name}</p>
-                                    </div>
-                                    <div className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                                        {maskLicensePlate(vehicle.license_plate)}
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 space-y-2 text-sm border-t border-gray-100 pt-3">
-                                    {vehicle.year && (
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Ano:</span>
-                                            <span className="font-medium text-gray-900">{vehicle.year}</span>
-                                        </div>
-                                    )}
-                                    {vehicle.color && (
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Cor:</span>
-                                            <span className="font-medium text-gray-900">{vehicle.color}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Actions */}
-                                <div className="mt-4 flex gap-2">
-                                    <button
-                                        onClick={() => handleEdit(vehicle)}
-                                        className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                    >
-                                        <Edit2 className="mx-auto h-4 w-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(vehicle)}
-                                        className="flex-1 rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-                                    >
-                                        <Trash2 className="mx-auto h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            {/* Table */}
+            <div className="rounded-lg bg-white shadow-sm">
+                {loading ? (
+                    <div className="flex h-64 items-center justify-center">
+                        <div className="loading-spinner" />
+                    </div>
+                ) : filteredVehicles.length === 0 ? (
+                    <div className="flex h-64 flex-col items-center justify-center text-gray-500">
+                        <p className="text-lg font-medium">Nenhum veículo encontrado</p>
+                        <p className="mt-1 text-sm">
+                            {searchTerm ? 'Tente ajustar a busca' : 'Comece criando seu primeiro veículo'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Veículo</th>
+                                    <th>Placa</th>
+                                    <th className="hidden md:table-cell">Cliente</th>
+                                    <th className="hidden md:table-cell">Detalhes</th>
+                                    <th className="text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredVehicles.map((vehicle) => (
+                                    <tr key={vehicle.id}>
+                                        <td>
+                                            <div className="font-medium text-gray-900">
+                                                {vehicle.brand} {vehicle.model}
+                                            </div>
+                                            <div className="md:hidden text-sm text-gray-500">
+                                                {vehicle.customer?.name}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
+                                                {maskLicensePlate(vehicle.license_plate)}
+                                            </span>
+                                        </td>
+                                        <td className="hidden md:table-cell">
+                                            <div className="text-gray-900">{vehicle.customer?.name}</div>
+                                        </td>
+                                        <td className="hidden md:table-cell">
+                                            <div className="text-sm text-gray-500">
+                                                {vehicle.year && <span>{vehicle.year}</span>}
+                                                {vehicle.year && vehicle.color && <span> • </span>}
+                                                {vehicle.color && <span>{vehicle.color}</span>}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(vehicle)}
+                                                    className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(vehicle)}
+                                                    className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
 
             {/* Stats */}
             <div className="grid grid-cols-1 gap-4">

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
 import { Customer, Vehicle, VehicleFormData } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
-import { maskLicensePlate, unmask, validateLicensePlate } from '@/utils/masks';
+import { maskLicensePlate, unmaskLicensePlate, validateLicensePlate } from '@/utils/masks';
 import toast from 'react-hot-toast';
 
 interface VehicleModalProps {
@@ -93,7 +93,7 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
             const vehicleData = {
                 ...data,
                 company_id: user.company.id,
-                license_plate: unmask(data.license_plate).toUpperCase(),
+                license_plate: unmaskLicensePlate(data.license_plate),
             };
 
             if (isEditing && vehicle) {
