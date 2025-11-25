@@ -265,7 +265,6 @@ export default function WorkOrders() {
                                     <th>ID</th>
                                     <th>Data</th>
                                     <th>Cliente</th>
-                                    <th>Veículo</th>
                                     <th>Valor</th>
                                     <th>Status</th>
                                     <th>Pagamento</th>
@@ -289,24 +288,14 @@ export default function WorkOrders() {
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <User className="w-4 h-4 text-neutral-400" />
-                                                {wo.customer?.name || '-'}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex items-center gap-2">
-                                                <Car className="w-4 h-4 text-neutral-400" />
-                                                {wo.vehicle ? (
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {wo.vehicle.brand} {wo.vehicle.model}
-                                                        </p>
+                                                <div>
+                                                    <p className="font-medium">{wo.customer?.name || '-'}</p>
+                                                    {wo.vehicle && (
                                                         <p className="text-sm text-neutral-500">
-                                                            {wo.vehicle.license_plate}
+                                                            {wo.vehicle.brand} {wo.vehicle.model} - {wo.vehicle.license_plate}
                                                         </p>
-                                                    </div>
-                                                ) : (
-                                                    '-'
-                                                )}
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td>
