@@ -196,9 +196,8 @@ export const Customers: React.FC = () => {
                                 <tr>
                                     <th>Nome</th>
                                     <th>Contato</th>
-                                    <th>CPF</th>
+                                    <th className="hidden md:table-cell">CPF</th>
                                     <th>Tipo</th>
-                                    <th>Status</th>
                                     <th className="text-right">Ações</th>
                                 </tr>
                             </thead>
@@ -215,11 +214,11 @@ export const Customers: React.FC = () => {
                                             <div className="text-sm">
                                                 <div className="text-gray-900">{maskPhone(customer.phone)}</div>
                                                 {customer.email && (
-                                                    <div className="text-gray-500">{customer.email}</div>
+                                                    <div className="hidden md:block text-gray-500">{customer.email}</div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="text-sm text-gray-500">
+                                        <td className="text-sm text-gray-500 hidden md:table-cell">
                                             {customer.cpf ? maskCPF(customer.cpf) : '-'}
                                         </td>
                                         <td>
@@ -231,14 +230,6 @@ export const Customers: React.FC = () => {
                                             >
                                                 {customer.customer_type === 'corporate' ? 'Corporativo' : 'Individual'}
                                             </span>
-                                        </td>
-                                        <td>
-                                            {customer.vip && (
-                                                <span className="badge badge-yellow">
-                                                    <Crown className="h-3 w-3" />
-                                                    VIP
-                                                </span>
-                                            )}
                                         </td>
                                         <td>
                                             <div className="flex items-center justify-end gap-2">
