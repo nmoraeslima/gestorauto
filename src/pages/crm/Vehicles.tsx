@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Vehicle } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -149,35 +149,21 @@ export const Vehicles: React.FC = () => {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {filteredVehicles.map((vehicle) => (
                         <div key={vehicle.id} className="overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md">
-                            {/* Photo */}
-                            <div className="aspect-video w-full bg-gray-100">
-                                {vehicle.photos && vehicle.photos.length > 0 ? (
-                                    <img
-                                        src={vehicle.photos[0]}
-                                        alt={`${vehicle.brand} ${vehicle.model}`}
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-full items-center justify-center text-gray-400">
-                                        <ImageIcon className="h-12 w-12" />
-                                    </div>
-                                )}
-                            </div>
-
                             {/* Content */}
                             <div className="p-4">
-                                <h3 className="text-lg font-semibold text-gray-900">
-                                    {vehicle.brand} {vehicle.model}
-                                </h3>
-                                <p className="mt-1 text-sm text-gray-500">{vehicle.customer?.name}</p>
-
-                                <div className="mt-3 space-y-1 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-500">Placa:</span>
-                                        <span className="font-medium text-gray-900">
-                                            {maskLicensePlate(vehicle.license_plate)}
-                                        </span>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            {vehicle.brand} {vehicle.model}
+                                        </h3>
+                                        <p className="mt-1 text-sm text-gray-500">{vehicle.customer?.name}</p>
                                     </div>
+                                    <div className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                                        {maskLicensePlate(vehicle.license_plate)}
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 space-y-2 text-sm border-t border-gray-100 pt-3">
                                     {vehicle.year && (
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">Ano:</span>
@@ -188,12 +174,6 @@ export const Vehicles: React.FC = () => {
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">Cor:</span>
                                             <span className="font-medium text-gray-900">{vehicle.color}</span>
-                                        </div>
-                                    )}
-                                    {vehicle.photos && vehicle.photos.length > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Fotos:</span>
-                                            <span className="font-medium text-gray-900">{vehicle.photos.length}</span>
                                         </div>
                                     )}
                                 </div>
@@ -220,16 +200,10 @@ export const Vehicles: React.FC = () => {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4">
                 <div className="rounded-lg bg-white p-4 shadow-sm">
                     <p className="text-sm font-medium text-gray-500">Total de Veículos</p>
                     <p className="mt-1 text-2xl font-bold text-gray-900">{vehicles.length}</p>
-                </div>
-                <div className="rounded-lg bg-white p-4 shadow-sm">
-                    <p className="text-sm font-medium text-gray-500">Veículos com Fotos</p>
-                    <p className="mt-1 text-2xl font-bold text-primary-600">
-                        {vehicles.filter((v) => v.photos && v.photos.length > 0).length}
-                    </p>
                 </div>
             </div>
 

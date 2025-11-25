@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { X, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
 import { Customer, Vehicle, VehicleFormData } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { maskLicensePlate, unmask, validateLicensePlate } from '@/utils/masks';
-import { uploadVehiclePhoto, deleteVehiclePhoto } from '@/lib/storage';
 import toast from 'react-hot-toast';
 
 interface VehicleModalProps {
@@ -24,8 +23,6 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const [photos, setPhotos] = useState<string[]>(vehicle?.photos || []);
-    const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const isEditing = !!vehicle;
 
     const {
@@ -59,10 +56,8 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
     useEffect(() => {
         if (vehicle) {
             reset(vehicle);
-            setPhotos(vehicle.photos || []);
         } else {
             reset({});
-            setPhotos([]);
         }
     }, [vehicle, reset]);
 
@@ -79,68 +74,6 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
         } catch (error: any) {
             console.error('Error loading customers:', error);
             toast.error('Erro ao carregar clientes');
-        }
-    };
-
-    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        if (photos.length + files.length > 10) {
-            toast.error('Máximo de 10 fotos por veículo');
-            return;
-        }
-
-        setUploadingPhoto(true);
-
-        try {
-            const uploadPromises = Array.from(files).map(async (file) => {
-                // Validate file size (5MB max)
-                if (file.size > 5 * 1024 * 1024) {
-                    throw new Error(`Arquivo ${file.name} excede 5MB`);
-                }
-
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    throw new Error(`Arquivo ${file.name} não é uma imagem`);
-                }
-
-                // For now, we'll use a temporary ID. In real upload, we'd use the actual vehicle ID
-                const vehicleId = vehicle?.id || 'temp-' + Date.now();
-                const { url, error } = await uploadVehiclePhoto(
-                    user!.company!.id,
-                    vehicleId,
-                    file
-                );
-
-                if (error) throw error;
-                return url;
-            });
-
-            const uploadedUrls = await Promise.all(uploadPromises);
-            setPhotos([...photos, ...uploadedUrls.filter((url) => url !== null) as string[]]);
-            toast.success('Fotos enviadas com sucesso!');
-        } catch (error: any) {
-            console.error('Error uploading photos:', error);
-            toast.error(error.message || 'Erro ao enviar fotos');
-        } finally {
-            setUploadingPhoto(false);
-            e.target.value = ''; // Reset input
-        }
-    };
-
-    const handlePhotoDelete = async (photoUrl: string) => {
-        if (!confirm('Tem certeza que deseja excluir esta foto?')) return;
-
-        try {
-            const { error } = await deleteVehiclePhoto(photoUrl);
-            if (error) throw error;
-
-            setPhotos(photos.filter((p) => p !== photoUrl));
-            toast.success('Foto excluída com sucesso!');
-        } catch (error: any) {
-            console.error('Error deleting photo:', error);
-            toast.error('Erro ao excluir foto');
         }
     };
 
@@ -161,10 +94,9 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
                 ...data,
                 company_id: user.company.id,
                 license_plate: unmask(data.license_plate).toUpperCase(),
-                photos,
             };
 
-            if (isEditing) {
+            if (isEditing && vehicle) {
                 const { error } = await supabase
                     .from('vehicles')
                     .update(vehicleData)
@@ -182,7 +114,6 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
             onSuccess();
             onClose();
             reset();
-            setPhotos([]);
         } catch (error: any) {
             console.error('Error saving vehicle:', error);
             if (error.code === '23505') {
@@ -323,50 +254,6 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
                                 />
                             </div>
 
-                            {/* Photos */}
-                            <div className="md:col-span-2">
-                                <label className="label">Fotos do Veículo</label>
-                                <div className="mt-2">
-                                    {/* Upload Button */}
-                                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 hover:border-primary-500 hover:bg-primary-50">
-                                        <Upload className="h-5 w-5" />
-                                        {uploadingPhoto ? 'Enviando...' : 'Adicionar Fotos'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={handlePhotoUpload}
-                                            className="hidden"
-                                            disabled={uploadingPhoto || photos.length >= 10}
-                                        />
-                                    </label>
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Máximo 10 fotos, 5MB cada. {photos.length}/10 fotos
-                                    </p>
-                                </div>
-
-                                {/* Photo Grid */}
-                                {photos.length > 0 && (
-                                    <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-                                        {photos.map((photo, index) => (
-                                            <div key={index} className="group relative aspect-square">
-                                                <img
-                                                    src={photo}
-                                                    alt={`Foto ${index + 1}`}
-                                                    className="h-full w-full rounded-lg object-cover"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handlePhotoDelete(photo)}
-                                                    className="absolute right-2 top-2 rounded-lg bg-red-500 p-1.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
                         </div>
 
                         {/* Footer */}
