@@ -259,8 +259,6 @@ export default function Appointments() {
                                 <tr>
                                     <th>Data/Hora</th>
                                     <th>Cliente</th>
-                                    <th>Veículo</th>
-                                    <th>Duração</th>
                                     <th>Status</th>
                                     <th>Ações</th>
                                 </tr>
@@ -284,31 +282,15 @@ export default function Appointments() {
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <User className="w-4 h-4 text-neutral-400" />
-                                                {appointment.customer?.name || '-'}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex items-center gap-2">
-                                                <Car className="w-4 h-4 text-neutral-400" />
-                                                {appointment.vehicle ? (
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {appointment.vehicle.brand}{' '}
-                                                            {appointment.vehicle.model}
-                                                        </p>
+                                                <div>
+                                                    <p className="font-medium">{appointment.customer?.name || '-'}</p>
+                                                    {appointment.vehicle && (
                                                         <p className="text-sm text-neutral-500">
-                                                            {appointment.vehicle.license_plate}
+                                                            <Car className="w-3 h-3 inline mr-1" />
+                                                            {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
                                                         </p>
-                                                    </div>
-                                                ) : (
-                                                    '-'
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="w-4 h-4 text-neutral-400" />
-                                                {appointment.duration_minutes || 60} min
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td>{getStatusBadge(appointment.status)}</td>
