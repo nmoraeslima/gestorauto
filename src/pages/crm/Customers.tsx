@@ -81,18 +81,51 @@ export const Customers: React.FC = () => {
     };
 
     const handleDelete = async (customer: Customer) => {
-        if (!confirm(`Tem certeza que deseja excluir o cliente "${customer.name}"?`)) {
-            return;
-        }
-
         try {
+            // First, check how many vehicles this customer has
+            const { data: vehicles, error: vehiclesError } = await supabase
+                .from('vehicles')
+                .select('id')
+                .eq('customer_id', customer.id);
+
+            if (vehiclesError) throw vehiclesError;
+
+            const vehicleCount = vehicles?.length || 0;
+
+            // Build confirmation message
+            let confirmMessage = `Tem certeza que deseja excluir o cliente "${customer.name}"?`;
+            if (vehicleCount > 0) {
+                confirmMessage += `\n\n⚠️ Este cliente possui ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} cadastrado${vehicleCount > 1 ? 's' : ''}, que também ${vehicleCount > 1 ? 'serão excluídos' : 'será excluído'}.`;
+            }
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // Delete vehicles first (if any)
+            if (vehicleCount > 0) {
+                const { error: deleteVehiclesError } = await supabase
+                    .from('vehicles')
+                    .delete()
+                    .eq('customer_id', customer.id);
+
+                if (deleteVehiclesError) throw deleteVehiclesError;
+            }
+
+            // Then soft delete the customer
             const { error } = await supabase
                 .from('customers')
                 .update({ deleted_at: new Date().toISOString() })
                 .eq('id', customer.id);
 
             if (error) throw error;
-            toast.success('Cliente excluído com sucesso');
+
+            if (vehicleCount > 0) {
+                toast.success(`Cliente e ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} excluído${vehicleCount > 1 ? 's' : ''} com sucesso`);
+            } else {
+                toast.success('Cliente excluído com sucesso');
+            }
+
             loadCustomers();
         } catch (error: any) {
             console.error('Error deleting customer:', error);
