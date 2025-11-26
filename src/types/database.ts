@@ -158,6 +158,7 @@ export interface Product {
   min_stock: number;
   cost_price: number;
   sale_price: number;
+  price?: number; // Alias for sale_price for frontend compatibility
   is_active: boolean;
   created_at: string;
   updated_at: string;

@@ -10,13 +10,27 @@ import {
     Package,
     Loader2,
     Calendar,
+    ArrowRight,
 } from 'lucide-react';
 import { DashboardStats } from '@/types/database';
+import { Link } from 'react-router-dom';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from 'recharts';
+import { formatCurrency } from '@/utils/calculations';
+import { formatDate } from '@/utils/datetime';
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
+    const [revenueData, setRevenueData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -68,6 +82,16 @@ export const Dashboard: React.FC = () => {
                     .limit(5),
             ]);
 
+            // Fetch 6 months of revenue data separately to avoid destructuring issues
+            const { data: revenueRawData } = await supabase
+                .from('financial_transactions')
+                .select('amount, created_at')
+                .eq('company_id', companyId)
+                .eq('type', 'income')
+                .eq('status', 'paid')
+                .gte('created_at', new Date(new Date().setMonth(new Date().getMonth() - 6)).toISOString())
+                .order('created_at', { ascending: true });
+
             // Calcular estatísticas
             const totalCustomers = customersRes.count || 0;
             const totalWorkOrders = workOrdersRes.count || 0;
@@ -105,6 +129,37 @@ export const Dashboard: React.FC = () => {
                 pending_payments: pendingPayments,
                 low_stock_products: lowStockProducts,
             });
+
+            if (appointmentsRes.data) {
+                setUpcomingAppointments(appointmentsRes.data);
+            }
+
+            // Process Revenue Data for Chart
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const processedRevenue = (revenueRawData || []).reduce((acc: any[], curr) => {
+                const date = new Date(curr.created_at);
+                const monthYear = `${months[date.getMonth()]}/${date.getFullYear().toString().slice(2)}`;
+
+                const existing = acc.find(item => item.name === monthYear);
+                if (existing) {
+                    existing.value += Number(curr.amount);
+                } else {
+                    acc.push({ name: monthYear, value: Number(curr.amount) });
+                }
+                return acc;
+            }, []);
+
+            // Ensure last 6 months are present even if 0
+            const last6Months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                const monthYear = `${months[d.getMonth()]}/${d.getFullYear().toString().slice(2)}`;
+                const found = processedRevenue.find((item: any) => item.name === monthYear);
+                last6Months.push(found || { name: monthYear, value: 0 });
+            }
+
+            setRevenueData(last6Months);
 
             if (appointmentsRes.data) {
                 setUpcomingAppointments(appointmentsRes.data);
@@ -235,27 +290,112 @@ export const Dashboard: React.FC = () => {
                 </div>
             )}
 
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Revenue Chart */}
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-card p-6 border border-secondary-100">
+                    <h2 className="text-xl font-semibold text-secondary-900 mb-6">
+                        Receita (Últimos 6 Meses)
+                    </h2>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={revenueData}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#64748b', fontSize: 12 }}
+                                    dy={10}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#64748b', fontSize: 12 }}
+                                    tickFormatter={(value) => `R$ ${value}`}
+                                />
+                                <Tooltip
+                                    formatter={(value: number) => [formatCurrency(value), 'Receita']}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#0ea5e9"
+                                    strokeWidth={2}
+                                    fillOpacity={1}
+                                    fill="url(#colorRevenue)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Upcoming Appointments */}
+                <div className="bg-white rounded-xl shadow-card p-6 border border-secondary-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-secondary-900">
+                            Próximos Agendamentos
+                        </h2>
+                        <Link to="/appointments" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+                            Ver todos <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+
+                    <div className="space-y-4">
+                        {upcomingAppointments.length === 0 ? (
+                            <p className="text-neutral-500 text-center py-8">Nenhum agendamento próximo.</p>
+                        ) : (
+                            upcomingAppointments.map((apt) => (
+                                <div key={apt.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-neutral-50 transition-colors border border-transparent hover:border-neutral-100">
+                                    <div className="bg-primary-50 p-2 rounded-lg text-primary-600 shrink-0">
+                                        <Calendar className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium text-secondary-900 truncate">
+                                            {apt.customer?.name}
+                                        </p>
+                                        <p className="text-sm text-secondary-600 truncate">
+                                            {apt.title}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 mt-1">
+                                            {formatDate(apt.scheduled_at)}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+
             {/* Ações Rápidas */}
             <div className="bg-white rounded-xl shadow-card p-6 border border-secondary-100">
                 <h2 className="text-xl font-semibold text-secondary-900 mb-4">
                     Ações Rápidas
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="btn btn-primary text-left p-4 flex flex-col items-start gap-2">
+                    <Link to="/work-orders" className="btn btn-primary text-left p-4 flex flex-col items-start gap-2 h-auto">
                         <ClipboardList className="w-6 h-6" />
                         <span className="font-semibold">Nova O.S.</span>
-                        <span className="text-sm opacity-90">Criar ordem de serviço</span>
-                    </button>
-                    <button className="btn btn-secondary text-left p-4 flex flex-col items-start gap-2">
+                        <span className="text-sm opacity-90 font-normal">Criar ordem de serviço</span>
+                    </Link>
+                    <Link to="/customers" className="btn btn-secondary text-left p-4 flex flex-col items-start gap-2 h-auto">
                         <Users className="w-6 h-6" />
                         <span className="font-semibold">Novo Cliente</span>
-                        <span className="text-sm opacity-90">Cadastrar cliente</span>
-                    </button>
-                    <button className="btn btn-secondary text-left p-4 flex flex-col items-start gap-2">
+                        <span className="text-sm opacity-90 font-normal">Cadastrar cliente</span>
+                    </Link>
+                    <Link to="/products" className="btn btn-secondary text-left p-4 flex flex-col items-start gap-2 h-auto">
                         <Package className="w-6 h-6" />
                         <span className="font-semibold">Novo Produto</span>
-                        <span className="text-sm opacity-90">Adicionar ao estoque</span>
-                    </button>
+                        <span className="text-sm opacity-90 font-normal">Adicionar ao estoque</span>
+                    </Link>
                 </div>
             </div>
         </div>

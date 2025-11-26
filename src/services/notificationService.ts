@@ -230,22 +230,49 @@ export class NotificationService {
         }
     }
 
-    private showNotification(options: {
+    async sendTestNotification(): Promise<void> {
+        await this.showNotification({
+            title: '🔔 Teste de Notificação',
+            body: 'O sistema de notificações está funcionando corretamente!',
+            tag: 'test-notification',
+            data: { url: window.location.pathname }
+        });
+    }
+
+    private async showNotification(options: {
         title: string;
         body: string;
         data?: any;
         tag?: string;
-    }): void {
+    }): Promise<void> {
         console.log('[Notifications] Showing notification:', options.title, options.body);
+
         if (Notification.permission === 'granted') {
-            new Notification(options.title, {
-                body: options.body,
-                icon: '/logo.png',
-                badge: '/logo.png',
-                tag: options.tag,
-                data: options.data,
-                requireInteraction: false,
-            });
+            try {
+                // Use Service Worker registration to show notification (required for PWA/Android)
+                const registration = await navigator.serviceWorker.ready;
+
+                await registration.showNotification(options.title, {
+                    body: options.body,
+                    icon: '/logo.png',
+                    badge: '/logo.png',
+                    tag: options.tag,
+                    data: options.data,
+                    requireInteraction: false,
+                    vibrate: [200, 100, 200], // Add vibration for mobile
+                } as any);
+            } catch (error) {
+                console.error('[Notifications] Error showing notification via Service Worker:', error);
+                // Fallback to standard Notification API if SW fails (desktop fallback)
+                new Notification(options.title, {
+                    body: options.body,
+                    icon: '/logo.png',
+                    badge: '/logo.png',
+                    tag: options.tag,
+                    data: options.data,
+                    requireInteraction: false,
+                });
+            }
         } else {
             console.warn('[Notifications] Cannot show notification - permission:', Notification.permission);
         }

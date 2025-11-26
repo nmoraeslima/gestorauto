@@ -16,7 +16,11 @@ import {
     ChevronDown,
     Building2,
     Tag,
+    Bell,
 } from 'lucide-react';
+import { notificationService } from '@/services/notificationService';
+import { isIOS, isStandalone } from '@/utils/pwa';
+import toast from 'react-hot-toast';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -45,6 +49,44 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const handleSignOut = async () => {
         await signOut();
         navigate('/signin');
+    };
+
+    const handleNotificationClick = async () => {
+        // iOS Check
+        if (isIOS() && !isStandalone()) {
+            toast('Para receber notificações no iPhone, adicione este app à Tela de Início\n(Compartilhar -> Adicionar à Tela de Início)', {
+                icon: '📱',
+                duration: 6000,
+                style: {
+                    borderRadius: '10px',
+                    background: '#333',
+                    color: '#fff',
+                },
+            });
+            return;
+        }
+
+        const permission = Notification.permission;
+
+        if (permission === 'granted') {
+            // Send test notification
+            try {
+                await notificationService.sendTestNotification();
+                toast.success('Notificação de teste enviada!');
+            } catch (error) {
+                console.error(error);
+                toast.error('Erro ao enviar teste');
+            }
+        } else {
+            // Request permission
+            const granted = await notificationService.requestPermission();
+            if (granted) {
+                toast.success('Notificações ativadas!');
+                await notificationService.sendTestNotification();
+            } else {
+                toast.error('Permissão negada. Ative nas configurações do navegador.');
+            }
+        }
     };
 
     return (
@@ -232,21 +274,33 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Main Content */}
             <div className="lg:pl-64 flex flex-col flex-1">
-                {/* Top Bar Mobile */}
-                <div className="sticky top-0 z-10 lg:hidden bg-white border-b border-secondary-200 px-4 py-3">
-                    <div className="flex items-center justify-between">
+                {/* Top Bar (Mobile & Desktop) */}
+                <div className="sticky top-0 z-10 bg-white border-b border-secondary-200 px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="text-secondary-600 hover:text-secondary-900"
+                            className="text-secondary-600 hover:text-secondary-900 lg:hidden"
                         >
                             <Menu className="w-6 h-6" />
                         </button>
                         <img
                             src="/assets/logo-horizontal-dark.png"
                             alt="GestorAuto"
-                            className="h-7 w-auto"
+                            className="h-7 w-auto lg:hidden"
                         />
-                        <div className="w-6" />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleNotificationClick}
+                            className="p-2 text-secondary-600 hover:text-primary-600 hover:bg-secondary-50 rounded-full transition-colors relative"
+                            title="Notificações"
+                        >
+                            <Bell className="w-6 h-6" />
+                            {Notification.permission === 'granted' && (
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full border border-white"></span>
+                            )}
+                        </button>
                     </div>
                 </div>
 

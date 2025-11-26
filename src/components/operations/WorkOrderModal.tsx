@@ -369,17 +369,17 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 }
             }
 
-            // Calculate totals
+            // Calculate totals (only services, products don't have price)
             const totals = calculateWorkOrderTotal(
                 selectedServices,
-                selectedProducts.map(p => ({ price: 0, quantity: p.quantity })),
+                [], // Products don't contribute to financial total
                 formData.discount,
                 formData.discount_type === 'percentage'
             );
 
             // Generate order number if not present (simple timestamp based for now, or fetch from DB sequence if available)
             // In a real app, this should be handled by a database trigger or sequence
-            const orderNumber = new Date().getTime().toString().slice(-6);
+            const orderNumber = workOrder?.order_number || new Date().getTime().toString().slice(-6);
 
             // Create work order
             const workOrderData = {
@@ -456,7 +456,9 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 if (servicesError) throw servicesError;
             }
 
-            // Insert products
+            // Insert products (for stock control only)
+            // Note: Stock deduction is handled automatically by database trigger
+            // when status changes to 'completed'
             if (selectedProducts.length > 0) {
                 const productsData = selectedProducts.map((product) => ({
                     company_id: user?.company?.id!,
@@ -476,51 +478,54 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             }
 
             // Generate or Update Financial Transaction
-            // Map payment status to transaction status
-            let transactionStatus = 'pending';
-            if (formData.payment_status === 'paid') transactionStatus = 'paid';
-            else if (formData.payment_status === 'partial') transactionStatus = 'pending'; // Partial is still pending full payment
+            // Only if status is NOT draft (i.e. In Progress or Completed)
+            if (formData.status !== 'draft') {
+                // Map payment status to transaction status
+                let transactionStatus = 'pending';
+                if (formData.payment_status === 'paid') transactionStatus = 'paid';
+                else if (formData.payment_status === 'partial') transactionStatus = 'pending'; // Partial is still pending full payment
 
-            const transactionData = {
-                company_id: user.company.id,
-                type: 'income',
-                category: 'Serviço',
-                description: `O.S. #${newWorkOrder.order_number} - ${customers.find(c => c.id === formData.customer_id)?.name}`,
-                amount: totals.total || 0,
-                status: transactionStatus,
-                due_date: formData.entry_date, // Use entry date as due date for now
-                paid_at: formData.payment_status === 'paid' ? new Date().toISOString() : null,
-                work_order_id: newWorkOrder.id,
-                customer_id: formData.customer_id,
-            };
+                const transactionData = {
+                    company_id: user.company.id,
+                    type: 'income',
+                    category: 'Serviço',
+                    description: `O.S. #${newWorkOrder.order_number} - ${customers.find(c => c.id === formData.customer_id)?.name}`,
+                    amount: totals.total || 0,
+                    status: transactionStatus,
+                    due_date: formData.expected_completion_date || formData.entry_date, // Use expected completion or entry date
+                    paid_at: formData.payment_status === 'paid' ? new Date().toISOString() : null,
+                    work_order_id: newWorkOrder.id,
+                    customer_id: formData.customer_id,
+                };
 
-            // Check if transaction exists
-            const { data: existingTransaction } = await supabase
-                .from('financial_transactions')
-                .select('id')
-                .eq('work_order_id', newWorkOrder.id)
-                .single();
-
-            if (existingTransaction) {
-                // Update existing transaction
-                const { error: transactionError } = await supabase
+                // Check if transaction exists
+                const { data: existingTransaction } = await supabase
                     .from('financial_transactions')
-                    .update(transactionData)
-                    .eq('id', existingTransaction.id);
+                    .select('id')
+                    .eq('work_order_id', newWorkOrder.id)
+                    .single();
 
-                if (transactionError) {
-                    console.error('Error updating financial transaction:', transactionError);
-                    toast.error(`Erro ao atualizar financeiro: ${transactionError.message}`);
-                }
-            } else {
-                // Create new transaction
-                const { error: transactionError } = await supabase
-                    .from('financial_transactions')
-                    .insert(transactionData);
+                if (existingTransaction) {
+                    // Update existing transaction
+                    const { error: transactionError } = await supabase
+                        .from('financial_transactions')
+                        .update(transactionData)
+                        .eq('id', existingTransaction.id);
 
-                if (transactionError) {
-                    console.error('Error creating financial transaction:', transactionError);
-                    toast.error(`Erro ao gerar financeiro: ${transactionError.message}`);
+                    if (transactionError) {
+                        console.error('Error updating financial transaction:', transactionError);
+                        toast.error(`Erro ao atualizar financeiro: ${transactionError.message}`);
+                    }
+                } else {
+                    // Create new transaction
+                    const { error: transactionError } = await supabase
+                        .from('financial_transactions')
+                        .insert(transactionData);
+
+                    if (transactionError) {
+                        console.error('Error creating financial transaction:', transactionError);
+                        toast.error(`Erro ao gerar financeiro: ${transactionError.message}`);
+                    }
                 }
             }
 
@@ -537,10 +542,10 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
     if (!isOpen) return null;
 
-    // Calculate totals
+    // Calculate totals (only services, products don't have price)
     const totals = calculateWorkOrderTotal(
         selectedServices,
-        selectedProducts.map(p => ({ price: 0, quantity: p.quantity })), // Products are not included in total
+        [], // Products don't contribute to financial total
         formData.discount,
         formData.discount_type === 'percentage'
     );
