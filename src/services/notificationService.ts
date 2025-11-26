@@ -69,7 +69,11 @@ export class NotificationService {
     }
 
     private async checkAll(companyId: string): Promise<void> {
+        console.log('[Notifications] Running periodic check for company:', companyId);
+        console.log('[Notifications] Permission status:', Notification.permission);
+
         if (Notification.permission !== 'granted') {
+            console.warn('[Notifications] Permission not granted, skipping checks');
             return;
         }
 
@@ -78,22 +82,30 @@ export class NotificationService {
             this.checkStock(companyId),
             this.checkReceivables(companyId),
         ]);
+
+        console.log('[Notifications] Check completed');
     }
 
     private async checkAppointments(companyId: string): Promise<void> {
         try {
+            console.log('[Notifications] Checking appointments for company:', companyId);
             const now = new Date();
             const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
             const { data: appointments, error } = await supabase
                 .from('appointments')
-                .select('id, customer_id, scheduled_date, notes, customers(name)')
+                .select('id, customer_id, scheduled_at, description, customers(name)')
                 .eq('company_id', companyId)
                 .eq('status', 'scheduled')
-                .gte('scheduled_date', now.toISOString())
-                .lte('scheduled_date', oneHourLater.toISOString());
+                .gte('scheduled_at', now.toISOString())
+                .lte('scheduled_at', oneHourLater.toISOString());
 
-            if (error) throw error;
+            if (error) {
+                console.error('[Notifications] Error querying appointments:', error);
+                throw error;
+            }
+
+            console.log('[Notifications] Found appointments:', appointments?.length || 0);
 
             if (appointments && appointments.length > 0) {
                 const currentTime = Date.now();
@@ -102,10 +114,15 @@ export class NotificationService {
                     this.lastChecks.appointments = currentTime;
 
                     for (const appointment of appointments) {
-                        const scheduledTime = new Date(appointment.scheduled_date);
+                        const scheduledTime = new Date(appointment.scheduled_at);
                         const minutesUntil = Math.round((scheduledTime.getTime() - now.getTime()) / 60000);
 
                         const customerName = (appointment.customers as any)?.name || 'Cliente';
+
+                        console.log('[Notifications] Sending appointment notification:', {
+                            customer: customerName,
+                            minutesUntil,
+                        });
 
                         this.showNotification({
                             title: '📅 Agendamento Próximo',
@@ -114,6 +131,8 @@ export class NotificationService {
                             tag: `appointment-${appointment.id}`,
                         });
                     }
+                } else {
+                    console.log('[Notifications] Skipping appointments - cooldown active');
                 }
             }
         } catch (error) {
@@ -217,6 +236,7 @@ export class NotificationService {
         data?: any;
         tag?: string;
     }): void {
+        console.log('[Notifications] Showing notification:', options.title, options.body);
         if (Notification.permission === 'granted') {
             new Notification(options.title, {
                 body: options.body,
@@ -226,6 +246,8 @@ export class NotificationService {
                 data: options.data,
                 requireInteraction: false,
             });
+        } else {
+            console.warn('[Notifications] Cannot show notification - permission:', Notification.permission);
         }
     }
 }
