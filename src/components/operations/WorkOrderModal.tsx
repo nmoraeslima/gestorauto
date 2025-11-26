@@ -12,9 +12,11 @@ import {
     Calendar,
     PlusCircle,
     Link as LinkIcon,
+    Camera,
 } from 'lucide-react';
 import { ServiceSelector } from './ServiceSelector';
 import { ProductSelector } from './ProductSelector';
+import { PhotoManager } from '../workOrder/PhotoManager';
 import { formatCurrency, calculateWorkOrderTotal } from '@/utils/calculations';
 import { WorkOrderStatus } from '@/types/database';
 import type { Customer, Vehicle, WorkOrder, Appointment } from '@/types/database';
@@ -79,7 +81,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
-    const [activeTab, setActiveTab] = useState<'basic' | 'services' | 'products' | 'financial'>(
+    const [activeTab, setActiveTab] = useState<'basic' | 'services' | 'products' | 'photos' | 'financial'>(
         'basic'
     );
     const [creationMode, setCreationMode] = useState<'link' | 'create'>('link');
@@ -597,6 +599,16 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                 }`}
                         >
                             Produtos ({selectedProducts.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('photos')}
+                            className={`px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'photos'
+                                    ? 'border-primary-300 text-primary-300'
+                                    : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                                }`}
+                        >
+                            <Camera className="w-4 h-4 inline-block mr-1" />
+                            Fotos
                         </button>
                         <button
                             onClick={() => setActiveTab('financial')}
