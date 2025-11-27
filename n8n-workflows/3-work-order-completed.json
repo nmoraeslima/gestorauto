@@ -1,0 +1,422 @@
+{
+    "name": "3. O.S. Pronta - Notificação",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "work-order-completed",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-wo-completed",
+            "name": "Webhook - O.S. Concluída",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT \n  wo.id as work_order_id,\n  wo.order_number,\n  wo.total_amount,\n  c.name as customer_name,\n  c.phone as customer_phone,\n  v.brand,\n  v.model,\n  v.license_plate,\n  co.name as company_name,\n  co.id as company_id,\n  string_agg(DISTINCT wos.service_name, ', ') as services\nFROM work_orders wo\nJOIN customers c ON wo.customer_id = c.id\nLEFT JOIN vehicles v ON wo.vehicle_id = v.id\nJOIN companies co ON wo.company_id = co.id\nLEFT JOIN work_order_services wos ON wo.id = wos.work_order_id\nWHERE wo.id = '{{ $json.work_order_id }}'\nGROUP BY wo.id, wo.order_number, wo.total_amount, c.name, c.phone, v.brand, v.model, v.license_plate, co.name, co.id",
+                "additionalFields": {}
+            },
+            "id": "get-work-order-data",
+            "name": "Buscar Dados da O.S.",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.customer_phone }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "check-phone-wo",
+            "name": "Verificar Telefone",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Formatar telefone\nconst phone = $input.item.json.customer_phone.replace(/\\D/g, '');\n\n// Formatar valor\nconst total = new Intl.NumberFormat('pt-BR', { \n  style: 'currency', \n  currency: 'BRL' \n}).format($input.item.json.total_amount);\n\n// Montar mensagem\nconst message = `Olá ${$input.item.json.customer_name}! 👋\\n\\nSeu veículo está pronto! ✅\\n\\n🚗 ${$input.item.json.brand} ${$input.item.json.model}\\n📋 O.S. #${$input.item.json.order_number}\\n🔧 Serviços realizados: ${$input.item.json.services || 'Diversos'}\\n💰 Total: ${total}\\n\\nAguardamos você para retirada!\\n\\n*${$input.item.json.company_name}*`;\n\nreturn {\n  phone: phone,\n  message: message,\n  work_order_id: $input.item.json.work_order_id,\n  company_id: $input.item.json.company_id,\n  customer_name: $input.item.json.customer_name\n};"
+            },
+            "id": "format-wo-message",
+            "name": "Formatar Mensagem",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_ID }}",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.EVOLUTION_API_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "number",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-wo-notification",
+            "name": "Enviar Notificação",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT \n  photo_url,\n  category\nFROM work_order_photos\nWHERE work_order_id = '{{ $('Formatar Mensagem').item.json.work_order_id }}'\nORDER BY category, created_at\nLIMIT 4",
+                "additionalFields": {}
+            },
+            "id": "get-photos",
+            "name": "Buscar Fotos",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                400
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.length }}",
+                            "operation": "larger",
+                            "value2": 0
+                        }
+                    ]
+                }
+            },
+            "id": "check-has-photos",
+            "name": "Tem Fotos?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "split-photos",
+            "name": "Processar Fotos",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                1450,
+                350
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendMedia/{{ $env.EVOLUTION_INSTANCE_ID }}",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.EVOLUTION_API_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "number",
+                            "value": "={{ $('Formatar Mensagem').item.json.phone }}"
+                        },
+                        {
+                            "name": "mediaUrl",
+                            "value": "={{ $json.photo_url }}"
+                        },
+                        {
+                            "name": "caption",
+                            "value": "={{ $json.category === 'before' ? '📸 Antes' : '✨ Depois' }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-photo",
+            "name": "Enviar Foto",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1650,
+                350
+            ]
+        },
+        {
+            "parameters": {
+                "amount": 1,
+                "unit": "seconds"
+            },
+            "id": "wait-between-photos",
+            "name": "Aguardar 1s",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                1850,
+                350
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO whatsapp_messages (\n  company_id,\n  instance_id,\n  direction,\n  to_number,\n  message_type,\n  content,\n  status,\n  work_order_id,\n  sent_at\n)\nVALUES (\n  '{{ $('Formatar Mensagem').item.json.company_id }}',\n  (SELECT id FROM whatsapp_instances WHERE company_id = '{{ $('Formatar Mensagem').item.json.company_id }}' LIMIT 1),\n  'outbound',\n  '{{ $('Formatar Mensagem').item.json.phone }}',\n  'text',\n  '{{ $('Formatar Mensagem').item.json.message }}',\n  'sent',\n  '{{ $('Formatar Mensagem').item.json.work_order_id }}',\n  NOW()\n)",
+                "additionalFields": {}
+            },
+            "id": "save-wo-history",
+            "name": "Salvar Histórico",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                1250,
+                250
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"message\": \"Notificação enviada\", \"photos_sent\": $('Processar Fotos').context.noItemsLeft ? $('Processar Fotos').context.currentRunIndex : 0 } }}"
+            },
+            "id": "response-wo-success",
+            "name": "Resposta Sucesso",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": false, \"error\": \"Telefone não cadastrado\" } }}",
+                "options": {
+                    "responseCode": 400
+                }
+            },
+            "id": "response-wo-no-phone",
+            "name": "Resposta Sem Telefone",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                850,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook - O.S. Concluída": {
+            "main": [
+                [
+                    {
+                        "node": "Buscar Dados da O.S.",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Dados da O.S.": {
+            "main": [
+                [
+                    {
+                        "node": "Verificar Telefone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verificar Telefone": {
+            "main": [
+                [
+                    {
+                        "node": "Formatar Mensagem",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Buscar Fotos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Resposta Sem Telefone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Formatar Mensagem": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar Notificação",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar Notificação": {
+            "main": [
+                [
+                    {
+                        "node": "Salvar Histórico",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Fotos": {
+            "main": [
+                [
+                    {
+                        "node": "Tem Fotos?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Tem Fotos?": {
+            "main": [
+                [
+                    {
+                        "node": "Processar Fotos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Processar Fotos": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar Foto",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar Foto": {
+            "main": [
+                [
+                    {
+                        "node": "Aguardar 1s",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aguardar 1s": {
+            "main": [
+                [
+                    {
+                        "node": "Processar Fotos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Salvar Histórico": {
+            "main": [
+                [
+                    {
+                        "node": "Resposta Sucesso",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 1,
+    "updatedAt": "2025-11-26T00:00:00.000Z",
+    "versionId": "1"
+}

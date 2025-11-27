@@ -146,6 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cadastro
     const signUp = async (data: SignUpData) => {
         try {
+            // 1. Criar a empresa primeiro (via RPC que bypassa RLS)
             const { data: companyId, error: companyError } = await supabase
                 .rpc('create_company_for_signup', {
                     p_name: data.company_name,
@@ -155,12 +156,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
 
             if (companyError) throw companyError;
+            if (!companyId) throw new Error('Erro ao criar empresa: ID não retornado');
 
-            toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
-            return { error: null };
+            // 2. Criar o usuário no Auth (com metadados para o trigger criar o profile)
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+                options: {
+                    data: {
+                        full_name: data.full_name,
+                        company_id: companyId,
+                        role: 'owner',
+                    },
+                },
+            });
+
+            if (authError) {
+                // TODO: Idealmente deletaríamos a empresa criada se o auth falhar
+                // mas por enquanto vamos apenas lançar o erro
+                throw authError;
+            }
+
+            if (authData.user) {
+                toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
+                
+                // Forçar recarregamento dos dados do usuário
+                await loadUserData(authData.user);
+                return { error: null };
+            } else {
+                throw new Error('Usuário não criado');
+            }
+
         } catch (error: any) {
             console.error('Sign up error:', error);
-            toast.error('Erro ao criar conta: ' + error.message);
+            toast.error('Erro ao criar conta: ' + (error.message || 'Erro desconhecido'));
             return { error };
         }
     };

@@ -1,0 +1,249 @@
+{
+    "name": "1. Confirmação de Agendamento",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "appointment-confirmation",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook - Novo Agendamento",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT \n  a.id,\n  a.scheduled_at,\n  c.name as customer_name,\n  c.phone as customer_phone,\n  v.brand,\n  v.model,\n  v.license_plate,\n  co.name as company_name,\n  string_agg(s.name, ', ') as services\nFROM appointments a\nJOIN customers c ON a.customer_id = c.id\nLEFT JOIN vehicles v ON a.vehicle_id = v.id\nJOIN companies co ON a.company_id = co.id\nLEFT JOIN appointment_services aps ON a.id = aps.appointment_id\nLEFT JOIN services s ON aps.service_id = s.id\nWHERE a.id = '{{ $json.appointment_id }}'\nGROUP BY a.id, a.scheduled_at, c.name, c.phone, v.brand, v.model, v.license_plate, co.name",
+                "additionalFields": {}
+            },
+            "id": "get-appointment-data",
+            "name": "Buscar Dados do Agendamento",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.customer_phone }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "check-phone",
+            "name": "Verificar Telefone",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Formatar data e hora\nconst scheduledAt = new Date($input.item.json.scheduled_at);\nconst date = scheduledAt.toLocaleDateString('pt-BR');\nconst time = scheduledAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });\n\n// Formatar telefone (remover caracteres especiais)\nconst phone = $input.item.json.customer_phone.replace(/\\D/g, '');\n\n// Montar mensagem\nconst message = `Olá ${$input.item.json.customer_name}! 👋\\n\\nSeu agendamento foi confirmado! ✅\\n\\n📅 Data: ${date}\\n🕐 Horário: ${time}\\n🚗 Veículo: ${$input.item.json.brand} ${$input.item.json.model}\\n🔧 Serviços: ${$input.item.json.services || 'A definir'}\\n\\nNos vemos em breve!\\n\\n*${$input.item.json.company_name}*`;\n\nreturn {\n  phone: phone,\n  message: message,\n  appointment_id: $input.item.json.id,\n  customer_name: $input.item.json.customer_name\n};"
+            },
+            "id": "format-message",
+            "name": "Formatar Mensagem",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_ID }}",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.EVOLUTION_API_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "number",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-whatsapp",
+            "name": "Enviar WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO whatsapp_messages (\n  company_id,\n  instance_id,\n  direction,\n  to_number,\n  message_type,\n  content,\n  status,\n  appointment_id,\n  sent_at\n)\nSELECT \n  a.company_id,\n  (SELECT id FROM whatsapp_instances WHERE company_id = a.company_id LIMIT 1),\n  'outbound',\n  '{{ $json.phone }}',\n  'text',\n  '{{ $json.message }}',\n  CASE WHEN '{{ $('Enviar WhatsApp').item.json.status }}' = 'success' THEN 'sent' ELSE 'failed' END,\n  '{{ $json.appointment_id }}',\n  NOW()\nFROM appointments a\nWHERE a.id = '{{ $json.appointment_id }}'",
+                "additionalFields": {}
+            },
+            "id": "save-message-history",
+            "name": "Salvar Histórico",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                1250,
+                250
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"message\": \"Confirmação enviada\", \"phone\": $json.phone } }}"
+            },
+            "id": "response-success",
+            "name": "Resposta Sucesso",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": false, \"error\": \"Telefone não cadastrado\" } }}",
+                "options": {
+                    "responseCode": 400
+                }
+            },
+            "id": "response-no-phone",
+            "name": "Resposta Sem Telefone",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                850,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook - Novo Agendamento": {
+            "main": [
+                [
+                    {
+                        "node": "Buscar Dados do Agendamento",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Dados do Agendamento": {
+            "main": [
+                [
+                    {
+                        "node": "Verificar Telefone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verificar Telefone": {
+            "main": [
+                [
+                    {
+                        "node": "Formatar Mensagem",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Resposta Sem Telefone",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Formatar Mensagem": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Salvar Histórico",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Salvar Histórico": {
+            "main": [
+                [
+                    {
+                        "node": "Resposta Sucesso",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 1,
+    "updatedAt": "2025-11-26T00:00:00.000Z",
+    "versionId": "1"
+}

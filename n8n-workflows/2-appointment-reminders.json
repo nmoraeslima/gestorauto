@@ -1,0 +1,234 @@
+{
+    "name": "2. Lembretes 24h Antes",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "cronExpression",
+                            "expression": "0 8 * * *"
+                        }
+                    ]
+                }
+            },
+            "id": "cron-trigger",
+            "name": "Cron - Diário 8h",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT \n  a.id as appointment_id,\n  a.scheduled_at,\n  c.name as customer_name,\n  c.phone as customer_phone,\n  v.brand,\n  v.model,\n  v.license_plate,\n  co.name as company_name,\n  co.id as company_id,\n  string_agg(s.name, ', ') as services\nFROM appointments a\nJOIN customers c ON a.customer_id = c.id\nLEFT JOIN vehicles v ON a.vehicle_id = v.id\nJOIN companies co ON a.company_id = co.id\nLEFT JOIN appointment_services aps ON a.id = aps.appointment_id\nLEFT JOIN services s ON aps.service_id = s.id\nWHERE \n  a.status IN ('scheduled', 'confirmed')\n  AND a.scheduled_at::date = (CURRENT_DATE + INTERVAL '1 day')::date\n  AND c.phone IS NOT NULL\n  AND NOT EXISTS (\n    SELECT 1 FROM whatsapp_messages wm \n    WHERE wm.appointment_id = a.id \n    AND wm.content LIKE '%Lembrando que seu agendamento é amanhã%'\n  )\nGROUP BY a.id, a.scheduled_at, c.name, c.phone, v.brand, v.model, v.license_plate, co.name, co.id",
+                "additionalFields": {}
+            },
+            "id": "get-appointments-tomorrow",
+            "name": "Buscar Agendamentos Amanhã",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "split-in-batches",
+            "name": "Processar Um por Um",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Formatar data e hora\nconst scheduledAt = new Date($input.item.json.scheduled_at);\nconst date = scheduledAt.toLocaleDateString('pt-BR');\nconst time = scheduledAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });\n\n// Formatar telefone\nconst phone = $input.item.json.customer_phone.replace(/\\D/g, '');\n\n// Montar mensagem de lembrete\nconst message = `Olá ${$input.item.json.customer_name}! 👋\\n\\nLembrando que seu agendamento é amanhã! ⏰\\n\\n📅 Data: ${date}\\n🕐 Horário: ${time}\\n🚗 Veículo: ${$input.item.json.brand} ${$input.item.json.model}\\n🔧 Serviços: ${$input.item.json.services || 'A definir'}\\n\\nAté logo!\\n\\n*${$input.item.json.company_name}*`;\n\nreturn {\n  phone: phone,\n  message: message,\n  appointment_id: $input.item.json.appointment_id,\n  company_id: $input.item.json.company_id,\n  customer_name: $input.item.json.customer_name\n};"
+            },
+            "id": "format-reminder",
+            "name": "Formatar Lembrete",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_ID }}",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.EVOLUTION_API_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "number",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-reminder",
+            "name": "Enviar Lembrete",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "INSERT INTO whatsapp_messages (\n  company_id,\n  instance_id,\n  direction,\n  to_number,\n  message_type,\n  content,\n  status,\n  appointment_id,\n  sent_at\n)\nSELECT \n  '{{ $json.company_id }}',\n  (SELECT id FROM whatsapp_instances WHERE company_id = '{{ $json.company_id }}' LIMIT 1),\n  'outbound',\n  '{{ $json.phone }}',\n  'text',\n  '{{ $json.message }}',\n  'sent',\n  '{{ $json.appointment_id }}',\n  NOW()",
+                "additionalFields": {}
+            },
+            "id": "save-reminder-history",
+            "name": "Salvar Histórico",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                1250,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase-db",
+                    "name": "Supabase PostgreSQL"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "amount": 2,
+                "unit": "seconds"
+            },
+            "id": "wait-between-messages",
+            "name": "Aguardar 2s",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Cron - Diário 8h": {
+            "main": [
+                [
+                    {
+                        "node": "Buscar Agendamentos Amanhã",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Agendamentos Amanhã": {
+            "main": [
+                [
+                    {
+                        "node": "Processar Um por Um",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Processar Um por Um": {
+            "main": [
+                [
+                    {
+                        "node": "Formatar Lembrete",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Formatar Lembrete": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar Lembrete",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar Lembrete": {
+            "main": [
+                [
+                    {
+                        "node": "Salvar Histórico",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Salvar Histórico": {
+            "main": [
+                [
+                    {
+                        "node": "Aguardar 2s",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aguardar 2s": {
+            "main": [
+                [
+                    {
+                        "node": "Processar Um por Um",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 1,
+    "updatedAt": "2025-11-26T00:00:00.000Z",
+    "versionId": "1"
+}
