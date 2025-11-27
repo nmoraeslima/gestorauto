@@ -259,6 +259,17 @@ export interface FinancialTransaction {
   updated_at: string;
 }
 
+export interface Notification {
+  id: string;
+  company_id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  read: boolean;
+  link?: string;
+  created_at: string;
+}
+
 // ============================================================================
 // EXTENDED TYPES (com relacionamentos)
 // ============================================================================

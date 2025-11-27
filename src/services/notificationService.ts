@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { Notification } from '@/types/database';
 
 export class NotificationService {
     private static instance: NotificationService;
@@ -7,10 +8,12 @@ export class NotificationService {
         appointments: number;
         stock: number;
         receivables: number;
+        trial: number;
     } = {
             appointments: 0,
             stock: 0,
             receivables: 0,
+            trial: 0,
         };
 
     private constructor() { }
@@ -70,25 +73,105 @@ export class NotificationService {
 
     private async checkAll(companyId: string): Promise<void> {
         console.log('[Notifications] Running periodic check for company:', companyId);
-        console.log('[Notifications] Permission status:', Notification.permission);
-
-        if (Notification.permission !== 'granted') {
-            console.warn('[Notifications] Permission not granted, skipping checks');
-            return;
-        }
 
         await Promise.all([
             this.checkAppointments(companyId),
             this.checkStock(companyId),
             this.checkReceivables(companyId),
+            this.checkTrialStatus(companyId),
         ]);
 
         console.log('[Notifications] Check completed');
     }
 
+    private async createNotification(companyId: string, notification: Omit<Notification, 'id' | 'created_at' | 'read' | 'company_id'>): Promise<void> {
+        try {
+            // Check if a similar notification already exists (to avoid spam)
+            // For simplicity, we'll just check if one with the same title exists created in the last 24h
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const { data: existing } = await supabase
+                .from('notifications')
+                .select('id')
+                .eq('company_id', companyId)
+                .eq('title', notification.title)
+                .gte('created_at', yesterday.toISOString())
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                console.log('[Notifications] Similar notification already exists, skipping:', notification.title);
+                return;
+            }
+
+            const { error } = await supabase
+                .from('notifications')
+                .insert({
+                    company_id: companyId,
+                    ...notification,
+                    read: false
+                });
+
+            if (error) throw error;
+
+            // Also show browser notification if permitted
+            this.showBrowserNotification({
+                title: notification.title,
+                body: notification.message,
+                data: { url: notification.link },
+                tag: notification.type
+            });
+
+        } catch (error) {
+            console.error('[Notifications] Error creating notification:', error);
+        }
+    }
+
+    private async checkTrialStatus(companyId: string): Promise<void> {
+        try {
+            const currentTime = Date.now();
+            // Check only once per day (24h)
+            if (currentTime - this.lastChecks.trial < 24 * 60 * 60 * 1000) {
+                return;
+            }
+
+            const { data: company, error } = await supabase
+                .from('companies')
+                .select('subscription_status, trial_ends_at')
+                .eq('id', companyId)
+                .single();
+
+            if (error) throw error;
+
+            if (company?.subscription_status === 'trial' && company.trial_ends_at) {
+                this.lastChecks.trial = currentTime;
+                const trialEnd = new Date(company.trial_ends_at);
+                const now = new Date();
+                const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+                if (daysRemaining <= 3 && daysRemaining > 0) {
+                    await this.createNotification(companyId, {
+                        title: '⏳ Período de Teste Acabando',
+                        message: `Seu período de teste termina em ${daysRemaining} dias. Assine agora para não perder o acesso!`,
+                        type: 'warning',
+                        link: '/settings/billing'
+                    });
+                } else if (daysRemaining <= 0) {
+                    await this.createNotification(companyId, {
+                        title: '🚫 Período de Teste Expirado',
+                        message: 'Seu período de teste expirou. Por favor, escolha um plano para continuar usando o sistema.',
+                        type: 'error',
+                        link: '/settings/billing'
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('[Notifications] Error checking trial status:', error);
+        }
+    }
+
     private async checkAppointments(companyId: string): Promise<void> {
         try {
-            console.log('[Notifications] Checking appointments for company:', companyId);
             const now = new Date();
             const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
@@ -100,39 +183,25 @@ export class NotificationService {
                 .gte('scheduled_at', now.toISOString())
                 .lte('scheduled_at', oneHourLater.toISOString());
 
-            if (error) {
-                console.error('[Notifications] Error querying appointments:', error);
-                throw error;
-            }
-
-            console.log('[Notifications] Found appointments:', appointments?.length || 0);
+            if (error) throw error;
 
             if (appointments && appointments.length > 0) {
                 const currentTime = Date.now();
-                // Only notify if we haven't checked in the last 30 minutes
                 if (currentTime - this.lastChecks.appointments > 30 * 60 * 1000) {
                     this.lastChecks.appointments = currentTime;
 
                     for (const appointment of appointments) {
                         const scheduledTime = new Date(appointment.scheduled_at);
                         const minutesUntil = Math.round((scheduledTime.getTime() - now.getTime()) / 60000);
-
                         const customerName = (appointment.customers as any)?.name || 'Cliente';
 
-                        console.log('[Notifications] Sending appointment notification:', {
-                            customer: customerName,
-                            minutesUntil,
-                        });
-
-                        this.showNotification({
+                        await this.createNotification(companyId, {
                             title: '📅 Agendamento Próximo',
-                            body: `${customerName} em ${minutesUntil} minutos`,
-                            data: { url: '/agenda' },
-                            tag: `appointment-${appointment.id}`,
+                            message: `${customerName} em ${minutesUntil} minutos`,
+                            type: 'info',
+                            link: '/appointments'
                         });
                     }
-                } else {
-                    console.log('[Notifications] Skipping appointments - cooldown active');
                 }
             }
         } catch (error) {
@@ -151,7 +220,6 @@ export class NotificationService {
             if (error) throw error;
 
             if (products && products.length > 0) {
-                // Filter products where stock <= minimum_stock * 1.2
                 const lowStockProducts = products.filter(
                     (p) => p.minimum_stock && p.stock <= p.minimum_stock * 1.2
                 );
@@ -159,7 +227,6 @@ export class NotificationService {
                 if (lowStockProducts.length === 0) return;
 
                 const currentTime = Date.now();
-                // Only notify if we haven't checked in the last hour
                 if (currentTime - this.lastChecks.stock > 60 * 60 * 1000) {
                     this.lastChecks.stock = currentTime;
 
@@ -169,20 +236,20 @@ export class NotificationService {
                     );
 
                     if (criticalProducts.length > 0) {
-                        this.showNotification({
+                        await this.createNotification(companyId, {
                             title: '🚨 Estoque Crítico',
-                            body: `${criticalProducts.length} produto${criticalProducts.length > 1 ? 's' : ''} abaixo do mínimo`,
-                            data: { url: '/catalogo' },
-                            tag: 'stock-critical',
+                            message: `${criticalProducts.length} produto${criticalProducts.length > 1 ? 's' : ''} abaixo do mínimo`,
+                            type: 'error',
+                            link: '/inventory'
                         });
                     }
 
                     if (lowProducts.length > 0) {
-                        this.showNotification({
+                        await this.createNotification(companyId, {
                             title: '⚠️ Estoque Baixo',
-                            body: `${lowProducts.length} produto${lowProducts.length > 1 ? 's' : ''} próximo${lowProducts.length > 1 ? 's' : ''} do mínimo`,
-                            data: { url: '/catalogo' },
-                            tag: 'stock-low',
+                            message: `${lowProducts.length} produto${lowProducts.length > 1 ? 's' : ''} próximo${lowProducts.length > 1 ? 's' : ''} do mínimo`,
+                            type: 'warning',
+                            link: '/inventory'
                         });
                     }
                 }
@@ -211,17 +278,16 @@ export class NotificationService {
 
             if (transactions && transactions.length > 0) {
                 const currentTime = Date.now();
-                // Only notify if we haven't checked in the last 4 hours
                 if (currentTime - this.lastChecks.receivables > 4 * 60 * 60 * 1000) {
                     this.lastChecks.receivables = currentTime;
 
                     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-                    this.showNotification({
+                    await this.createNotification(companyId, {
                         title: '💰 Contas a Vencer',
-                        body: `${transactions.length} conta${transactions.length > 1 ? 's' : ''} vencendo em até 3 dias - R$ ${totalAmount.toFixed(2)}`,
-                        data: { url: '/financeiro/receber' },
-                        tag: 'receivables-due',
+                        message: `${transactions.length} conta${transactions.length > 1 ? 's' : ''} vencendo em até 3 dias - R$ ${totalAmount.toFixed(2)}`,
+                        type: 'info',
+                        link: '/financial'
                     });
                 }
             }
@@ -231,7 +297,10 @@ export class NotificationService {
     }
 
     async sendTestNotification(): Promise<void> {
-        await this.showNotification({
+        // This method is mainly for testing browser notifications, 
+        // but we can also use it to test persistence if needed.
+        // For now, let's keep it simple and just show a browser notification.
+        await this.showBrowserNotification({
             title: '🔔 Teste de Notificação',
             body: 'O sistema de notificações está funcionando corretamente!',
             tag: 'test-notification',
@@ -239,19 +308,15 @@ export class NotificationService {
         });
     }
 
-    private async showNotification(options: {
+    private async showBrowserNotification(options: {
         title: string;
         body: string;
         data?: any;
         tag?: string;
     }): Promise<void> {
-        console.log('[Notifications] Showing notification:', options.title, options.body);
-
         if (Notification.permission === 'granted') {
             try {
-                // Use Service Worker registration to show notification (required for PWA/Android)
                 const registration = await navigator.serviceWorker.ready;
-
                 await registration.showNotification(options.title, {
                     body: options.body,
                     icon: '/logo.png',
@@ -259,11 +324,10 @@ export class NotificationService {
                     tag: options.tag,
                     data: options.data,
                     requireInteraction: false,
-                    vibrate: [200, 100, 200], // Add vibration for mobile
+                    vibrate: [200, 100, 200],
                 } as any);
             } catch (error) {
                 console.error('[Notifications] Error showing notification via Service Worker:', error);
-                // Fallback to standard Notification API if SW fails (desktop fallback)
                 new Notification(options.title, {
                     body: options.body,
                     icon: '/logo.png',
@@ -273,8 +337,6 @@ export class NotificationService {
                     requireInteraction: false,
                 });
             }
-        } else {
-            console.warn('[Notifications] Cannot show notification - permission:', Notification.permission);
         }
     }
 }
