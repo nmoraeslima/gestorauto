@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Notification } from '@/types/database';
+import { AppNotification } from '@/types/database';
 
 export class NotificationService {
     private static instance: NotificationService;
@@ -84,7 +84,7 @@ export class NotificationService {
         console.log('[Notifications] Check completed');
     }
 
-    private async createNotification(companyId: string, notification: Omit<Notification, 'id' | 'created_at' | 'read' | 'company_id'>): Promise<void> {
+    private async createNotification(companyId: string, notification: Omit<AppNotification, 'id' | 'created_at' | 'read' | 'company_id'>): Promise<void> {
         try {
             // Check if a similar notification already exists (to avoid spam)
             // For simplicity, we'll just check if one with the same title exists created in the last 24h

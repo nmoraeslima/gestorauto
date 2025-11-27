@@ -259,7 +259,7 @@ export interface FinancialTransaction {
   updated_at: string;
 }
 
-export interface Notification {
+export interface AppNotification {
   id: string;
   company_id: string;
   title: string;

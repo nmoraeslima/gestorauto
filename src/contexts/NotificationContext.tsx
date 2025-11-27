@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
-import { Notification } from '@/types/database';
+import { AppNotification } from '@/types/database';
 import { notificationService } from '@/services/notificationService';
 
 interface NotificationContextType {
-    notifications: Notification[];
+    notifications: AppNotification[];
     unreadCount: number;
     loading: boolean;
     markAsRead: (id: string) => Promise<void>;
@@ -17,7 +17,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchNotifications = async () => {
@@ -95,7 +95,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         filter: `company_id=eq.${user.company.id}`,
                     },
                     (payload) => {
-                        setNotifications(prev => [payload.new as Notification, ...prev]);
+                        setNotifications(prev => [payload.new as AppNotification, ...prev]);
                     }
                 )
                 .subscribe();
