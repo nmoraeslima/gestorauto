@@ -132,8 +132,11 @@ export class NotificationService {
             const currentTime = Date.now();
             // Check only once per day (24h)
             if (currentTime - this.lastChecks.trial < 24 * 60 * 60 * 1000) {
+                console.log('[Notifications] Trial check skipped (cooldown)');
                 return;
             }
+
+            console.log('[Notifications] Checking trial status for company:', companyId);
 
             const { data: company, error } = await supabase
                 .from('companies')
@@ -148,6 +151,8 @@ export class NotificationService {
                 const trialEnd = new Date(company.trial_ends_at);
                 const now = new Date();
                 const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+                console.log(`[Notifications] Trial ends in ${daysRemaining} days`);
 
                 if (daysRemaining <= 3 && daysRemaining > 0) {
                     await this.createNotification(companyId, {
@@ -213,15 +218,15 @@ export class NotificationService {
         try {
             const { data: products, error } = await supabase
                 .from('products')
-                .select('id, name, stock, minimum_stock')
+                .select('id, name, quantity, min_stock')
                 .eq('company_id', companyId)
-                .not('minimum_stock', 'is', null);
+                .not('min_stock', 'is', null);
 
             if (error) throw error;
 
             if (products && products.length > 0) {
                 const lowStockProducts = products.filter(
-                    (p) => p.minimum_stock && p.stock <= p.minimum_stock * 1.2
+                    (p) => p.min_stock && p.quantity <= p.min_stock * 1.2
                 );
 
                 if (lowStockProducts.length === 0) return;
@@ -230,9 +235,9 @@ export class NotificationService {
                 if (currentTime - this.lastChecks.stock > 60 * 60 * 1000) {
                     this.lastChecks.stock = currentTime;
 
-                    const criticalProducts = lowStockProducts.filter((p) => p.stock < p.minimum_stock!);
+                    const criticalProducts = lowStockProducts.filter((p) => p.quantity < p.min_stock!);
                     const lowProducts = lowStockProducts.filter(
-                        (p) => p.stock >= p.minimum_stock! && p.stock <= p.minimum_stock! * 1.2
+                        (p) => p.quantity >= p.min_stock! && p.quantity <= p.min_stock! * 1.2
                     );
 
                     if (criticalProducts.length > 0) {
@@ -265,7 +270,7 @@ export class NotificationService {
             const threeDaysLater = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
 
             const { data: transactions, error } = await supabase
-                .from('transactions')
+                .from('financial_transactions')
                 .select('id, description, amount, due_date')
                 .eq('company_id', companyId)
                 .eq('type', 'income')
