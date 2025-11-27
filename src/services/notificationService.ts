@@ -225,9 +225,11 @@ export class NotificationService {
             if (error) throw error;
 
             if (products && products.length > 0) {
-                const lowStockProducts = products.filter(
-                    (p) => p.min_stock && p.quantity <= p.min_stock * 1.2
-                );
+                const lowStockProducts = products.filter((p) => {
+                    const quantity = Number(p.quantity);
+                    const minStock = Number(p.min_stock);
+                    return minStock !== null && quantity <= minStock * 1.2;
+                });
 
                 if (lowStockProducts.length === 0) return;
 
@@ -235,10 +237,17 @@ export class NotificationService {
                 if (currentTime - this.lastChecks.stock > 60 * 60 * 1000) {
                     this.lastChecks.stock = currentTime;
 
-                    const criticalProducts = lowStockProducts.filter((p) => p.quantity < p.min_stock!);
-                    const lowProducts = lowStockProducts.filter(
-                        (p) => p.quantity >= p.min_stock! && p.quantity <= p.min_stock! * 1.2
-                    );
+                    const criticalProducts = lowStockProducts.filter((p) => {
+                        const quantity = Number(p.quantity);
+                        const minStock = Number(p.min_stock);
+                        return quantity < minStock;
+                    });
+
+                    const lowProducts = lowStockProducts.filter((p) => {
+                        const quantity = Number(p.quantity);
+                        const minStock = Number(p.min_stock);
+                        return quantity >= minStock && quantity <= minStock * 1.2;
+                    });
 
                     if (criticalProducts.length > 0) {
                         await this.createNotification(companyId, {
