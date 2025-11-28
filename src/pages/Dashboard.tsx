@@ -198,7 +198,7 @@ export const Dashboard: React.FC = () => {
         },
         {
             title: 'Receita Mensal',
-            value: `R$ ${(stats?.monthly_revenue || 0).toFixed(2)}`,
+            value: formatCurrency(stats?.monthly_revenue || 0),
             icon: TrendingUp,
             color: 'success',
             bgColor: 'bg-success-100',
@@ -206,7 +206,7 @@ export const Dashboard: React.FC = () => {
         },
         {
             title: 'Pagamentos Pendentes',
-            value: `R$ ${(stats?.pending_payments || 0).toFixed(2)}`,
+            value: formatCurrency(stats?.pending_payments || 0),
             icon: DollarSign,
             color: 'danger',
             bgColor: 'bg-danger-100',
@@ -318,7 +318,7 @@ export const Dashboard: React.FC = () => {
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fill: '#64748b', fontSize: 12 }}
-                                    tickFormatter={(value) => `R$ ${value}`}
+                                    tickFormatter={(value) => formatCurrency(value)}
                                 />
                                 <Tooltip
                                     formatter={(value: number) => [formatCurrency(value), 'Receita']}

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Edit2, Trash2, Tag } from 'lucide-react';
 import { ServiceModal } from '@/components/catalog/ServiceModal';
 import type { Service } from '@/types/database';
+import { formatCurrency } from '@/utils/format';
 import toast from 'react-hot-toast';
 
 export const Services: React.FC = () => {
@@ -140,7 +141,7 @@ export const Services: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(service.price)}
+                                            {formatCurrency(service.price)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">
                                             {service.duration_minutes} min
