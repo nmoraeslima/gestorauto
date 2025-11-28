@@ -206,7 +206,7 @@ export const ServiceTracker: React.FC = () => {
 
                             <div className="flex justify-between items-center font-bold text-secondary-900 text-lg">
                                 <span>Total</span>
-                                <span>{formatCurrency(data.workOrder.total)}</span>
+                                <span>{formatCurrency(data.workOrder.subtotal - data.workOrder.discount)}</span>
                             </div>
                         </div>
                     </div>

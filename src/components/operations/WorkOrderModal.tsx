@@ -404,7 +404,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 subtotal: totals.subtotal,
                 discount: formData.discount,
                 discount_type: formData.discount_type,
-                total_amount: totals.total,
+                total: totals.total,
                 payment_method: formData.payment_method,
                 payment_status: formData.payment_status,
             };
