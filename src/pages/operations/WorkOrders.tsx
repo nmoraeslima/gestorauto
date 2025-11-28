@@ -146,10 +146,10 @@ export default function WorkOrders() {
         completed: workOrders.filter((wo) => wo.status === 'completed').length,
         totalRevenue: workOrders
             .filter((wo) => wo.status === 'completed')
-            .reduce((sum, wo) => sum + (wo.total_amount || 0), 0),
+            .reduce((sum, wo) => sum + (wo.total || 0), 0),
         pendingPayment: workOrders
             .filter((wo) => wo.payment_status === 'pending')
-            .reduce((sum, wo) => sum + (wo.total_amount || 0), 0),
+            .reduce((sum, wo) => sum + (wo.total || 0), 0),
     };
 
     return (
@@ -304,7 +304,7 @@ export default function WorkOrders() {
                                         </td>
                                         <td>
                                             <span className="font-semibold text-primary-300">
-                                                {formatCurrency(wo.total_amount || 0)}
+                                                {formatCurrency(wo.total || 0)}
                                             </span>
                                         </td>
                                         <td>{getStatusBadge(wo.status)}</td>
