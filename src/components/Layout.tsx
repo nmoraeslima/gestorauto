@@ -20,7 +20,7 @@ import {
     Tag,
 } from 'lucide-react';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
-import { PWAInstallPrompt } from './PWAInstallPrompt';
+
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -265,7 +265,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </div>
                     </main>
                 </div>
-                </div>
+
             </div>
             <PWAInstallPrompt />
         </NotificationProvider >
