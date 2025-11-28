@@ -8,6 +8,7 @@ import { ProtectedLayout } from './components/ProtectedLayout';
 import { SignIn } from './pages/auth/SignIn';
 import { SignUp } from './pages/auth/SignUp';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
+import { notificationService } from './services/notificationService';
 
 // App Pages
 import { Dashboard } from './pages/Dashboard';
@@ -43,6 +44,10 @@ const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
 );
 
 function App() {
+    React.useEffect(() => {
+        notificationService.registerServiceWorker();
+    }, []);
+
     return (
         <BrowserRouter>
             <AuthProvider>

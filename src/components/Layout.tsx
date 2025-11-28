@@ -19,6 +19,7 @@ import {
     Building2,
     Tag,
 } from 'lucide-react';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 interface LayoutProps {
     children: React.ReactNode;
