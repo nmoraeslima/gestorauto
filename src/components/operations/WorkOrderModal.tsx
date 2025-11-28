@@ -329,7 +329,6 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
             // If creating new appointment automatically
             if (creationMode === 'create') {
-                // Generate a title for the appointment
                 const customer = customers.find(c => c.id === formData.customer_id);
                 const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
                 const title = `O.S. - ${customer?.name} - ${vehicle?.model}`;
@@ -339,9 +338,9 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     customer_id: formData.customer_id,
                     vehicle_id: formData.vehicle_id,
                     title: title,
-                    scheduled_at: new Date(formData.entry_date).toISOString(), // Use entry date as schedule date
-                    status: 'in_progress', // Auto-start
-                    duration_minutes: 60, // Default duration
+                    scheduled_at: new Date(formData.entry_date).toISOString(),
+                    status: 'in_progress',
+                    duration_minutes: 60,
                 };
 
                 const { data: newAppointment, error: appError } = await supabase
@@ -351,16 +350,14 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     .single();
 
                 if (appError) throw appError;
-                if (appError) throw appError;
                 finalAppointmentId = newAppointment.id;
 
-                // Link services to the new appointment
                 if (selectedServices.length > 0) {
                     const appointmentServicesData = selectedServices.map((service) => ({
                         appointment_id: finalAppointmentId,
                         service_id: service.service_id,
                         price: service.price,
-                        duration_minutes: 60, // Default or fetch from service if available
+                        duration_minutes: 60,
                     }));
 
                     const { error: appServicesError } = await supabase
@@ -371,26 +368,29 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 }
             }
 
-            // Calculate totals (only services, products don't have price)
+            // Calculate totals
             const totals = calculateWorkOrderTotal(
                 selectedServices,
-                [], // Products don't contribute to financial total
+                [],
                 formData.discount,
                 formData.discount_type === 'percentage'
             );
 
-            // Generate order number if not present (simple timestamp based for now, or fetch from DB sequence if available)
-            // In a real app, this should be handled by a database trigger or sequence
             const orderNumber = workOrder?.order_number || new Date().getTime().toString().slice(-6);
 
-            // Create work order
+            // PREPARE DATA
+            // Important: If status is 'completed', we first save as 'in_progress' (or keep current)
+            // to ensure products are saved BEFORE the completion trigger fires.
+            const targetStatus = formData.status;
+            const tempStatus = targetStatus === 'completed' ? 'in_progress' : targetStatus;
+
             const workOrderData = {
                 company_id: user.company.id,
                 appointment_id: finalAppointmentId,
                 customer_id: formData.customer_id,
                 vehicle_id: formData.vehicle_id,
-                order_number: orderNumber, // Add generated order number
-                status: formData.status,
+                order_number: orderNumber,
+                status: tempStatus, // Use temp status first
                 entry_date: new Date(formData.entry_date).toISOString(),
                 expected_completion_date: formData.expected_completion_date
                     ? new Date(formData.expected_completion_date).toISOString()
@@ -411,8 +411,8 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
             let newWorkOrder;
 
+            // 1. SAVE WORK ORDER (Without completing yet)
             if (workOrder) {
-                // Update existing work order
                 const { data, error } = await supabase
                     .from('work_orders')
                     .update(workOrderData)
@@ -423,11 +423,10 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 if (error) throw error;
                 newWorkOrder = data;
 
-                // Delete existing services and products to re-insert
+                // Clear existing items
                 await supabase.from('work_order_services').delete().eq('work_order_id', workOrder.id);
                 await supabase.from('work_order_products').delete().eq('work_order_id', workOrder.id);
             } else {
-                // Create new work order
                 const { data, error } = await supabase
                     .from('work_orders')
                     .insert(workOrderData)
@@ -438,7 +437,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 newWorkOrder = data;
             }
 
-            // Insert services
+            // 2. INSERT SERVICES & PRODUCTS
             if (selectedServices.length > 0) {
                 const servicesData = selectedServices.map((service) => ({
                     company_id: user?.company?.id!,
@@ -458,9 +457,6 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 if (servicesError) throw servicesError;
             }
 
-            // Insert products (for stock control only)
-            // Note: Stock deduction is handled automatically by database trigger
-            // when status changes to 'completed'
             if (selectedProducts.length > 0) {
                 const productsData = selectedProducts.map((product) => ({
                     company_id: user?.company?.id!,
@@ -479,56 +475,60 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 if (productsError) throw productsError;
             }
 
-            // Generate or Update Financial Transaction
-            // Only if status is NOT draft (i.e. In Progress or Completed)
-            if (formData.status !== 'draft') {
-                // Map payment status to transaction status
-                let transactionStatus = 'pending';
-                if (formData.payment_status === 'paid') transactionStatus = 'paid';
-                else if (formData.payment_status === 'partial') transactionStatus = 'pending'; // Partial is still pending full payment
+            // 3. UPDATE STATUS TO COMPLETED (If needed)
+            // This will fire the DB trigger for stock deduction and initial financial transaction
+            if (targetStatus === 'completed' && newWorkOrder.status !== 'completed') {
+                const { error: updateError } = await supabase
+                    .from('work_orders')
+                    .update({ status: 'completed' })
+                    .eq('id', newWorkOrder.id);
 
-                const transactionData = {
-                    company_id: user.company.id,
-                    type: 'income',
-                    category: 'Serviço',
-                    description: `O.S. #${newWorkOrder.order_number} - ${customers.find(c => c.id === formData.customer_id)?.name}`,
-                    amount: totals.total || 0,
-                    status: transactionStatus,
-                    due_date: formData.expected_completion_date || formData.entry_date, // Use expected completion or entry date
-                    paid_at: formData.payment_status === 'paid' ? new Date().toISOString() : null,
-                    work_order_id: newWorkOrder.id,
-                    customer_id: formData.customer_id,
-                };
+                if (updateError) throw updateError;
+            }
 
-                // Check if transaction exists
-                const { data: existingTransaction } = await supabase
+            // 4. HANDLE FINANCIAL TRANSACTION
+            // If completed, the trigger created a transaction. We might need to update it.
+            // If not completed, we manage it manually.
+
+            let transactionStatus = 'pending';
+            if (formData.payment_status === 'paid') transactionStatus = 'paid';
+            else if (formData.payment_status === 'partial') transactionStatus = 'pending';
+
+            const transactionData = {
+                company_id: user.company.id,
+                type: 'income',
+                category: 'Serviço',
+                description: `O.S. #${newWorkOrder.order_number} - ${customers.find(c => c.id === formData.customer_id)?.name}`,
+                amount: totals.total || 0,
+                status: transactionStatus,
+                due_date: formData.expected_completion_date || formData.entry_date,
+                paid_at: formData.payment_status === 'paid' ? new Date().toISOString() : null,
+                work_order_id: newWorkOrder.id,
+                customer_id: formData.customer_id,
+            };
+
+            // Check if transaction exists (created by trigger or previously)
+            const { data: existingTransaction } = await supabase
+                .from('financial_transactions')
+                .select('id')
+                .eq('work_order_id', newWorkOrder.id)
+                .single();
+
+            if (existingTransaction) {
+                // Update existing transaction (fix trigger defaults if needed)
+                const { error: transactionError } = await supabase
                     .from('financial_transactions')
-                    .select('id')
-                    .eq('work_order_id', newWorkOrder.id)
-                    .single();
+                    .update(transactionData)
+                    .eq('id', existingTransaction.id);
 
-                if (existingTransaction) {
-                    // Update existing transaction
-                    const { error: transactionError } = await supabase
-                        .from('financial_transactions')
-                        .update(transactionData)
-                        .eq('id', existingTransaction.id);
+                if (transactionError) console.error('Error updating financial transaction:', transactionError);
+            } else if (targetStatus !== 'draft') {
+                // Create new transaction if it doesn't exist and not draft
+                const { error: transactionError } = await supabase
+                    .from('financial_transactions')
+                    .insert(transactionData);
 
-                    if (transactionError) {
-                        console.error('Error updating financial transaction:', transactionError);
-                        toast.error(`Erro ao atualizar financeiro: ${transactionError.message}`);
-                    }
-                } else {
-                    // Create new transaction
-                    const { error: transactionError } = await supabase
-                        .from('financial_transactions')
-                        .insert(transactionData);
-
-                    if (transactionError) {
-                        console.error('Error creating financial transaction:', transactionError);
-                        toast.error(`Erro ao gerar financeiro: ${transactionError.message}`);
-                    }
-                }
+                if (transactionError) console.error('Error creating financial transaction:', transactionError);
             }
 
             toast.success(workOrder ? 'Ordem de Serviço atualizada!' : 'Ordem de Serviço criada com sucesso!');
