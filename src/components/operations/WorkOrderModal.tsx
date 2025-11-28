@@ -568,14 +568,26 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                 <button
                                     onClick={() => {
                                         const url = `${window.location.origin}/tracker/${workOrder.id}`;
-                                        navigator.clipboard.writeText(url);
-                                        toast.success('Link de acompanhamento copiado!');
+                                        const customerName = customers.find(c => c.id === workOrder.customer_id)?.name || 'Cliente';
+                                        const vehicleModel = vehicles.find(v => v.id === workOrder.vehicle_id)?.model || 'seu veículo';
+
+                                        const message = `Olá ${customerName}! 🚗\n\nAcompanhe o serviço do ${vehicleModel} em tempo real pelo nosso link exclusivo:\n\n${url}\n\nQualquer dúvida, estamos à disposição!`;
+
+                                        // Get customer phone if available
+                                        const customer = customers.find(c => c.id === workOrder.customer_id);
+                                        const phone = customer?.phone?.replace(/\D/g, '');
+
+                                        const whatsappUrl = phone
+                                            ? `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`
+                                            : `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+                                        window.open(whatsappUrl, '_blank');
                                     }}
                                     className="btn btn-secondary text-xs py-1 px-3 flex items-center gap-2"
-                                    title="Copiar Link de Acompanhamento"
+                                    title="Enviar Link por WhatsApp"
                                 >
                                     <LinkIcon className="w-3 h-3" />
-                                    Link do Cliente
+                                    Enviar no WhatsApp
                                 </button>
                             )}
                             <button
