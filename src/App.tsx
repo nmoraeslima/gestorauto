@@ -34,6 +34,7 @@ import { Payables } from './pages/financial/Payables';
 
 // Settings Pages
 import { CompanySettings } from './pages/settings/CompanySettings';
+import { ServiceTracker } from './pages/public/ServiceTracker';
 
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -84,6 +85,7 @@ function App() {
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/signup" element={<SignUp />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/tracker/:id" element={<ServiceTracker />} />
 
                     {/* Subscription Route (accessible even with expired subscription) */}
                     <Route path="/subscription/renew" element={<SubscriptionRenew />} />

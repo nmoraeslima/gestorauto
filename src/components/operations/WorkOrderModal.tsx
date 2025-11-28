@@ -563,12 +563,28 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                         <h3 className="text-xl font-semibold text-secondary-600">
                             {workOrder ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}
                         </h3>
-                        <button
-                            onClick={onClose}
-                            className="text-neutral-400 hover:text-neutral-600 transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {workOrder && (
+                                <button
+                                    onClick={() => {
+                                        const url = `${window.location.origin}/tracker/${workOrder.id}`;
+                                        navigator.clipboard.writeText(url);
+                                        toast.success('Link de acompanhamento copiado!');
+                                    }}
+                                    className="btn btn-secondary text-xs py-1 px-3 flex items-center gap-2"
+                                    title="Copiar Link de Acompanhamento"
+                                >
+                                    <LinkIcon className="w-3 h-3" />
+                                    Link do Cliente
+                                </button>
+                            )}
+                            <button
+                                onClick={onClose}
+                                className="text-neutral-400 hover:text-neutral-600 transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Tabs */}
@@ -603,8 +619,8 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                         <button
                             onClick={() => setActiveTab('photos')}
                             className={`px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'photos'
-                                    ? 'border-primary-300 text-primary-300'
-                                    : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                                ? 'border-primary-300 text-primary-300'
+                                : 'border-transparent text-neutral-500 hover:text-neutral-700'
                                 }`}
                         >
                             <Camera className="w-4 h-4 inline-block mr-1" />
