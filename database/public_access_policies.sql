@@ -1,7 +1,7 @@
 -- Enable public read access for Work Orders (by UUID)
 -- This allows anyone with the UUID to view the work order details
 CREATE POLICY "Public can view work orders by ID" 
-ON public.work_orders FOR SELECT 
+ON public.work_orders FOR SELECT
 USING (true); -- Ideally we would restrict this, but for "Magic Link" by UUID, standard SELECT is often open or we rely on the UUID being secret. 
 -- A stricter approach:
 -- USING (id::text = current_setting('request.jwt.claims', true)::json->>'work_order_id'); 
