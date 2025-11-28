@@ -290,8 +290,7 @@ export const Customers: React.FC = () => {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Nome</th>
-                                    <th>Contato</th>
+                                    <th>Nome / Contato</th>
                                     <th className="hidden md:table-cell">CPF</th>
                                     <th>Tipo</th>
                                     <th className="text-right">Ações</th>
@@ -301,19 +300,21 @@ export const Customers: React.FC = () => {
                                 {filteredCustomers.map((customer) => (
                                     <tr key={customer.id}>
                                         <td>
-                                            <div className="flex items-center gap-2">
-                                                {customer.vip && <Crown className="h-4 w-4 text-yellow-500" />}
-                                                <span className="font-medium text-gray-900">{customer.name}</span>
-                                                {!customer.is_active && (
-                                                    <span className="badge badge-gray text-xs">Inativo</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="text-sm">
-                                                <div className="text-gray-900">{maskPhone(customer.phone)}</div>
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    {customer.vip && <Crown className="h-4 w-4 text-yellow-500" />}
+                                                    <span className="font-medium text-gray-900">{customer.name}</span>
+                                                    {!customer.is_active && (
+                                                        <span className="badge badge-gray text-xs">Inativo</span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-gray-500 mt-0.5">
+                                                    {maskPhone(customer.phone)}
+                                                </div>
                                                 {customer.email && (
-                                                    <div className="hidden md:block text-gray-500">{customer.email}</div>
+                                                    <div className="text-xs text-gray-400 hidden md:block">
+                                                        {customer.email}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
