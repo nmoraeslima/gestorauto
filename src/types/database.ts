@@ -141,7 +141,21 @@ export interface Service {
   category?: string;
   price: number;
   duration_minutes: number;
+  recurrence_interval?: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceReminder {
+  id: string;
+  company_id: string;
+  customer_id: string;
+  vehicle_id: string;
+  service_id: string;
+  work_order_id: string;
+  due_date: string;
+  status: 'pending' | 'sent' | 'cancelled' | 'completed';
   created_at: string;
   updated_at: string;
 }
@@ -294,6 +308,12 @@ export interface AppointmentWithDetails extends Appointment {
   customer?: Customer;
   vehicle?: Vehicle;
   assigned_user?: Profile;
+}
+
+export interface ServiceReminderWithDetails extends ServiceReminder {
+  customer?: Customer;
+  vehicle?: Vehicle;
+  service?: Service;
 }
 
 // ============================================================================

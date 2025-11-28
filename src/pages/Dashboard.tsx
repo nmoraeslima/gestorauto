@@ -25,6 +25,7 @@ import {
 } from 'recharts';
 import { formatCurrency } from '@/utils/calculations';
 import { formatDate } from '@/utils/datetime';
+import { ServiceReminders } from '@/components/dashboard/ServiceReminders';
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -225,6 +226,9 @@ export const Dashboard: React.FC = () => {
                     Aqui está um resumo do seu negócio hoje.
                 </p>
             </div>
+
+            {/* Service Reminders (CRM) */}
+            <ServiceReminders />
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

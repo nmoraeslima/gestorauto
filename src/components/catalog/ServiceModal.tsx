@@ -25,6 +25,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
         description: '',
         price: 0,
         duration_minutes: 60,
+        recurrence_interval: 0,
         category: '',
         is_active: true,
     });
@@ -36,6 +37,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                 description: service.description || '',
                 price: service.price,
                 duration_minutes: service.duration_minutes,
+                recurrence_interval: service.recurrence_interval || 0,
                 category: service.category || '',
                 is_active: service.is_active,
             });
@@ -45,6 +47,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                 description: '',
                 price: 0,
                 duration_minutes: 60,
+                recurrence_interval: 0,
                 category: '',
                 is_active: true,
             });
@@ -142,6 +145,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                                     className="input"
                                 />
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="label">
                                     <Clock className="w-4 h-4 inline mr-2" />
@@ -156,6 +162,23 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                                     onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 0 })}
                                     className="input"
                                 />
+                            </div>
+                            <div>
+                                <label className="label">
+                                    <Clock className="w-4 h-4 inline mr-2" />
+                                    Recorrência (dias)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={formData.recurrence_interval}
+                                    onChange={(e) => setFormData({ ...formData, recurrence_interval: parseInt(e.target.value) || 0 })}
+                                    className="input"
+                                    placeholder="Ex: 180 (6 meses)"
+                                    title="Dias para sugerir retorno do cliente"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">0 para desativar</p>
                             </div>
                         </div>
 
