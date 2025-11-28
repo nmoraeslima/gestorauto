@@ -113,6 +113,33 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             loadAppointments();
             loadCustomers();
         }
+
+        // Reset state when modal closes
+        if (!isOpen) {
+            setActiveTab('basic');
+            setCreationMode('link');
+            setFormData({
+                appointment_id: '',
+                customer_id: '',
+                vehicle_id: '',
+                status: WorkOrderStatus.DRAFT,
+                entry_date: new Date().toISOString().split('T')[0],
+                expected_completion_date: '',
+                fuel_level: 50,
+                odometer: '',
+                damage_notes: '',
+                customer_belongings: '',
+                internal_notes: '',
+                customer_notes: '',
+                discount: 0,
+                discount_type: 'percentage',
+                payment_method: 'cash',
+                payment_status: 'pending',
+            });
+            setSelectedServices([]);
+            setSelectedProducts([]);
+            setVehicles([]);
+        }
     }, [isOpen, user]);
 
     // Reset form when mode changes

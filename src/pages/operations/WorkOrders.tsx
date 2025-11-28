@@ -53,7 +53,11 @@ export default function WorkOrders() {
             .eq('company_id', user.company.id)
             .order('created_at', { ascending: false });
 
-        if (!error && data) {
+        if (error) {
+            console.error('Error loading work orders:', error);
+            toast.error('Erro ao carregar ordens de serviço');
+        } else if (data) {
+            console.log('Loaded work orders:', data.length);
             setWorkOrders(data as WorkOrderWithDetails[]);
         }
         setLoading(false);
