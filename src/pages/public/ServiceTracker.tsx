@@ -175,13 +175,39 @@ export const ServiceTracker: React.FC = () => {
                     <div className="divide-y divide-gray-100">
                         {data.services.map((service: any) => (
                             <div key={service.id} className="p-4 flex justify-between items-center">
-                                <span className="text-secondary-700 font-medium">{service.service_name}</span>
-                                <span className="text-secondary-500 text-sm">{formatCurrency(service.price)}</span>
+                                <div>
+                                    <span className="text-secondary-700 font-medium block">{service.service_name}</span>
+                                    {service.quantity > 1 && (
+                                        <span className="text-xs text-secondary-400">
+                                            {service.quantity}x {formatCurrency(service.unit_price)}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-secondary-500 text-sm">{formatCurrency(service.total_price)}</span>
                             </div>
                         ))}
-                        <div className="p-4 bg-gray-50 flex justify-between items-center font-bold text-secondary-900">
-                            <span>Total</span>
-                            <span>{formatCurrency(data.workOrder.total)}</span>
+
+                        {/* Financial Summary */}
+                        <div className="bg-gray-50 p-4 space-y-2">
+                            {/* Show Subtotal and Discount only if there is a discount */}
+                            {data.workOrder.discount > 0 && (
+                                <>
+                                    <div className="flex justify-between items-center text-secondary-600 text-sm">
+                                        <span>Subtotal</span>
+                                        <span>{formatCurrency(data.workOrder.subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-green-600 text-sm">
+                                        <span>Desconto</span>
+                                        <span>- {formatCurrency(data.workOrder.discount)}</span>
+                                    </div>
+                                    <div className="border-t border-gray-200 my-2"></div>
+                                </>
+                            )}
+
+                            <div className="flex justify-between items-center font-bold text-secondary-900 text-lg">
+                                <span>Total</span>
+                                <span>{formatCurrency(data.workOrder.total)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
