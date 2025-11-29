@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Building2, CreditCard, Users as UsersIcon, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Building2, CreditCard, Users as UsersIcon, Save, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type TabType = 'company' | 'subscription' | 'users';
@@ -176,9 +176,18 @@ export const CompanySettings: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-secondary-900">Configurações</h1>
-                <p className="text-secondary-600 mt-1">Gerencie as informações da sua empresa</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-secondary-900">Configurações</h1>
+                    <p className="text-secondary-600 mt-1">Gerencie as informações da sua empresa</p>
+                </div>
+                <a
+                    href="/settings/booking"
+                    className="btn btn-outline flex items-center gap-2"
+                >
+                    <Calendar className="w-5 h-5" />
+                    Agendamento Online
+                </a>
             </div>
 
             {/* Tabs */}
@@ -191,8 +200,8 @@ export const CompanySettings: React.FC = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
-                                        ? 'border-primary-600 text-primary-600'
-                                        : 'border-transparent text-secondary-600 hover:text-secondary-900 hover:border-secondary-300'
+                                    ? 'border-primary-600 text-primary-600'
+                                    : 'border-transparent text-secondary-600 hover:text-secondary-900 hover:border-secondary-300'
                                     }`}
                             >
                                 <Icon className="w-5 h-5" />
@@ -439,8 +448,8 @@ export const CompanySettings: React.FC = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${userItem.is_active
-                                                        ? 'bg-success-100 text-success-700'
-                                                        : 'bg-secondary-100 text-secondary-700'
+                                                    ? 'bg-success-100 text-success-700'
+                                                    : 'bg-secondary-100 text-secondary-700'
                                                     }`}>
                                                     {userItem.is_active ? 'Ativo' : 'Inativo'}
                                                 </span>
