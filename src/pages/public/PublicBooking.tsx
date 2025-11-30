@@ -146,98 +146,55 @@ export default function PublicBooking() {
         setSubmitting(true);
 
         try {
-            // 1. Create or find customer
-            let customerId: string;
-            const { data: existingCustomer } = await supabase
-                .from('customers')
-                .select('id')
-                .eq('company_id', company.id)
-                .eq('phone', data.customerPhone.replace(/\D/g, ''))
-                .single();
+            console.log('Starting booking via RPC...');
 
-            if (existingCustomer) {
-                customerId = existingCustomer.id;
-            } else {
-                const { data: newCustomer, error: customerError } = await supabase
-                    .from('customers')
-                    .insert({
-                        company_id: company.id,
-                        name: data.customerName,
-                        phone: data.customerPhone.replace(/\D/g, ''),
-                        email: data.customerEmail || null,
-                        source: 'booking',
-                    })
-                    .select()
-                    .single();
-
-                if (customerError) throw customerError;
-                customerId = newCustomer.id;
-            }
-
-            // 2. Create or find vehicle
-            let vehicleId: string;
-            const { data: existingVehicle } = await supabase
-                .from('vehicles')
-                .select('id')
-                .eq('company_id', company.id)
-                .eq('license_plate', data.vehiclePlate)
-                .single();
-
-            if (existingVehicle) {
-                vehicleId = existingVehicle.id;
-            } else {
-                const { data: newVehicle, error: vehicleError } = await supabase
-                    .from('vehicles')
-                    .insert({
-                        company_id: company.id,
-                        customer_id: customerId,
-                        brand: data.vehicleBrand || 'Não informado',
-                        model: data.vehicleModel,
-                        license_plate: data.vehiclePlate,
-                        year: new Date().getFullYear(),
-                    })
-                    .select()
-                    .single();
-
-                if (vehicleError) throw vehicleError;
-                vehicleId = newVehicle.id;
-            }
-
-            // 3. Create appointment
-            const { data: appointment, error: appointmentError } = await supabase
-                .from('appointments')
-                .insert({
-                    company_id: company.id,
-                    customer_id: customerId,
-                    vehicle_id: vehicleId,
+            const rpcParams = {
+                p_company_id: company.id,
+                p_customer_data: {
+                    name: data.customerName,
+                    phone: data.customerPhone,
+                    email: data.customerEmail
+                },
+                p_vehicle_data: {
+                    brand: data.vehicleBrand,
+                    model: data.vehicleModel,
+                    license_plate: data.vehiclePlate,
+                    year: new Date().getFullYear()
+                },
+                p_appointment_data: {
                     title: `${data.serviceName} - ${data.customerName}`,
                     scheduled_at: data.selectedTime,
-                    status: 'scheduled',
                     duration_minutes: data.serviceDuration,
-                    notes: data.notes || null,
-                })
-                .select()
-                .single();
+                    notes: data.notes
+                },
+                p_service_data: {
+                    service_id: data.serviceId,
+                    price: data.servicePrice,
+                    duration_minutes: data.serviceDuration
+                }
+            };
 
-            if (appointmentError) throw appointmentError;
+            const { data: result, error } = await supabase.rpc('create_booking', rpcParams);
 
-            // 4. Link service to appointment
-            const { error: serviceError } = await supabase.from('appointment_services').insert({
-                appointment_id: appointment.id,
-                service_id: data.serviceId,
-                price: data.servicePrice,
-                duration_minutes: data.serviceDuration,
-            });
+            if (error) {
+                console.error('RPC Error:', error);
+                throw error;
+            }
 
-            if (serviceError) throw serviceError;
+            if (!result.success) {
+                console.error('Booking Logic Error:', result.error);
+                throw new Error(result.error || 'Erro desconhecido ao criar agendamento');
+            }
+
+            console.log('Booking success:', result);
 
             // Success!
-            updateData({ appointmentId: appointment.id });
+            updateData({ appointmentId: result.appointment_id });
             goNext(); // Go to confirmation
             toast.success('Agendamento realizado com sucesso!');
         } catch (error: any) {
             console.error('Error creating booking:', error);
-            toast.error('Erro ao criar agendamento. Tente novamente.');
+            toast.error(error.message || 'Erro ao criar agendamento. Tente novamente.');
         } finally {
             setSubmitting(false);
         }
@@ -285,8 +242,8 @@ export default function PublicBooking() {
                                     >
                                         <div
                                             className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${index <= stepIndex
-                                                    ? 'bg-primary-300 text-white'
-                                                    : 'bg-neutral-200 text-neutral-600'
+                                                ? 'bg-primary-300 text-white'
+                                                : 'bg-neutral-200 text-neutral-600'
                                                 }`}
                                         >
                                             {index + 1}

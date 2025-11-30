@@ -37,6 +37,7 @@ import { CompanySettings } from './pages/settings/CompanySettings';
 import { BookingSettings } from './pages/settings/BookingSettings';
 import { ServiceTracker } from './pages/public/ServiceTracker';
 import PublicBooking from './pages/public/PublicBooking';
+import { Landing } from './pages/Landing';
 
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -83,7 +84,7 @@ function App() {
 
                 <Routes>
                     {/* Public Routes */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/" element={<Landing />} />
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/signup" element={<SignUp />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
