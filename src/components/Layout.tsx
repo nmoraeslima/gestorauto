@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import toast from 'react-hot-toast';
 
 
 interface LayoutProps {
@@ -61,7 +62,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             // Force reload to trigger the PWA prompt component
             window.location.reload();
         } else {
-            await install();
+            const success = await install();
+            if (!success) {
+                toast.error('Instalação automática não disponível. Tente instalar pelo menu do navegador.', {
+                    duration: 5000,
+                    icon: '📱'
+                });
+            }
         }
         setUserMenuOpen(false);
     };
@@ -140,7 +147,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                 {userMenuOpen && (
                                     <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
-                                        {(isInstallable || isIOS) && !isInstalled && (
+                                        {!isInstalled && (
                                             <button
                                                 onClick={handleInstallApp}
                                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-150"
@@ -244,7 +251,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                     {userMenuOpen && (
                                         <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
-                                            {(isInstallable || isIOS) && !isInstalled && (
+                                            {!isInstalled && (
                                                 <button
                                                     onClick={handleInstallApp}
                                                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-150"
