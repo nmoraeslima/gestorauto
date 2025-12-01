@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Clock, AlertCircle, Calendar, CheckCircle, XCircle } from 'lucide-react';
@@ -29,10 +30,18 @@ interface Appointment {
 
 export const TVDashboard: React.FC = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Redirect to signin if not authenticated
+    useEffect(() => {
+        if (!user) {
+            navigate('/signin');
+        }
+    }, [user, navigate]);
 
     useEffect(() => {
         // Clock timer
@@ -258,8 +267,8 @@ export const TVDashboard: React.FC = () => {
                         </div>
 
                         <div className={`grid gap-4 ${pendingAppointments.length > 0
-                                ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-                                : 'grid-cols-1 md:grid-cols-3 xl:grid-cols-4'
+                            ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                            : 'grid-cols-1 md:grid-cols-3 xl:grid-cols-4'
                             }`}>
                             {todayAppointments.length === 0 ? (
                                 <div className="col-span-full text-center py-12 text-secondary-500">
@@ -273,8 +282,8 @@ export const TVDashboard: React.FC = () => {
                                                 {format(new Date(apt.scheduled_at), 'HH:mm')}
                                             </span>
                                             <span className={`px-2 py-1 rounded text-xs font-bold ${apt.status === 'completed' ? 'bg-success-500/20 text-success-400' :
-                                                    apt.status === 'in_progress' ? 'bg-primary-500/20 text-primary-400' :
-                                                        'bg-secondary-700 text-secondary-300'
+                                                apt.status === 'in_progress' ? 'bg-primary-500/20 text-primary-400' :
+                                                    'bg-secondary-700 text-secondary-300'
                                                 }`}>
                                                 {apt.status === 'in_progress' ? 'EM ANDAMENTO' :
                                                     apt.status === 'completed' ? 'CONCLUÍDO' : 'AGENDADO'}

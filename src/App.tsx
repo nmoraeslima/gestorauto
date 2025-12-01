@@ -95,6 +95,9 @@ function App() {
                     {/* Subscription Route (accessible even with expired subscription) */}
                     <Route path="/subscription/renew" element={<SubscriptionRenew />} />
 
+                    {/* TV Dashboard - Fullscreen mode without layout */}
+                    <Route path="/tv-dashboard" element={<TVDashboard />} />
+
                     {/* Protected Routes */}
                     <Route element={<ProtectedLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
@@ -110,7 +113,6 @@ function App() {
                         <Route path="/financial/payables" element={<Payables />} />
                         <Route path="/settings" element={<CompanySettings />} />
                         <Route path="/settings/booking" element={<BookingSettings />} />
-                        <Route path="/tv-dashboard" element={<TVDashboard />} />
                     </Route>
 
                     {/* 404 */}
