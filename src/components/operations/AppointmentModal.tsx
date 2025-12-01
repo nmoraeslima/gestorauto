@@ -80,6 +80,22 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             if (appointment.customer_id) {
                 loadVehicles(appointment.customer_id);
             }
+        } else {
+            // Reset form for new appointment
+            setFormData({
+                title: '',
+                customer_id: '',
+                vehicle_id: '',
+                service_ids: [],
+                scheduled_date: '',
+                scheduled_time: '',
+                duration_minutes: 60,
+                status: 'scheduled' as 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+                notes: '',
+            });
+            setVehicles([]);
+            setServiceSearch('');
+            setShowServiceDropdown(false);
         }
     }, [appointment]);
 
