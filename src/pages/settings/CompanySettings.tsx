@@ -239,13 +239,13 @@ export const CompanySettings: React.FC = () => {
                                     <label className="block text-sm font-medium text-secondary-700 mb-2">
                                         URL da Empresa *
                                     </label>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-secondary-500">gestorauto.com/</span>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                        <span className="text-sm text-secondary-500 whitespace-nowrap">gestorauto.com/</span>
                                         <input
                                             type="text"
                                             value={formData.slug}
                                             onChange={(e) => handleSlugChange(e.target.value)}
-                                            className="flex-1 px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                            className="flex-1 min-w-0 px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                             placeholder="auto-estetica-premium"
                                         />
                                     </div>
@@ -426,28 +426,33 @@ export const CompanySettings: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
+                        <div className="overflow-x-auto -mx-6 sm:mx-0">
+                            <table className="w-full min-w-full">
                                 <thead className="bg-secondary-50 border-y border-secondary-200">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase">Nome</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase">Email</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase">Cargo</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase">Status</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase whitespace-nowrap">Nome</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase whitespace-nowrap hidden sm:table-cell">Email</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase whitespace-nowrap">Cargo</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-600 uppercase whitespace-nowrap">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-200">
                                     {users.map((userItem) => (
                                         <tr key={userItem.id} className="hover:bg-secondary-50">
-                                            <td className="px-4 py-3 text-sm text-secondary-900">{userItem.full_name}</td>
-                                            <td className="px-4 py-3 text-sm text-secondary-600">{userItem.email}</td>
+                                            <td className="px-4 py-3 text-sm text-secondary-900">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{userItem.full_name}</span>
+                                                    <span className="text-xs text-secondary-500 sm:hidden">{userItem.email}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-secondary-600 hidden sm:table-cell">{userItem.email}</td>
                                             <td className="px-4 py-3">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(userItem.role)}`}>
+                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getRoleBadgeColor(userItem.role)}`}>
                                                     {getRoleLabel(userItem.role)}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${userItem.is_active
+                                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${userItem.is_active
                                                     ? 'bg-success-100 text-success-700'
                                                     : 'bg-secondary-100 text-secondary-700'
                                                     }`}>
