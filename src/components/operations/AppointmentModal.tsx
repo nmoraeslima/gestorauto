@@ -32,7 +32,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         scheduled_date: '',
         scheduled_time: '',
         duration_minutes: 60,
-        status: 'scheduled' as const,
+        status: 'scheduled' as 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
         notes: '',
     });
 
