@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, AlertCircle, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, AlertCircle, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Appointment {
@@ -29,7 +29,7 @@ interface Appointment {
 }
 
 export const TVDashboard: React.FC = () => {
-    const { user } = useAuth();
+    const { user, session, loading, dataLoading } = useAuth();
     const navigate = useNavigate();
     const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
@@ -38,10 +38,22 @@ export const TVDashboard: React.FC = () => {
 
     // Redirect to signin if not authenticated
     useEffect(() => {
-        if (!user) {
-            navigate('/signin');
+        if (!loading && !session) {
+            navigate('/signin', { replace: true });
         }
-    }, [user, navigate]);
+    }, [session, loading, navigate]);
+
+    // Show loading while checking auth or loading user data
+    if (loading || dataLoading || !user) {
+        return (
+            <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-primary-300 animate-spin mx-auto mb-4" />
+                    <p className="text-secondary-400">Carregando painel...</p>
+                </div>
+            </div>
+        );
+    }
 
     useEffect(() => {
         // Clock timer
