@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, Calendar as CalendarIcon, Clock, User, Car as CarIcon, FileText, Tag } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock, User, Car as CarIcon, FileText, Tag, Search } from 'lucide-react';
 import type { Customer, Vehicle, Appointment, Service } from '@/types/database';
 import toast from 'react-hot-toast';
 
@@ -23,6 +23,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+    const [serviceSearch, setServiceSearch] = useState('');
+    const [showServiceDropdown, setShowServiceDropdown] = useState(false);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -256,41 +258,95 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Services Selection */}
-                        <div>
+                        <div className="relative">
                             <label className="label mb-2">
                                 <Tag className="w-4 h-4 inline mr-2" />
                                 Serviços *
                             </label>
-                            <div className="border border-secondary-200 rounded-lg divide-y divide-secondary-200 max-h-48 overflow-y-auto">
-                                {services.length === 0 ? (
-                                    <div className="p-4 text-center text-sm text-secondary-500">
-                                        Nenhum serviço cadastrado.
-                                    </div>
-                                ) : (
-                                    services.map((service) => (
-                                        <div key={service.id} className="flex items-center p-3 hover:bg-secondary-50 transition-colors">
-                                            <input
-                                                type="checkbox"
-                                                id={`service-${service.id}`}
-                                                checked={formData.service_ids.includes(service.id)}
-                                                onChange={() => handleServiceToggle(service.id)}
-                                                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                                            />
-                                            <label htmlFor={`service-${service.id}`} className="ml-3 flex-1 cursor-pointer">
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm font-medium text-secondary-900">{service.name}</span>
-                                                    <span className="text-sm text-secondary-500">
-                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(service.price)}
-                                                    </span>
-                                                </div>
-                                                <div className="text-xs text-secondary-500">
-                                                    {service.duration_minutes} min
-                                                </div>
-                                            </label>
-                                        </div>
-                                    ))
-                                )}
+
+                            {/* Selected Services Tags */}
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {formData.service_ids.map(id => {
+                                    const service = services.find(s => s.id === id);
+                                    if (!service) return null;
+                                    return (
+                                        <span key={id} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
+                                            {service.name}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleServiceToggle(id)}
+                                                className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:outline-none"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    );
+                                })}
                             </div>
+
+                            {/* Search Input */}
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar e adicionar serviços..."
+                                    className="input pl-10"
+                                    value={serviceSearch}
+                                    onChange={(e) => setServiceSearch(e.target.value)}
+                                    onFocus={() => setShowServiceDropdown(true)}
+                                />
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
+                            </div>
+
+                            {/* Dropdown Results */}
+                            {showServiceDropdown && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-10"
+                                        onClick={() => setShowServiceDropdown(false)}
+                                    />
+                                    <div className="absolute z-20 w-full mt-1 bg-white border border-secondary-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {services
+                                            .filter(s =>
+                                                !formData.service_ids.includes(s.id) &&
+                                                s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+                                            )
+                                            .length === 0 ? (
+                                            <div className="p-3 text-sm text-secondary-500 text-center">
+                                                Nenhum serviço encontrado
+                                            </div>
+                                        ) : (
+                                            services
+                                                .filter(s =>
+                                                    !formData.service_ids.includes(s.id) &&
+                                                    s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+                                                )
+                                                .map((service) => (
+                                                    <button
+                                                        key={service.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            handleServiceToggle(service.id);
+                                                            setServiceSearch('');
+                                                            // Keep dropdown open for multiple selection or close? 
+                                                            // User wants to avoid expanding screen, so maybe keep open is better for flow, 
+                                                            // but closing feels cleaner. Let's keep open but focus input.
+                                                        }}
+                                                        className="w-full text-left px-4 py-3 hover:bg-secondary-50 transition-colors border-b border-secondary-100 last:border-0 flex justify-between items-center"
+                                                    >
+                                                        <div>
+                                                            <p className="font-medium text-secondary-900">{service.name}</p>
+                                                            <p className="text-xs text-secondary-500">{service.duration_minutes} min</p>
+                                                        </div>
+                                                        <span className="text-sm font-medium text-primary-600">
+                                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(service.price)}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                        )}
+                                    </div>
+                                </>
+                            )}
+
                             {formData.title && (
                                 <p className="mt-2 text-xs text-secondary-500">
                                     Resumo: {formData.title}
