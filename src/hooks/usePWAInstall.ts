@@ -3,11 +3,6 @@ import { useState, useEffect } from 'react';
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-import { useState, useEffect } from 'react';
-
-interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
 export const usePWAInstall = () => {
