@@ -146,10 +146,13 @@ export default function WorkOrders() {
         completed: workOrders.filter((wo) => wo.status === 'completed').length,
         totalRevenue: workOrders
             .filter((wo) => wo.status === 'completed')
-            .reduce((sum, wo) => sum + (wo.total || 0), 0),
+            .reduce((sum, wo) => {
+                console.log('WO Total:', wo.order_number, wo.total);
+                return sum + (Number(wo.total) || 0);
+            }, 0),
         pendingPayment: workOrders
             .filter((wo) => wo.payment_status === 'pending')
-            .reduce((sum, wo) => sum + (wo.total || 0), 0),
+            .reduce((sum, wo) => sum + (Number(wo.total) || 0), 0),
     };
 
     return (
