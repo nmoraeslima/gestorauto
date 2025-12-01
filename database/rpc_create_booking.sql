@@ -64,7 +64,7 @@ BEGIN
     ) VALUES (
       p_company_id,
       v_customer_id,
-      COALESCE(p_vehicle_data->>'brand', 'Não informado'),
+      NULLIF(p_vehicle_data->>'brand', ''),
       p_vehicle_data->>'model',
       v_vehicle_plate,
       COALESCE((p_vehicle_data->>'year')::INTEGER, EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER)
