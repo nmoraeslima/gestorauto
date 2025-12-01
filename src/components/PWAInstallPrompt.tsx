@@ -1,63 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Share, PlusSquare, X, Smartphone } from 'lucide-react';
-
-interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 export const PWAInstallPrompt: React.FC = () => {
-    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+    const { isInstallable, isInstalled, install } = usePWAInstall();
     const [isIOS, setIsIOS] = useState(false);
-    const [isStandalone, setIsStandalone] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
 
     useEffect(() => {
-        // Check if already installed
-        const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
-            (window.navigator as any).standalone ||
-            document.referrer.includes('android-app://');
-
-        setIsStandalone(isStandaloneMode);
-
         // Check if iOS
         const isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
         setIsIOS(isIOSDevice);
 
-        // Handle Android/Desktop install prompt
-        const handleBeforeInstallPrompt = (e: Event) => {
-            e.preventDefault();
-            setDeferredPrompt(e as BeforeInstallPromptEvent);
-            // Only show if not dismissed recently
-            const dismissedAt = localStorage.getItem('pwa_prompt_dismissed');
-            if (!dismissedAt || Date.now() - Number(dismissedAt) > 24 * 60 * 60 * 1000) { // 24h cooldown
-                setShowPrompt(true);
-            }
-        };
-
-        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-        // Show iOS prompt if not standalone and not dismissed recently
-        if (isIOSDevice && !isStandaloneMode) {
+        // Show prompt if installable and not dismissed recently
+        if ((isInstallable || isIOSDevice) && !isInstalled) {
             const dismissedAt = localStorage.getItem('pwa_prompt_dismissed');
             if (!dismissedAt || Date.now() - Number(dismissedAt) > 24 * 60 * 60 * 1000) {
                 setShowPrompt(true);
             }
         }
-
-        return () => {
-            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        };
-    }, []);
+    }, [isInstallable, isInstalled]);
 
     const handleInstallClick = async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                setDeferredPrompt(null);
-                setShowPrompt(false);
-            }
+        const success = await install();
+        if (success) {
+            setShowPrompt(false);
         }
     };
 
@@ -66,7 +33,7 @@ export const PWAInstallPrompt: React.FC = () => {
         localStorage.setItem('pwa_prompt_dismissed', Date.now().toString());
     };
 
-    if (isStandalone || !showPrompt) return null;
+    if (isInstalled || !showPrompt) return null;
 
     return (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white rounded-xl shadow-2xl border border-primary-100 p-4 z-50 animate-in slide-in-from-bottom duration-500">

@@ -18,8 +18,10 @@ import {
     ChevronDown,
     Building2,
     Tag,
+    Download,
 } from 'lucide-react';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 
 interface LayoutProps {
@@ -32,6 +34,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -49,6 +52,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const handleSignOut = async () => {
         await signOut();
         navigate('/signin');
+    };
+
+    const handleInstallApp = async () => {
+        if (isIOS) {
+            // Reset dismissed state to show the prompt again
+            localStorage.removeItem('pwa_prompt_dismissed');
+            // Force reload to trigger the PWA prompt component
+            window.location.reload();
+        } else {
+            await install();
+        }
+        setUserMenuOpen(false);
     };
 
     return (
@@ -125,6 +140,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                 {userMenuOpen && (
                                     <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
+                                        {(isInstallable || isIOS) && !isInstalled && (
+                                            <button
+                                                onClick={handleInstallApp}
+                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-150"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Instalar App
+                                            </button>
+                                        )}
                                         <button
                                             onClick={handleSignOut}
                                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
@@ -220,6 +244,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                     {userMenuOpen && (
                                         <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
+                                            {(isInstallable || isIOS) && !isInstalled && (
+                                                <button
+                                                    onClick={handleInstallApp}
+                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-150"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    Instalar App
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={handleSignOut}
                                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
