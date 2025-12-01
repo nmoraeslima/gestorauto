@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Clock, AlertCircle, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -30,18 +29,10 @@ interface Appointment {
 
 export const TVDashboard: React.FC = () => {
     const { user, session, loading, dataLoading } = useAuth();
-    const navigate = useNavigate();
     const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    // Redirect to signin if not authenticated
-    useEffect(() => {
-        if (!loading && !session) {
-            navigate('/signin', { replace: true });
-        }
-    }, [session, loading, navigate]);
 
     // Show loading while checking auth or loading user data
     if (loading || dataLoading || !user) {
