@@ -181,12 +181,12 @@ export const BookingSettings: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-secondary-900">Agendamento Online</h1>
                     <p className="text-neutral-600 mt-1">Configure o sistema de agendamento para clientes</p>
                 </div>
-                <button onClick={handleSave} disabled={saving} className="btn btn-primary flex items-center gap-2">
+                <button onClick={handleSave} disabled={saving} className="btn btn-primary flex items-center gap-2 justify-center w-full sm:w-auto">
                     <Save className="w-5 h-5" />
                     {saving ? 'Salvando...' : 'Salvar Configurações'}
                 </button>
@@ -194,14 +194,14 @@ export const BookingSettings: React.FC = () => {
 
             {/* Booking Link */}
             {bookingLink && (
-                <div className="card p-6 bg-primary-50 border-primary-200">
+                <div className="card p-4 sm:p-6 bg-primary-50 border-primary-200">
                     <h3 className="font-semibold text-secondary-900 mb-2 flex items-center gap-2">
                         <SettingsIcon className="w-5 h-5" />
                         Link de Agendamento
                     </h3>
-                    <div className="flex gap-2">
-                        <input type="text" value={bookingLink} readOnly className="input flex-1 bg-white" />
-                        <button onClick={copyBookingLink} className="btn btn-outline">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <input type="text" value={bookingLink} readOnly className="input flex-1 bg-white text-sm" />
+                        <button onClick={copyBookingLink} className="btn btn-outline whitespace-nowrap">
                             Copiar
                         </button>
                     </div>
@@ -315,8 +315,8 @@ export const BookingSettings: React.FC = () => {
 
                 <div className="space-y-3">
                     {Object.entries(settings.working_hours).map(([day, hours]) => (
-                        <div key={day} className="flex items-center gap-4 p-3 bg-neutral-50 rounded-lg">
-                            <div className="w-32">
+                        <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 bg-neutral-50 rounded-lg">
+                            <div className="min-w-[140px]">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -336,14 +336,14 @@ export const BookingSettings: React.FC = () => {
                                         type="time"
                                         value={hours.start}
                                         onChange={(e) => updateWorkingHours(day as any, 'start', e.target.value)}
-                                        className="input py-1 px-2 text-sm"
+                                        className="input py-1 px-2 text-sm flex-1 min-w-0"
                                     />
-                                    <span className="text-neutral-500">até</span>
+                                    <span className="text-neutral-500 text-sm whitespace-nowrap">até</span>
                                     <input
                                         type="time"
                                         value={hours.end}
                                         onChange={(e) => updateWorkingHours(day as any, 'end', e.target.value)}
-                                        className="input py-1 px-2 text-sm"
+                                        className="input py-1 px-2 text-sm flex-1 min-w-0"
                                     />
                                 </div>
                             )}
@@ -364,7 +364,7 @@ export const BookingSettings: React.FC = () => {
                 </h3>
 
                 <div className="space-y-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input
                             type="date"
                             value={newBlockedDate}
@@ -372,7 +372,7 @@ export const BookingSettings: React.FC = () => {
                             className="input flex-1"
                             min={new Date().toISOString().split('T')[0]}
                         />
-                        <button onClick={addBlockedDate} className="btn btn-outline flex items-center gap-2">
+                        <button onClick={addBlockedDate} className="btn btn-outline flex items-center gap-2 justify-center">
                             <Plus className="w-5 h-5" />
                             Adicionar
                         </button>

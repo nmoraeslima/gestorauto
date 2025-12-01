@@ -176,18 +176,36 @@ export const CompanySettings: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-secondary-900">Configurações</h1>
-                    <p className="text-secondary-600 mt-1">Gerencie as informações da sua empresa</p>
+            <div>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-secondary-900">Configurações</h1>
+                        <p className="text-secondary-600 mt-1">Gerencie as informações da sua empresa</p>
+                    </div>
                 </div>
-                <a
-                    href="/settings/booking"
-                    className="btn btn-outline flex items-center gap-2"
-                >
-                    <Calendar className="w-5 h-5" />
-                    Agendamento Online
-                </a>
+
+                {/* Online Booking CTA Card */}
+                <div className="mt-6 bg-gradient-to-r from-primary-50 to-primary-100 border-2 border-primary-300 rounded-lg p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-12 h-12 bg-primary-300 rounded-lg flex items-center justify-center">
+                                <Calendar className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-secondary-900">Agendamento Online</h3>
+                                <p className="text-sm text-secondary-600 mt-1">
+                                    Configure seu sistema de agendamento online e compartilhe o link com seus clientes
+                                </p>
+                            </div>
+                        </div>
+                        <a
+                            href="/settings/booking"
+                            className="btn btn-primary whitespace-nowrap w-full sm:w-auto justify-center"
+                        >
+                            Configurar Agora
+                        </a>
+                    </div>
+                </div>
             </div>
 
             {/* Tabs */}
