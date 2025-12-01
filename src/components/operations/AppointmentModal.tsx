@@ -34,7 +34,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         scheduled_date: '',
         scheduled_time: '',
         duration_minutes: 60,
-        status: 'scheduled' as 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+        status: 'scheduled' as 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
         notes: '',
     });
 
@@ -53,7 +53,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 scheduled_date: '',
                 scheduled_time: '',
                 duration_minutes: 60,
-                status: 'scheduled' as 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+                status: 'scheduled' as 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
                 notes: '',
             });
             setVehicles([]);
@@ -108,7 +108,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 scheduled_date: '',
                 scheduled_time: '',
                 duration_minutes: 60,
-                status: 'scheduled' as 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+                status: 'scheduled' as 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
                 notes: '',
             });
             setVehicles([]);
@@ -497,6 +497,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     className="input"
                                     disabled={formData.status === 'in_progress' || formData.status === 'completed'}
                                 >
+                                    <option value="pending">Pendente</option>
                                     <option value="scheduled">Agendado</option>
                                     <option value="confirmed">Confirmado</option>
                                     <option value="cancelled">Cancelado</option>
@@ -550,6 +551,34 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 {loading ? 'Salvando...' : appointment ? 'Atualizar' : 'Criar Agendamento'}
                             </button>
                         </div>
+
+                        {/* Approval Actions */}
+                        {appointment?.status === 'pending' && (
+                            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
+                                <h4 className="font-bold text-yellow-800 mb-2">Aprovação Necessária</h4>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData({ ...formData, status: 'scheduled' });
+                                        }}
+                                        className="btn bg-green-600 hover:bg-green-700 text-white flex-1"
+                                    >
+                                        Aprovar Agendamento
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, status: 'cancelled' })}
+                                        className="btn bg-red-100 hover:bg-red-200 text-red-700 flex-1"
+                                    >
+                                        Rejeitar
+                                    </button>
+                                </div>
+                                <p className="text-xs text-yellow-700 mt-2 text-center">
+                                    Selecione uma ação e clique em "Atualizar" para confirmar.
+                                </p>
+                            </div>
+                        )}
                     </form>
                 </div>
             </div>

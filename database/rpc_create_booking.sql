@@ -20,10 +20,27 @@ DECLARE
   v_appointment_id UUID;
   v_customer_phone TEXT;
   v_vehicle_plate TEXT;
+  v_booking_settings JSONB;
+  v_auto_approve BOOLEAN;
+  v_initial_status VARCHAR;
 BEGIN
   -- Extract phone and plate for searching
   v_customer_phone := regexp_replace(p_customer_data->>'phone', '\D', '', 'g');
   v_vehicle_plate := p_vehicle_data->>'license_plate';
+
+  -- 0. Determine Initial Status based on Company Settings
+  SELECT booking_settings INTO v_booking_settings
+  FROM companies
+  WHERE id = p_company_id;
+
+  -- Default to false if setting is missing
+  v_auto_approve := COALESCE((v_booking_settings->>'auto_approve')::BOOLEAN, false);
+
+  IF v_auto_approve THEN
+    v_initial_status := 'scheduled';
+  ELSE
+    v_initial_status := 'pending';
+  END IF;
 
   -- 1. Find or Create Customer
   SELECT id INTO v_customer_id 
@@ -87,7 +104,7 @@ BEGIN
     v_vehicle_id,
     p_appointment_data->>'title',
     (p_appointment_data->>'scheduled_at')::TIMESTAMPTZ,
-    'scheduled',
+    v_initial_status, -- Use determined status
     (p_appointment_data->>'duration_minutes')::INTEGER,
     NULLIF(p_appointment_data->>'notes', '')
   ) RETURNING id INTO v_appointment_id;
@@ -109,7 +126,8 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'appointment_id', v_appointment_id,
-    'customer_id', v_customer_id
+    'customer_id', v_customer_id,
+    'status', v_initial_status
   );
 
 EXCEPTION WHEN OTHERS THEN

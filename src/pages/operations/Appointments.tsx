@@ -117,9 +117,10 @@ export default function Appointments() {
     // Get status badge
     const getStatusBadge = (status: string) => {
         const badges: Record<string, { label: string; className: string }> = {
+            pending: { label: 'Pendente', className: 'badge-yellow' },
             scheduled: { label: 'Agendado', className: 'badge-blue' },
             confirmed: { label: 'Confirmado', className: 'badge-green' },
-            in_progress: { label: 'Em Andamento', className: 'badge-yellow' },
+            in_progress: { label: 'Em Andamento', className: 'badge-purple' },
             completed: { label: 'Concluído', className: 'badge-primary' },
             cancelled: { label: 'Cancelado', className: 'badge-red' },
         };
@@ -131,6 +132,7 @@ export default function Appointments() {
     // Stats
     const stats = {
         total: appointments.length,
+        pending: appointments.filter((a) => a.status === 'pending').length,
         scheduled: appointments.filter((a) => a.status === 'scheduled').length,
         confirmed: appointments.filter((a) => a.status === 'confirmed').length,
         today: appointments.filter((a) => {
@@ -150,10 +152,16 @@ export default function Appointments() {
                         Gerencie os agendamentos de serviços
                     </p>
                 </div>
-                <button onClick={handleCreate} className="btn btn-primary">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Novo Agendamento
-                </button>
+                <div className="flex gap-3">
+                    <a href="/tv-dashboard" target="_blank" className="btn btn-outline flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Modo TV
+                    </a>
+                    <button onClick={handleCreate} className="btn btn-primary">
+                        <Plus className="w-5 h-5 mr-2" />
+                        Novo Agendamento
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -170,10 +178,10 @@ export default function Appointments() {
                 <div className="card p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-neutral-500">Hoje</p>
-                            <p className="text-2xl font-bold text-primary-300">{stats.today}</p>
+                            <p className="text-sm text-neutral-500">Pendentes</p>
+                            <p className="text-2xl font-bold text-warning-600">{stats.pending}</p>
                         </div>
-                        <Clock className="w-8 h-8 text-primary-300" />
+                        <Clock className="w-8 h-8 text-warning-600" />
                     </div>
                 </div>
                 <div className="card p-4">
@@ -217,6 +225,7 @@ export default function Appointments() {
                             className="input pl-10"
                         >
                             <option value="all">Todos os Status</option>
+                            <option value="pending">Pendente</option>
                             <option value="scheduled">Agendado</option>
                             <option value="confirmed">Confirmado</option>
                             <option value="in_progress">Em Andamento</option>

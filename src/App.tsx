@@ -22,6 +22,7 @@ import { Services } from './pages/catalog/Services';
 // Operations Pages
 import Appointments from './pages/operations/Appointments';
 import WorkOrders from './pages/operations/WorkOrders';
+import { TVDashboard } from './pages/operations/TVDashboard';
 
 // Inventory Pages
 import Products from './pages/catalog/Products';
@@ -109,6 +110,7 @@ function App() {
                         <Route path="/financial/payables" element={<Payables />} />
                         <Route path="/settings" element={<CompanySettings />} />
                         <Route path="/settings/booking" element={<BookingSettings />} />
+                        <Route path="/tv-dashboard" element={<TVDashboard />} />
                     </Route>
 
                     {/* 404 */}
