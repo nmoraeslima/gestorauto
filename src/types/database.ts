@@ -80,6 +80,9 @@ export interface Company {
   max_users: number;
   max_customers: number;
 
+  // Booking Settings
+  booking_settings?: any;
+
   // Metadata
   created_at: string;
   updated_at: string;
