@@ -285,6 +285,7 @@ export default function PublicBooking() {
                                 selectedTime={data.selectedTime}
                                 onDateSelect={(date) => handleFieldChange('selectedDate', date)}
                                 onTimeSelect={(time) => handleFieldChange('selectedTime', time)}
+                                maxAdvanceDays={(company.booking_settings as any)?.max_advance_days || 30}
                             />
                         </div>
                     )}

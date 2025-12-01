@@ -13,6 +13,7 @@ interface DateTimePickerProps {
     selectedTime: string | null;
     onDateSelect: (date: Date) => void;
     onTimeSelect: (time: string) => void;
+    maxAdvanceDays?: number;
 }
 
 export const DateTimePicker: React.FC<DateTimePickerProps> = ({
@@ -22,6 +23,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
     selectedTime,
     onDateSelect,
     onTimeSelect,
+    maxAdvanceDays = 30,
 }) => {
     const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
@@ -56,6 +58,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                         onChange={handleDateChange}
                         value={calendarDate}
                         minDate={new Date()}
+                        maxDate={new Date(Date.now() + maxAdvanceDays * 24 * 60 * 60 * 1000)}
                         locale="pt-BR"
                         className="rounded-lg border border-neutral-200 shadow-sm"
                     />
