@@ -184,13 +184,24 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
 
                         <div>
                             <label className="label">Categoria</label>
-                            <input
-                                type="text"
+                            <select
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                 className="input"
-                                placeholder="Ex: Lavagem, Polimento, etc."
-                            />
+                            >
+                                <option value="">Selecione uma categoria</option>
+                                <option value="Lavagem">Lavagem</option>
+                                <option value="Polimento">Polimento</option>
+                                <option value="Higienização Interna">Higienização Interna</option>
+                                <option value="Vitrificação">Vitrificação</option>
+                                <option value="Enceramento">Enceramento</option>
+                                <option value="Cristalização">Cristalização</option>
+                                <option value="Película/Insulfilm">Película/Insulfilm</option>
+                                <option value="Martelinho de Ouro">Martelinho de Ouro</option>
+                                <option value="Pintura">Pintura</option>
+                                <option value="Restauração de Faróis">Restauração de Faróis</option>
+                                <option value="Outras">Outras</option>
+                            </select>
                         </div>
 
                         <div>
