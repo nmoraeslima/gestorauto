@@ -5,7 +5,6 @@ import { Check } from 'lucide-react';
 const plans = [
     {
         name: 'Básico',
-        price: '49,90',
         features: [
             'Até 2 usuários',
             '100 agendamentos/mês',
@@ -17,7 +16,6 @@ const plans = [
     },
     {
         name: 'Profissional',
-        price: '99,90',
         features: [
             'Até 5 usuários',
             '500 agendamentos/mês',
@@ -31,7 +29,6 @@ const plans = [
     },
     {
         name: 'Premium',
-        price: '199,90',
         features: [
             'Usuários ilimitados',
             'Agendamentos ilimitados',
@@ -59,9 +56,8 @@ export const Pricing: React.FC = () => {
 
                             <div className="pricing-header">
                                 <h3>{plan.name}</h3>
-                                <div className="price">
-                                    R$ {plan.price}
-                                    <span>/mês</span>
+                                <div className="price" style={{ fontSize: '1.5rem' }}>
+                                    Sob Consulta
                                 </div>
                             </div>
 
