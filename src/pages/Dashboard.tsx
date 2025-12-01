@@ -206,12 +206,12 @@ export const Dashboard: React.FC = () => {
             textColor: 'text-success-600',
         },
         {
-            title: 'Pagamentos Pendentes',
+            title: 'A Receber',
             value: formatCurrency(stats?.pending_payments || 0),
             icon: DollarSign,
-            color: 'danger',
-            bgColor: 'bg-danger-100',
-            textColor: 'text-danger-600',
+            color: 'warning',
+            bgColor: 'bg-warning-100',
+            textColor: 'text-warning-600',
         },
     ];
 
