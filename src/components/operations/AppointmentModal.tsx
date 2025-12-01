@@ -405,13 +405,23 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                         })
                                     }
                                     className="input"
+                                    disabled={formData.status === 'in_progress' || formData.status === 'completed'}
                                 >
                                     <option value="scheduled">Agendado</option>
                                     <option value="confirmed">Confirmado</option>
-                                    <option value="in_progress">Em Andamento</option>
-                                    <option value="completed">Concluído</option>
                                     <option value="cancelled">Cancelado</option>
+                                    {(formData.status === 'in_progress' || formData.status === 'completed') && (
+                                        <>
+                                            <option value="in_progress">Em Andamento (Gerido pela O.S.)</option>
+                                            <option value="completed">Concluído (Gerido pela O.S.)</option>
+                                        </>
+                                    )}
                                 </select>
+                                {(formData.status === 'in_progress' || formData.status === 'completed') && (
+                                    <p className="text-xs text-neutral-500 mt-1">
+                                        Status gerenciado pela Ordem de Serviço.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
