@@ -259,7 +259,6 @@ export default function Appointments() {
                                 <tr>
                                     <th>Data/Hora</th>
                                     <th>Cliente</th>
-                                    <th>Status</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -284,15 +283,17 @@ export default function Appointments() {
                                                 <User className="w-4 h-4 text-neutral-400" />
                                                 <div>
                                                     <p className="font-medium">{appointment.customer?.name || '-'}</p>
-                                                    {appointment.vehicle && (
-                                                        <p className="text-sm text-neutral-500">
-                                                            {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
-                                                        </p>
-                                                    )}
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        {getStatusBadge(appointment.status)}
+                                                        {appointment.vehicle && (
+                                                            <p className="text-sm text-neutral-500">
+                                                                {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{getStatusBadge(appointment.status)}</td>
                                         <td>
                                             <div className="flex gap-2">
                                                 <button
