@@ -83,10 +83,10 @@ export const PWAInstallPrompt: React.FC = () => {
                 </div>
                 <div className="flex-1">
                     <h3 className="font-semibold text-secondary-900 mb-1">
-                        Instale o App
+                        ⚡ Acesso Instantâneo ao seu Negócio
                     </h3>
                     <p className="text-sm text-secondary-600 mb-3">
-                        Instale o GestorAuto para uma melhor experiência e acesso rápido.
+                        Instale na tela inicial e tenha <strong>acesso com 1 toque</strong>, <strong>tela cheia sem distrações</strong> e <strong>experiência de app nativo</strong>. Mais rápido e prático! 📱✨
                     </p>
 
                     {isIOS ? (
