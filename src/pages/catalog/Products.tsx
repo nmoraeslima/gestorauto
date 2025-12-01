@@ -154,7 +154,6 @@ export default function Products() {
                             <thead>
                                 <tr>
                                     <th>Produto</th>
-                                    <th>Categoria</th>
                                     <th>Preço Venda</th>
                                     <th>Estoque</th>
                                     <th>Ações</th>
@@ -165,20 +164,18 @@ export default function Products() {
                                     <tr key={product.id}>
                                         <td>
                                             <div>
-                                                <p className="font-medium text-secondary-900">{product.name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-secondary-900">{product.name}</p>
+                                                    {product.category && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-600">
+                                                            {product.category}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {product.sku && (
                                                     <p className="text-xs text-neutral-500">SKU: {product.sku}</p>
                                                 )}
                                             </div>
-                                        </td>
-                                        <td>
-                                            {product.category ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
-                                                    {product.category}
-                                                </span>
-                                            ) : (
-                                                '-'
-                                            )}
                                         </td>
                                         <td>
                                             <span className="font-medium text-secondary-900">
