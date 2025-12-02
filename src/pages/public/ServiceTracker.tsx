@@ -189,25 +189,48 @@ export const ServiceTracker: React.FC = () => {
 
                         {/* Financial Summary */}
                         <div className="bg-gray-50 p-4 space-y-2">
-                            {/* Show Subtotal and Discount only if there is a discount */}
-                            {data.workOrder.discount > 0 && (
-                                <>
-                                    <div className="flex justify-between items-center text-secondary-600 text-sm">
-                                        <span>Subtotal</span>
-                                        <span>{formatCurrency(data.workOrder.subtotal)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-green-600 text-sm">
-                                        <span>Desconto</span>
-                                        <span>- {formatCurrency(data.workOrder.discount)}</span>
-                                    </div>
-                                    <div className="border-t border-gray-200 my-2"></div>
-                                </>
-                            )}
+                            {/* Calculate discount amount based on type */}
+                            {(() => {
+                                const discountType = data.workOrder.discount_type || 'fixed';
+                                const discountValue = data.workOrder.discount || 0;
+                                const subtotal = data.workOrder.subtotal || 0;
 
-                            <div className="flex justify-between items-center font-bold text-secondary-900 text-lg">
-                                <span>Total</span>
-                                <span>{formatCurrency(data.workOrder.subtotal - data.workOrder.discount)}</span>
-                            </div>
+                                // Calculate actual discount amount
+                                const discountAmount = discountType === 'percentage'
+                                    ? (subtotal * discountValue) / 100
+                                    : discountValue;
+
+                                const total = subtotal - discountAmount;
+
+                                return (
+                                    <>
+                                        {/* Show Subtotal and Discount only if there is a discount */}
+                                        {discountValue > 0 && (
+                                            <>
+                                                <div className="flex justify-between items-center text-secondary-600 text-sm">
+                                                    <span>Subtotal</span>
+                                                    <span>{formatCurrency(subtotal)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-green-600 text-sm">
+                                                    <span>
+                                                        Desconto
+                                                        {discountType === 'percentage' && (
+                                                            <span className="ml-1">({discountValue}%)</span>
+                                                        )}
+                                                    </span>
+                                                    <span>- {formatCurrency(discountAmount)}</span>
+                                                </div>
+                                                <div className="border-t border-gray-200 my-2"></div>
+                                            </>
+                                        )}
+
+                                        <div className="flex justify-between items-center font-bold text-secondary-900 text-lg">
+                                            <span>Total</span>
+                                            <span>{formatCurrency(total)}</span>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
