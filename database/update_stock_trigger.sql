@@ -92,13 +92,13 @@ BEGIN
                 'O.S. #' || NEW.order_number,
                 NEW.total,
                 'paid',
-                CURRENT_DATE,
-                NOW(),
+                COALESCE(NEW.completed_at::DATE, CURRENT_DATE), -- ✅ Usa data de conclusão da O.S.
+                NEW.completed_at,                                -- ✅ Usa timestamp de conclusão
                 NEW.id,
                 NEW.customer_id
             );
             
-            RAISE NOTICE 'Transação financeira criada para O.S. %', NEW.order_number;
+            RAISE NOTICE 'Transação financeira criada para O.S. % com data %', NEW.order_number, NEW.completed_at;
         ELSE
             RAISE NOTICE 'Transação financeira já existe para O.S. %, pulando criação', NEW.order_number;
         END IF;
