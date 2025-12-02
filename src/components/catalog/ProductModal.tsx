@@ -27,7 +27,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         category: '',
         unit: 'un',
         cost_price: 0,
-        sale_price: 0,
         quantity: 0,
         min_stock: 5,
     });
@@ -41,7 +40,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 category: product.category || '',
                 unit: product.unit || 'un',
                 cost_price: product.cost_price || 0,
-                sale_price: product.sale_price || 0,
                 quantity: product.quantity || 0,
                 min_stock: product.min_stock || 0,
             });
@@ -53,7 +51,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 category: '',
                 unit: 'un',
                 cost_price: 0,
-                sale_price: 0,
                 quantity: 0,
                 min_stock: 5,
             });
@@ -75,7 +72,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 category: formData.category,
                 unit: formData.unit,
                 cost_price: formData.cost_price,
-                sale_price: formData.sale_price,
                 quantity: formData.quantity,
                 min_stock: formData.min_stock,
             };
@@ -232,20 +228,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                                 />
                             </div>
 
-                            <div>
-                                <label className="label">
-                                    <DollarSign className="w-4 h-4 inline mr-2" />
-                                    Preço de Venda (R$)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={formData.sale_price}
-                                    onChange={(e) => setFormData({ ...formData, sale_price: parseFloat(e.target.value) })}
-                                    className="input"
-                                />
-                            </div>
+
 
                             {!product && (
                                 <div className="sm:col-span-2 bg-neutral-50 p-4 rounded-lg border border-neutral-200">

@@ -154,7 +154,6 @@ export default function Products() {
                             <thead>
                                 <tr>
                                     <th>Produto</th>
-                                    <th>Preço Venda</th>
                                     <th>Estoque</th>
                                     <th>Ações</th>
                                 </tr>
@@ -175,11 +174,7 @@ export default function Products() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td>
-                                            <span className="font-medium text-secondary-900">
-                                                {formatCurrency(product.sale_price || 0)}
-                                            </span>
-                                        </td>
+
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <span
