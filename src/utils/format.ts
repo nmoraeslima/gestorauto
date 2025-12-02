@@ -34,3 +34,12 @@ export const formatPercent = (value: number): string => {
         maximumFractionDigits: 1
     }).format(value / 100);
 };
+
+// Formatação de quantidade de estoque (até 3 casas decimais)
+export const formatQuantity = (value: number): string => {
+    // Remove zeros desnecessários à direita
+    return new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3
+    }).format(value);
+};

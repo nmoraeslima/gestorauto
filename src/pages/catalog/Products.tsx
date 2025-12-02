@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { ProductModal } from '@/components/catalog/ProductModal';
 import { formatCurrency } from '@/utils/calculations';
+import { formatQuantity } from '@/utils/format';
 import type { Product } from '@/types/database';
 import toast from 'react-hot-toast';
 
@@ -183,7 +184,7 @@ export default function Products() {
                                                         : 'text-green-600'
                                                         }`}
                                                 >
-                                                    {product.quantity || 0} {product.unit}
+                                                    {formatQuantity(product.quantity || 0)} {product.unit}
                                                 </span>
                                                 {(product.quantity || 0) <= (product.min_stock || 0) && (
                                                     <div title="Estoque Baixo">

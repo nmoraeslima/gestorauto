@@ -239,6 +239,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                                     <input
                                         type="number"
                                         min="0"
+                                        step="0.01"
                                         value={formData.quantity}
                                         onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
                                         className="input"
