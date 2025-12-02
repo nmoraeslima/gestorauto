@@ -40,6 +40,8 @@ import { ServiceTracker } from './pages/public/ServiceTracker';
 import PublicBooking from './pages/public/PublicBooking';
 import { Landing } from './pages/Landing';
 
+import { ReloadPrompt } from './components/ReloadPrompt';
+
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     <div className="text-center py-12">
@@ -49,13 +51,12 @@ const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
 );
 
 function App() {
-    React.useEffect(() => {
-        notificationService.registerServiceWorker();
-    }, []);
+    // Service Worker is now handled by vite-plugin-pwa
 
     return (
         <BrowserRouter>
             <AuthProvider>
+                <ReloadPrompt />
                 <Toaster
                     position="top-right"
                     toastOptions={{
