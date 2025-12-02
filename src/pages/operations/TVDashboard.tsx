@@ -34,18 +34,6 @@ export const TVDashboard: React.FC = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    // Show loading while checking auth or loading user data
-    if (loading || dataLoading || !user) {
-        return (
-            <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-primary-300 animate-spin mx-auto mb-4" />
-                    <p className="text-secondary-400">Carregando painel...</p>
-                </div>
-            </div>
-        );
-    }
-
     useEffect(() => {
         // Clock timer
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -65,6 +53,18 @@ export const TVDashboard: React.FC = () => {
             supabase.removeAllChannels();
         };
     }, [user]);
+
+    // Show loading while checking auth or loading user data
+    if (loading || dataLoading || !user) {
+        return (
+            <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-primary-300 animate-spin mx-auto mb-4" />
+                    <p className="text-secondary-400">Carregando painel...</p>
+                </div>
+            </div>
+        );
+    }
 
     const loadAppointments = async () => {
         if (!user?.company?.id) return;
