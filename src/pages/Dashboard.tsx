@@ -26,6 +26,7 @@ import {
 import { formatCurrency } from '@/utils/calculations';
 import { formatDate } from '@/utils/datetime';
 import { ServiceReminders } from '@/components/dashboard/ServiceReminders';
+import { QuickActions } from '@/components/dashboard/QuickActions';
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -226,6 +227,8 @@ export const Dashboard: React.FC = () => {
                     Aqui está um resumo do seu negócio hoje.
                 </p>
             </div>
+
+            <QuickActions />
 
             {/* Service Reminders (CRM) */}
             <ServiceReminders />
