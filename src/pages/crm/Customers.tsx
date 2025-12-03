@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Plus, Edit2, Trash2, Car, Crown, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Customer } from '@/types/database';
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 
 export const Customers: React.FC = () => {
     const { user } = useAuth();
+    const [searchParams] = useSearchParams();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
@@ -24,6 +26,13 @@ export const Customers: React.FC = () => {
             loadCustomers();
         }
     }, [user, showInactive]);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setIsModalOpen(true);
+            setSelectedCustomer(null);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         filterCustomersList();

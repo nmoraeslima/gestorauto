@@ -33,14 +33,14 @@ export const QuickActions: React.FC = () => {
     ];
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-in fade-in slide-in-from-top-8 duration-700">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 animate-in fade-in slide-in-from-top-8 duration-700">
             {actions.map((action, index) => {
                 const Icon = action.icon;
                 return (
                     <button
                         key={index}
                         onClick={action.onClick}
-                        className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-transparent hover:border-secondary-200 hover:shadow-sm ${action.color}`}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border border-transparent hover:border-secondary-200 hover:shadow-sm ${action.color} h-full`}
                     >
                         <div className="mb-2 p-2 bg-white rounded-full shadow-sm">
                             <Icon className="w-6 h-6" />

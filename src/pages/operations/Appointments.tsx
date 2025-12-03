@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -26,6 +26,7 @@ interface AppointmentWithDetails extends Appointment {
 
 export default function Appointments() {
     const { user } = useAuth();
+    const [searchParams] = useSearchParams();
     const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -37,6 +38,13 @@ export default function Appointments() {
     useEffect(() => {
         loadAppointments();
     }, [user]);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setShowModal(true);
+            setSelectedAppointment(null);
+        }
+    }, [searchParams]);
 
     const loadAppointments = async () => {
         if (!user?.company?.id) return;

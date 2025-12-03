@@ -382,29 +382,7 @@ export const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Ações Rápidas */}
-            <div className="bg-white rounded-xl shadow-card p-6 border border-secondary-100">
-                <h2 className="text-xl font-semibold text-secondary-900 mb-4">
-                    Ações Rápidas
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Link to="/work-orders" className="btn btn-primary text-left p-4 flex flex-col items-start gap-2 h-auto">
-                        <ClipboardList className="w-6 h-6" />
-                        <span className="font-semibold">Nova O.S.</span>
-                        <span className="text-sm opacity-90 font-normal">Criar ordem de serviço</span>
-                    </Link>
-                    <Link to="/customers" className="btn btn-secondary text-left p-4 flex flex-col items-start gap-2 h-auto">
-                        <Users className="w-6 h-6" />
-                        <span className="font-semibold">Novo Cliente</span>
-                        <span className="text-sm opacity-90 font-normal">Cadastrar cliente</span>
-                    </Link>
-                    <Link to="/products" className="btn btn-secondary text-left p-4 flex flex-col items-start gap-2 h-auto">
-                        <Package className="w-6 h-6" />
-                        <span className="font-semibold">Novo Produto</span>
-                        <span className="text-sm opacity-90 font-normal">Adicionar ao estoque</span>
-                    </Link>
-                </div>
-            </div>
+
         </div>
     );
 };

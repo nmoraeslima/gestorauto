@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -28,6 +29,7 @@ interface WorkOrderWithDetails extends WorkOrder {
 
 export default function WorkOrders() {
     const { user } = useAuth();
+    const [searchParams] = useSearchParams();
     const [workOrders, setWorkOrders] = useState<WorkOrderWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -38,6 +40,13 @@ export default function WorkOrders() {
     useEffect(() => {
         loadWorkOrders();
     }, [user]);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setShowModal(true);
+            setSelectedWorkOrder(null);
+        }
+    }, [searchParams]);
 
     const loadWorkOrders = async () => {
         if (!user?.company?.id) return;

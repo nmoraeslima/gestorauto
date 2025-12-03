@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -19,6 +20,7 @@ import toast from 'react-hot-toast';
 
 export default function Products() {
     const { user } = useAuth();
+    const [searchParams] = useSearchParams();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,6 +31,13 @@ export default function Products() {
     useEffect(() => {
         loadProducts();
     }, [user]);
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setShowModal(true);
+            setSelectedProduct(null);
+        }
+    }, [searchParams]);
 
     const loadProducts = async () => {
         if (!user?.company?.id) return;
