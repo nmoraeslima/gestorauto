@@ -146,7 +146,7 @@ export default function Appointments() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-secondary-600">Agendamentos</h1>
                     <p className="text-neutral-500 mt-1">
@@ -156,11 +156,11 @@ export default function Appointments() {
                 <div className="flex gap-3">
                     <Link to="/tv-dashboard" className="btn btn-outline flex items-center gap-2">
                         <Clock className="w-5 h-5" />
-                        Modo TV
+                        <span className="hidden sm:inline">Modo TV</span>
                     </Link>
-                    <button onClick={handleCreate} className="btn btn-primary">
-                        <Plus className="w-5 h-5 mr-2" />
-                        Novo Agendamento
+                    <button onClick={handleCreate} className="btn btn-primary flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        <span className="hidden sm:inline">Novo Agendamento</span>
                     </button>
                 </div>
             </div>
