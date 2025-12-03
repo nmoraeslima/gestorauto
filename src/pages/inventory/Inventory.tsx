@@ -58,8 +58,7 @@ export default function Inventory() {
     // Filter products
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
-            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+            product.name.toLowerCase().includes(searchTerm.toLowerCase());
 
         const isLowStock = (product.quantity || 0) <= (product.min_stock || 0);
 
@@ -129,7 +128,7 @@ export default function Inventory() {
                             <thead>
                                 <tr>
                                     <th>Produto</th>
-                                    <th>SKU</th>
+
                                     <th>Estoque Atual</th>
                                     <th>Mínimo</th>
                                     <th>Status</th>
@@ -145,7 +144,7 @@ export default function Inventory() {
                                                 <p className="font-medium text-secondary-900">{product.name}</p>
                                                 <p className="text-xs text-neutral-500">{product.category}</p>
                                             </td>
-                                            <td>{product.sku || '-'}</td>
+
                                             <td>
                                                 <span className="font-bold text-secondary-900">
                                                     {product.quantity} {product.unit}
