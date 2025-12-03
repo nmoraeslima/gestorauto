@@ -6,9 +6,9 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
-        react(),
         VitePWA({
             registerType: 'prompt',
+            injectRegister: 'auto',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {
                 name: 'GestorAuto',
@@ -37,7 +37,8 @@ export default defineConfig({
                 enabled: true,
                 type: 'module',
             },
-        })
+        }),
+        react(),
     ],
     resolve: {
         alias: {

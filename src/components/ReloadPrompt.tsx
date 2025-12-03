@@ -1,34 +1,57 @@
-import React from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle, RefreshCw, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function ReloadPrompt() {
-    const {
-        offlineReady: [offlineReady, setOfflineReady],
-        needRefresh: [needRefresh, setNeedRefresh],
-        updateServiceWorker,
-    } = useRegisterSW({
-        onRegistered(r) {
-            console.log('SW Registered: ' + r);
-        },
-        onRegisterError(error) {
-            console.log('SW registration error', error);
-        },
-    });
+    const [offlineReady, setOfflineReady] = useState(false);
+    const [needRefresh, setNeedRefresh] = useState(false);
+    const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            // Handle updates
+            const handleUpdate = (reg: ServiceWorkerRegistration) => {
+                const waitingServiceWorker = reg.waiting;
+                if (waitingServiceWorker) {
+                    setNeedRefresh(true);
+                    setRegistration(reg);
+                }
+            };
+
+            navigator.serviceWorker.ready.then((reg) => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                setNeedRefresh(true);
+                                setRegistration(reg);
+                            }
+                        });
+                    }
+                });
+
+                // Check if there's already a waiting worker
+                if (reg.waiting) {
+                    setNeedRefresh(true);
+                    setRegistration(reg);
+                }
+            });
+        }
+    }, []);
+
+    const updateServiceWorker = () => {
+        if (registration && registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            setNeedRefresh(false);
+            window.location.reload();
+        }
+    };
 
     const close = () => {
         setOfflineReady(false);
         setNeedRefresh(false);
     };
-
-    // Show toast when offline ready
-    React.useEffect(() => {
-        if (offlineReady) {
-            toast.success('App pronto para uso offline!');
-            setOfflineReady(false);
-        }
-    }, [offlineReady]);
 
     if (!needRefresh) return null;
 
@@ -44,7 +67,7 @@ export function ReloadPrompt() {
                         </p>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => updateServiceWorker(true)}
+                                onClick={updateServiceWorker}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium rounded transition-colors"
                             >
                                 <RefreshCw className="w-3 h-3" />
