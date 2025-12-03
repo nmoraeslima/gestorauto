@@ -260,9 +260,9 @@ export class NotificationService {
 
                     if (lowProducts.length > 0) {
                         await this.createNotification(companyId, {
-                            title: '⚠️ Estoque Baixo',
+                            title: '🚨 Estoque Baixo',
                             message: `${lowProducts.length} produto${lowProducts.length > 1 ? 's' : ''} próximo${lowProducts.length > 1 ? 's' : ''} do mínimo`,
-                            type: 'warning',
+                            type: 'error',
                             link: '/inventory'
                         });
                     }

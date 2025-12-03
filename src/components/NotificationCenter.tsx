@@ -35,14 +35,28 @@ export const NotificationCenter: React.FC = () => {
     const getIcon = (type: string) => {
         switch (type) {
             case 'warning':
-                return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+                return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
             case 'error':
-                return <AlertCircle className="w-5 h-5 text-red-500" />;
+                return <AlertCircle className="w-5 h-5 text-red-600" />;
             case 'success':
-                return <CheckCircle className="w-5 h-5 text-green-500" />;
+                return <CheckCircle className="w-5 h-5 text-green-600" />;
             default:
-                return <Info className="w-5 h-5 text-blue-500" />;
+                return <Info className="w-5 h-5 text-blue-600" />;
         }
+    };
+
+    const getNotificationStyle = (type: string, read: boolean) => {
+        const baseStyle = 'p-4 hover:bg-secondary-50 cursor-pointer transition-colors';
+
+        if (type === 'error') {
+            return `${baseStyle} ${!read ? 'bg-red-50 border-l-4 border-red-500' : 'bg-red-50/50 border-l-4 border-red-300'}`;
+        }
+
+        if (type === 'warning') {
+            return `${baseStyle} ${!read ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'bg-yellow-50/50 border-l-4 border-yellow-300'}`;
+        }
+
+        return `${baseStyle} ${!read ? 'bg-primary-50/30' : ''}`;
     };
 
     return (
@@ -85,8 +99,7 @@ export const NotificationCenter: React.FC = () => {
                                     <div
                                         key={notification.id}
                                         onClick={() => handleNotificationClick(notification)}
-                                        className={`p-4 hover:bg-secondary-50 cursor-pointer transition-colors ${!notification.read ? 'bg-primary-50/30' : ''
-                                            }`}
+                                        className={getNotificationStyle(notification.type, notification.read)}
                                     >
                                         <div className="flex gap-3">
                                             <div className="flex-shrink-0 mt-1">
