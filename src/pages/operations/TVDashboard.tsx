@@ -184,9 +184,6 @@ export const TVDashboard: React.FC = () => {
                 )
                 .subscribe((status) => {
                     console.log('Subscription status:', status);
-                    if (status === 'SUBSCRIPTION_ERROR') {
-                        setError('Erro na conexão em tempo real');
-                    }
                 });
 
             channelRef.current = channel;
