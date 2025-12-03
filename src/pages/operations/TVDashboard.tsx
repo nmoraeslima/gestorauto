@@ -32,7 +32,9 @@ export const TVDashboard: React.FC = () => {
     const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [error, setError] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const channelRef = useRef<any>(null);
 
     useEffect(() => {
         // Clock timer
@@ -50,12 +52,15 @@ export const TVDashboard: React.FC = () => {
         audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         return () => {
-            supabase.removeAllChannels();
+            // Properly cleanup channel
+            if (channelRef.current) {
+                supabase.removeChannel(channelRef.current);
+            }
         };
-    }, [user]);
+    }, [user?.company?.id]);
 
     // Show loading while checking auth or loading user data
-    if (loading || dataLoading || !user) {
+    if (loading || dataLoading) {
         return (
             <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
                 <div className="text-center">
@@ -66,79 +71,144 @@ export const TVDashboard: React.FC = () => {
         );
     }
 
+    // Show error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
+                <div className="text-center">
+                    <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <p className="text-red-400 mb-4">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+                    >
+                        Recarregar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Require authentication
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
+                <div className="text-center">
+                    <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+                    <p className="text-secondary-400 mb-4">Você precisa estar logado para acessar o painel</p>
+                    <a
+                        href="/signin"
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 inline-block"
+                    >
+                        Fazer Login
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
     const loadAppointments = async () => {
         if (!user?.company?.id) return;
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // Fetch Pending
-        const { data: pending } = await supabase
-            .from('appointments')
-            .select(`
-                *,
-                customer:customers(name, phone),
-                vehicle:vehicles(brand, model, license_plate),
-                services:appointment_services(service:services(name))
-            `)
-            .eq('company_id', user.company.id)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: true });
+            // Fetch Pending
+            const { data: pending, error: pendingError } = await supabase
+                .from('appointments')
+                .select(`
+                    *,
+                    customer:customers(name, phone),
+                    vehicle:vehicles(brand, model, license_plate),
+                    services:appointment_services(service:services(name))
+                `)
+                .eq('company_id', user.company.id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: true });
 
-        if (pending) setPendingAppointments(pending);
+            if (pendingError) throw pendingError;
+            if (pending) setPendingAppointments(pending);
 
-        // Fetch Today's Schedule
-        const { data: scheduled } = await supabase
-            .from('appointments')
-            .select(`
-                *,
-                customer:customers(name, phone),
-                vehicle:vehicles(brand, model, license_plate),
-                services:appointment_services(service:services(name))
-            `)
-            .eq('company_id', user.company.id)
-            .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
-            .gte('scheduled_at', today.toISOString())
-            .lt('scheduled_at', tomorrow.toISOString())
-            .order('scheduled_at', { ascending: true });
+            // Fetch Today's Schedule
+            const { data: scheduled, error: scheduledError } = await supabase
+                .from('appointments')
+                .select(`
+                    *,
+                    customer:customers(name, phone),
+                    vehicle:vehicles(brand, model, license_plate),
+                    services:appointment_services(service:services(name))
+                `)
+                .eq('company_id', user.company.id)
+                .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
+                .gte('scheduled_at', today.toISOString())
+                .lt('scheduled_at', tomorrow.toISOString())
+                .order('scheduled_at', { ascending: true });
 
-        if (scheduled) setTodayAppointments(scheduled);
+            if (scheduledError) throw scheduledError;
+            if (scheduled) setTodayAppointments(scheduled);
+        } catch (err: any) {
+            console.error('Error loading appointments:', err);
+            setError('Erro ao carregar agendamentos: ' + err.message);
+        }
     };
 
     const setupRealtimeSubscription = () => {
         if (!user?.company?.id) return;
 
-        supabase
-            .channel('tv-dashboard')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'appointments',
-                    filter: `company_id=eq.${user.company.id}`,
-                },
-                (payload) => {
-                    console.log('Realtime update:', payload);
+        try {
+            const channel = supabase
+                .channel('tv-dashboard')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'appointments',
+                        filter: `company_id=eq.${user.company.id}`,
+                    },
+                    (payload) => {
+                        console.log('Realtime update:', payload);
 
-                    // Play sound on new pending appointment
-                    if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
-                        playAlert();
-                        toast('Novo agendamento pendente!', { icon: '🔔' });
+                        // Play sound on new pending appointment
+                        if (payload.eventType === 'INSERT' && (payload.new as any).status === 'pending') {
+                            playAlert();
+                            toast('Novo agendamento pendente!', { icon: '🔔' });
+                        }
+
+                        // Reload data on any change
+                        loadAppointments();
                     }
+                )
+                .subscribe((status) => {
+                    console.log('Subscription status:', status);
+                    if (status === 'SUBSCRIPTION_ERROR') {
+                        setError('Erro na conexão em tempo real');
+                    }
+                });
 
-                    // Reload data on any change
-                    loadAppointments();
-                }
-            )
-            .subscribe();
+            channelRef.current = channel;
+        } catch (err: any) {
+            console.error('Error setting up realtime:', err);
+            setError('Erro ao configurar atualização em tempo real');
+        }
     };
 
     const playAlert = () => {
         if (audioRef.current) {
-            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+            audioRef.current.play()
+                .then(() => {
+                    console.log('Alert sound played successfully');
+                })
+                .catch((e) => {
+                    console.log('Audio play failed (user interaction may be required):', e);
+                    // Fallback: show visual notification
+                    toast.error('🔔 Novo agendamento pendente!', {
+                        duration: 5000,
+                    });
+                });
         }
     };
 
