@@ -85,12 +85,29 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     }, [customer, reset, isOpen]);
 
     const handleAddVehicle = () => {
-        if (!newVehicle.brand || !newVehicle.model || !newVehicle.license_plate) {
-            toast.error('Preencha marca, modelo e placa do veículo');
+        // Validação de campos obrigatórios
+        if (!newVehicle.brand) {
+            toast.error('A marca do veículo é obrigatória');
             return;
         }
+        if (!newVehicle.model) {
+            toast.error('O modelo do veículo é obrigatório');
+            return;
+        }
+        if (!newVehicle.license_plate) {
+            toast.error('A placa do veículo é obrigatória');
+            return;
+        }
+
+        // Validação de duplicidade na lista
+        if (pendingVehicles.some(v => v.license_plate === newVehicle.license_plate)) {
+            toast.error('Este veículo já foi adicionado à lista');
+            return;
+        }
+
         setPendingVehicles([...pendingVehicles, newVehicle]);
         setNewVehicle({ brand: '', model: '', license_plate: '', color: '' });
+        toast.success('Veículo adicionado à lista');
     };
 
     const handleRemoveVehicle = (index: number) => {
@@ -363,7 +380,6 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                                         type="button"
                                         onClick={handleAddVehicle}
                                         className="mt-3 w-full btn-secondary text-sm flex items-center justify-center gap-2"
-                                        disabled={!newVehicle.brand || !newVehicle.model || !newVehicle.license_plate}
                                     >
                                         <Plus className="w-4 h-4" />
                                         Adicionar à lista
