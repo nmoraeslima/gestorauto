@@ -50,7 +50,7 @@ export default function Appointments() {
                 vehicle:vehicles(brand, model, license_plate)
             `)
             .eq('company_id', user.company.id)
-            .order('scheduled_at', { ascending: true });
+            .order('scheduled_at', { ascending: false });
 
         if (!error && data) {
             setAppointments(data as AppointmentWithDetails[]);
@@ -289,18 +289,20 @@ export default function Appointments() {
                                             </div>
                                         </td>
                                         <td>
-                                            <div className="flex items-center gap-2">
-                                                <User className="w-4 h-4 text-neutral-400" />
-                                                <div>
-                                                    <p className="font-medium">{appointment.customer?.name || '-'}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        {getStatusBadge(appointment.status)}
-                                                        {appointment.vehicle && (
-                                                            <p className="text-sm text-neutral-500">
-                                                                {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
-                                                            </p>
-                                                        )}
+                                            <div className="flex flex-col gap-1">
+                                                <p className="font-medium text-secondary-900">
+                                                    {appointment.customer?.name || '-'}
+                                                </p>
+                                                {appointment.vehicle && (
+                                                    <div className="flex items-center gap-1.5 text-sm text-neutral-600">
+                                                        <Car className="w-3.5 h-3.5 text-neutral-400" />
+                                                        <span>
+                                                            {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
+                                                        </span>
                                                     </div>
+                                                )}
+                                                <div className="mt-1">
+                                                    {getStatusBadge(appointment.status)}
                                                 </div>
                                             </div>
                                         </td>
