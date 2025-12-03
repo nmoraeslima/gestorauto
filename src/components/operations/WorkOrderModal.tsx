@@ -14,6 +14,7 @@ import {
     Link as LinkIcon,
     Camera,
 } from 'lucide-react';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ServiceSelector } from './ServiceSelector';
 import { ProductSelector } from './ProductSelector';
 import { PhotoManager } from '../workOrder/PhotoManager';
@@ -715,70 +716,61 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                 {/* Appointment Selection (Link Mode) */}
                                 {creationMode === 'link' && (
                                     <div>
-                                        <label className="label">
-                                            <Calendar className="w-4 h-4 inline mr-2" />
-                                            Agendamento *
-                                        </label>
-                                        <select
+                                        <SearchableSelect
+                                            label="Agendamento"
+                                            icon={<Calendar className="w-4 h-4" />}
                                             required
                                             value={formData.appointment_id}
-                                            onChange={(e) => handleAppointmentChange(e.target.value)}
-                                            className="input"
+                                            onChange={handleAppointmentChange}
+                                            options={appointments.map(a => ({
+                                                value: a.id,
+                                                label: `${formatDate(a.scheduled_at)} - ${a.customer.name}`,
+                                                subLabel: `${a.vehicle?.brand} ${a.vehicle?.model} (${a.vehicle?.license_plate || 'Sem placa'})`
+                                            }))}
+                                            placeholder="Selecione um agendamento"
                                             disabled={!!workOrder}
-                                        >
-                                            <option value="">Selecione um agendamento</option>
-                                            {appointments.map((appointment) => (
-                                                <option key={appointment.id} value={appointment.id}>
-                                                    {formatDate(appointment.scheduled_at)} - {appointment.customer.name} ({appointment.vehicle?.license_plate || 'Sem placa'})
-                                                </option>
-                                            ))}
-                                        </select>
+                                            notFoundText="Nenhum agendamento encontrado"
+                                        />
                                     </div>
                                 )}
 
                                 {/* Customer and Vehicle */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="label">
-                                            <User className="w-4 h-4 inline mr-2" />
-                                            Cliente *
-                                        </label>
-                                        <select
+                                        <SearchableSelect
+                                            label="Cliente"
+                                            icon={<User className="w-4 h-4" />}
                                             required
                                             value={formData.customer_id}
-                                            onChange={(e) => handleCustomerChange(e.target.value)}
-                                            className={`input ${creationMode === 'link' ? 'bg-neutral-100' : ''}`}
-                                            disabled={creationMode === 'link'} // Disable in link mode
-                                        >
-                                            <option value="">Selecione um cliente</option>
-                                            {customers.map((customer) => (
-                                                <option key={customer.id} value={customer.id}>
-                                                    {customer.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            onChange={handleCustomerChange}
+                                            options={customers.map(c => ({
+                                                value: c.id,
+                                                label: c.name,
+                                                subLabel: c.phone ? c.phone : undefined
+                                            }))}
+                                            placeholder="Selecione um cliente"
+                                            disabled={creationMode === 'link'}
+                                            notFoundText="Nenhum cliente encontrado"
+                                            className={creationMode === 'link' ? 'bg-neutral-100' : ''}
+                                        />
                                     </div>
                                     <div>
-                                        <label className="label">
-                                            <CarIcon className="w-4 h-4 inline mr-2" />
-                                            Veículo *
-                                        </label>
-                                        <select
+                                        <SearchableSelect
+                                            label="Veículo"
+                                            icon={<CarIcon className="w-4 h-4" />}
                                             required
                                             value={formData.vehicle_id}
-                                            onChange={(e) =>
-                                                setFormData({ ...formData, vehicle_id: e.target.value })
-                                            }
-                                            className={`input ${creationMode === 'link' ? 'bg-neutral-100' : ''}`}
-                                            disabled={creationMode === 'link' || !formData.customer_id} // Disable in link mode
-                                        >
-                                            <option value="">Selecione um veículo</option>
-                                            {vehicles.map((vehicle) => (
-                                                <option key={vehicle.id} value={vehicle.id}>
-                                                    {vehicle.brand} {vehicle.model} - {vehicle.license_plate}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            onChange={(value) => setFormData({ ...formData, vehicle_id: value })}
+                                            options={vehicles.map(v => ({
+                                                value: v.id,
+                                                label: `${v.brand} ${v.model}`,
+                                                subLabel: v.license_plate
+                                            }))}
+                                            placeholder="Selecione um veículo"
+                                            disabled={creationMode === 'link' || !formData.customer_id}
+                                            notFoundText="Nenhum veículo encontrado"
+                                            className={creationMode === 'link' ? 'bg-neutral-100' : ''}
+                                        />
                                     </div>
                                 </div>
 

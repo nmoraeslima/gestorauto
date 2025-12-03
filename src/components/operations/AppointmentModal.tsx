@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { X, Calendar as CalendarIcon, Clock, User, Car as CarIcon, FileText, Tag, Search } from 'lucide-react';
 import type { Customer, Vehicle, Appointment, Service } from '@/types/database';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import toast from 'react-hot-toast';
 
 interface AppointmentModalProps {
@@ -125,6 +126,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             .from('customers')
             .select('*')
             .eq('company_id', user.company.id)
+            .is('deleted_at', null)
+            .eq('is_active', true)
             .order('name');
 
         if (customersData) setCustomers(customersData);
@@ -145,6 +148,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             .from('vehicles')
             .select('*')
             .eq('customer_id', customerId)
+            .is('deleted_at', null)
             .order('model');
 
         if (data) setVehicles(data);
@@ -390,47 +394,39 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
                         {/* Customer Selection */}
                         <div>
-                            <label className="label">
-                                <User className="w-4 h-4 inline mr-2" />
-                                Cliente *
-                            </label>
-                            <select
+                            <SearchableSelect
+                                label="Cliente"
+                                icon={<User className="w-4 h-4" />}
                                 required
                                 value={formData.customer_id}
-                                onChange={(e) => handleCustomerChange(e.target.value)}
-                                className="input"
-                            >
-                                <option value="">Selecione um cliente</option>
-                                {customers.map((customer) => (
-                                    <option key={customer.id} value={customer.id}>
-                                        {customer.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={handleCustomerChange}
+                                options={customers.map(c => ({
+                                    value: c.id,
+                                    label: c.name,
+                                    subLabel: c.phone ? c.phone : undefined
+                                }))}
+                                placeholder="Selecione um cliente"
+                                notFoundText="Nenhum cliente encontrado"
+                            />
                         </div>
 
                         {/* Vehicle Selection */}
                         <div>
-                            <label className="label">
-                                <CarIcon className="w-4 h-4 inline mr-2" />
-                                Veículo *
-                            </label>
-                            <select
+                            <SearchableSelect
+                                label="Veículo"
+                                icon={<CarIcon className="w-4 h-4" />}
                                 required
                                 value={formData.vehicle_id}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, vehicle_id: e.target.value })
-                                }
-                                className="input"
+                                onChange={(value) => setFormData({ ...formData, vehicle_id: value })}
+                                options={vehicles.map(v => ({
+                                    value: v.id,
+                                    label: `${v.brand} ${v.model}`,
+                                    subLabel: v.license_plate
+                                }))}
+                                placeholder="Selecione um veículo"
                                 disabled={!formData.customer_id}
-                            >
-                                <option value="">Selecione um veículo</option>
-                                {vehicles.map((vehicle) => (
-                                    <option key={vehicle.id} value={vehicle.id}>
-                                        {vehicle.brand} {vehicle.model} - {vehicle.license_plate}
-                                    </option>
-                                ))}
-                            </select>
+                                notFoundText="Nenhum veículo encontrado"
+                            />
                         </div>
 
                         {/* Date and Time */}

@@ -3,6 +3,7 @@ import { X, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { TransactionType, TransactionStatus, FinancialTransaction } from '@/types/database';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import toast from 'react-hot-toast';
 
 interface TransactionModalProps {
@@ -121,18 +122,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <select
-                                required
+                            <SearchableSelect
                                 value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className={`input ${isSystemGenerated ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
+                                onChange={(value) => setFormData({ ...formData, category: value })}
+                                options={categories.map(cat => ({ value: cat, label: cat }))}
+                                placeholder="Selecione..."
                                 disabled={isSystemGenerated}
-                            >
-                                <option value="">Selecione...</option>
-                                {categories.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
+                                className={isSystemGenerated ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}
+                            />
                         </div>
 
                         <div>
