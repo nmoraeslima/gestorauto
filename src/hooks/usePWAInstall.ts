@@ -45,21 +45,8 @@ export const usePWAInstall = () => {
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.addEventListener('appinstalled', handleAppInstalled);
 
-        // If Android and not installed, but no prompt available, show manual instructions
-        if (isAndroidDevice && !isStandaloneMode && !deferredPrompt) {
-            // Wait a bit to see if prompt fires
-            const timer = setTimeout(() => {
-                if (!deferredPrompt) {
-                    setShowManualInstructions(true);
-                }
-            }, 2000);
-
-            return () => {
-                clearTimeout(timer);
-                window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-                window.removeEventListener('appinstalled', handleAppInstalled);
-            };
-        }
+        // If Android and not installed, but no prompt available, DO NOT show manual instructions automatically
+        // Just let the user click the button if they want to install
 
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -127,7 +114,7 @@ export const usePWAInstall = () => {
     };
 
     return {
-        isInstallable: isInstallable || showManualInstructions,
+        isInstallable: isInstallable || isIOS || isAndroid, // Always allow install attempt on mobile
         isInstalled,
         isIOS,
         isAndroid,
