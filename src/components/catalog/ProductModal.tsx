@@ -23,7 +23,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        sku: '',
         category: '',
         unit: 'un',
         cost_price: 0,
@@ -36,7 +35,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             setFormData({
                 name: product.name,
                 description: product.description || '',
-                sku: product.sku || '',
                 category: product.category || '',
                 unit: product.unit || 'un',
                 cost_price: product.cost_price || 0,
@@ -47,7 +45,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             setFormData({
                 name: '',
                 description: '',
-                sku: '',
                 category: '',
                 unit: 'un',
                 cost_price: 0,
@@ -68,7 +65,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 company_id: user.company.id,
                 name: formData.name,
                 description: formData.description,
-                sku: formData.sku,
                 category: formData.category,
                 unit: formData.unit,
                 cost_price: formData.cost_price,
@@ -174,16 +170,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                                 </datalist>
                             </div>
 
-                            <div>
-                                <label className="label">SKU / Código</label>
-                                <input
-                                    type="text"
-                                    value={formData.sku}
-                                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                                    className="input"
-                                    placeholder="Ex: PROD-001"
-                                />
-                            </div>
+
 
                             <div>
                                 <label className="label">Unidade</label>
