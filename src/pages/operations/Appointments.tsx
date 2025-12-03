@@ -156,11 +156,11 @@ export default function Appointments() {
                 <div className="flex gap-3">
                     <Link to="/tv-dashboard" className="btn btn-outline flex items-center gap-2">
                         <Clock className="w-5 h-5" />
-                        <span className="hidden sm:inline">Modo TV</span>
+                        Modo TV
                     </Link>
                     <button onClick={handleCreate} className="btn btn-primary flex items-center gap-2">
                         <Plus className="w-5 h-5" />
-                        <span className="hidden sm:inline">Novo Agendamento</span>
+                        Novo Agendamento
                     </button>
                 </div>
             </div>
