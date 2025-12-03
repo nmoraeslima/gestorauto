@@ -259,14 +259,14 @@ export const Dashboard: React.FC = () => {
 
             {/* Alertas */}
             {stats && stats.low_stock_products > 0 && (
-                <div className="bg-warning-50 border-l-4 border-warning-500 p-4 rounded-lg">
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-warning-600 flex-shrink-0 mt-0.5" />
+                        <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                         <div>
-                            <h3 className="text-sm font-semibold text-warning-800">
-                                Alerta de Estoque Baixo
+                            <h3 className="text-sm font-semibold text-red-800">
+                                🚨 Alerta de Estoque Baixo
                             </h3>
-                            <p className="text-sm text-warning-700 mt-1">
+                            <p className="text-sm text-red-700 mt-1">
                                 Você tem {stats.low_stock_products} produto(s) com estoque abaixo
                                 do mínimo. Verifique o estoque para evitar falta de produtos.
                             </p>
