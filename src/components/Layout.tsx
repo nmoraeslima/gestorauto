@@ -35,7 +35,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+    const { isInstallable, isInstalled, isIOS, install, showManualInstructions, getManualInstructions } = usePWAInstall();
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -62,16 +62,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             // Force reload to trigger the PWA prompt component
             window.location.reload();
         } else {
-            const success = await install();
-            if (!success) {
-                toast.error('Instalação automática não disponível. Tente instalar pelo menu do navegador.', {
-                    duration: 5000,
-                    icon: '📱'
-                });
-            }
+            await install();
+            setUserMenuOpen(false);
         }
-        setUserMenuOpen(false);
     };
+
+    const manualInstructions = getManualInstructions();
 
     return (
         <NotificationProvider>
@@ -308,6 +304,52 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             </div>
             <PWAInstallPrompt />
+
+            {/* Manual Install Instructions Modal */}
+            {showManualInstructions && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-primary-100 p-2 rounded-lg">
+                                    <Download className="w-6 h-6 text-primary-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-secondary-900">
+                                    {manualInstructions.title}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="text-secondary-400 hover:text-secondary-600"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-secondary-600">
+                                Para instalar o aplicativo, siga os passos abaixo:
+                            </p>
+                            <div className="bg-secondary-50 rounded-lg p-4 space-y-3">
+                                {manualInstructions.steps.map((step, index) => (
+                                    <div key={index} className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                            {index + 1}
+                                        </div>
+                                        <p className="text-sm text-secondary-700 pt-0.5">{step}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="btn btn-primary w-full"
+                            >
+                                Entendi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </NotificationProvider >
     );
 };

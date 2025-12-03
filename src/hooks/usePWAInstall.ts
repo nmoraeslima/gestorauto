@@ -10,6 +10,8 @@ export const usePWAInstall = () => {
     const [isInstallable, setIsInstallable] = useState(false);
     const [isInstalled, setIsInstalled] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const [isAndroid, setIsAndroid] = useState(false);
+    const [showManualInstructions, setShowManualInstructions] = useState(false);
 
     useEffect(() => {
         // Check if already installed
@@ -19,26 +21,58 @@ export const usePWAInstall = () => {
 
         setIsInstalled(isStandaloneMode);
 
-        // Check if iOS
+        // Check device type
         const isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        const isAndroidDevice = /Android/.test(navigator.userAgent);
         setIsIOS(isIOSDevice);
+        setIsAndroid(isAndroidDevice);
 
         // Handle install prompt
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
             setIsInstallable(true);
+            setShowManualInstructions(false);
+        };
+
+        const handleAppInstalled = () => {
+            setDeferredPrompt(null);
+            setIsInstallable(false);
+            setIsInstalled(true);
+            setShowManualInstructions(false);
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.addEventListener('appinstalled', handleAppInstalled);
+
+        // If Android and not installed, but no prompt available, show manual instructions
+        if (isAndroidDevice && !isStandaloneMode && !deferredPrompt) {
+            // Wait a bit to see if prompt fires
+            const timer = setTimeout(() => {
+                if (!deferredPrompt) {
+                    setShowManualInstructions(true);
+                }
+            }, 2000);
+
+            return () => {
+                clearTimeout(timer);
+                window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+                window.removeEventListener('appinstalled', handleAppInstalled);
+            };
+        }
 
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
         };
     }, []);
 
     const install = async () => {
-        if (!deferredPrompt) return false;
+        if (!deferredPrompt) {
+            // If no prompt available, show manual instructions
+            setShowManualInstructions(true);
+            return false;
+        }
 
         try {
             await deferredPrompt.prompt();
@@ -48,19 +82,57 @@ export const usePWAInstall = () => {
                 setDeferredPrompt(null);
                 setIsInstallable(false);
                 setIsInstalled(true);
+                setShowManualInstructions(false);
                 return true;
             }
             return false;
         } catch (error) {
             console.error('Error installing PWA:', error);
+            // If prompt fails, show manual instructions
+            setShowManualInstructions(true);
             return false;
         }
     };
 
+    const getManualInstructions = () => {
+        if (isIOS) {
+            return {
+                title: 'Instalar no iOS',
+                steps: [
+                    'Toque no botão de compartilhar (ícone com seta para cima)',
+                    'Role para baixo e toque em "Adicionar à Tela de Início"',
+                    'Toque em "Adicionar" no canto superior direito'
+                ]
+            };
+        }
+
+        if (isAndroid) {
+            return {
+                title: 'Instalar no Android',
+                steps: [
+                    'Toque no menu (⋮) no canto superior direito do navegador',
+                    'Selecione "Instalar app" ou "Adicionar à tela inicial"',
+                    'Confirme tocando em "Instalar"'
+                ]
+            };
+        }
+
+        return {
+            title: 'Instalar Aplicativo',
+            steps: [
+                'Use o menu do seu navegador',
+                'Procure pela opção "Instalar" ou "Adicionar à tela inicial"'
+            ]
+        };
+    };
+
     return {
-        isInstallable,
+        isInstallable: isInstallable || showManualInstructions,
         isInstalled,
         isIOS,
+        isAndroid,
+        showManualInstructions,
         install,
+        getManualInstructions,
     };
 };
