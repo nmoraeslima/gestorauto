@@ -122,6 +122,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                         {/* User Menu */}
                         <div className="flex-shrink-0 px-3 pb-2">
+                            {!isInstalled && (
+                                <button
+                                    onClick={handleInstallApp}
+                                    className="w-full flex items-center gap-3 px-3 py-2 mb-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 rounded-lg shadow-sm transition-all duration-150"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    Instalar App
+                                </button>
+                            )}
                             <div className="relative">
                                 <button
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -143,15 +152,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                 {userMenuOpen && (
                                     <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
-                                        {!isInstalled && (
-                                            <button
-                                                onClick={handleInstallApp}
-                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-150"
-                                            >
-                                                <Download className="w-4 h-4" />
-                                                Instalar App
-                                            </button>
-                                        )}
+
                                         <button
                                             onClick={handleSignOut}
                                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
@@ -226,6 +227,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                             {/* User Menu Mobile */}
                             <div className="flex-shrink-0 px-3 pb-4 border-t border-secondary-200 pt-4">
+                                {!isInstalled && (
+                                    <button
+                                        onClick={handleInstallApp}
+                                        className="w-full flex items-center gap-3 px-3 py-2 mb-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 rounded-lg shadow-sm transition-all duration-150"
+                                    >
+                                        <Download className="w-5 h-5" />
+                                        Instalar App
+                                    </button>
+                                )}
                                 <div className="relative">
                                     <button
                                         onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -247,15 +257,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                     {userMenuOpen && (
                                         <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
-                                            {!isInstalled && (
-                                                <button
-                                                    onClick={handleInstallApp}
-                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-150"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                    Instalar App
-                                                </button>
-                                            )}
+
                                             <button
                                                 onClick={handleSignOut}
                                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
