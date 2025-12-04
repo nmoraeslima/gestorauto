@@ -190,6 +190,12 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         e.preventDefault();
         if (!user?.company?.id) return;
 
+        // Validate services
+        if (formData.service_ids.length === 0) {
+            toast.error('Selecione pelo menos um serviço');
+            return;
+        }
+
         setLoading(true);
 
         try {

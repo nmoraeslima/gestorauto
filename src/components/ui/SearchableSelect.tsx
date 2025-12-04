@@ -83,6 +83,17 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 </label>
             )}
 
+            {/* Hidden input for HTML5 validation */}
+            <input
+                type="text"
+                value={value}
+                onChange={() => { }} // Controlled by onChange prop
+                required={required}
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+            />
+
             <div
                 className={`
                     input flex items-center justify-between cursor-pointer bg-white
