@@ -132,6 +132,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 company_id: user?.company?.id!,
                 phone: unmask(data.phone),
                 cpf: data.cpf ? unmask(data.cpf) : null,
+                birth_date: data.birth_date || null, // Convert empty string to null
             };
 
             let customerId = customer?.id;
