@@ -33,7 +33,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const { user, signOut } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('sidebarCollapsed');
+            // If collapsed is true, sidebarOpen is false
+            if (saved === 'true') return false;
+        }
+        return true;
+    });
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const { isInstallable, isInstalled, isIOS, install, showManualInstructions, getManualInstructions } = usePWAInstall();
 
@@ -73,30 +81,76 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <NotificationProvider>
             <div className="min-h-screen bg-secondary-50">
                 {/* Sidebar Desktop */}
-                <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-                    <div className="flex flex-col flex-grow bg-white border-r border-secondary-200 pt-5 pb-4 overflow-y-auto">
-                        {/* Logo */}
-                        <div className="flex items-center flex-shrink-0 px-6 mb-6">
-                            <img
-                                src="/assets/logo-horizontal-dark.png"
-                                alt="GestorAuto"
-                                className="h-10 w-auto"
-                            />
+                <div
+                    className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-20'
+                        }`}
+                >
+                    <div className="flex flex-col flex-grow bg-white border-r border-secondary-200 pt-5 pb-4 overflow-y-auto overflow-x-hidden">
+                        {/* Header (Logo + Toggle) */}
+                        <div className={`flex items-center flex-shrink-0 mb-6 ${sidebarOpen ? 'px-6 justify-between' : 'flex-col gap-4 px-2'}`}>
+                            {sidebarOpen ? (
+                                <>
+                                    <img
+                                        src="/assets/logo-horizontal-dark.png"
+                                        alt="GestorAuto"
+                                        className="h-8 w-auto"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const newState = !sidebarOpen;
+                                            setSidebarOpen(newState);
+                                            localStorage.setItem('sidebarCollapsed', String(!newState));
+                                        }}
+                                        className="p-1 text-secondary-400 hover:text-secondary-600 rounded-lg hover:bg-secondary-100 transition-colors"
+                                        title="Recolher Menu"
+                                    >
+                                        <Menu className="w-5 h-5" />
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <img
+                                        src="/logo.png"
+                                        alt="GA"
+                                        className="h-8 w-8 object-contain"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const newState = !sidebarOpen;
+                                            setSidebarOpen(newState);
+                                            localStorage.setItem('sidebarCollapsed', String(!newState));
+                                        }}
+                                        className="p-1 text-secondary-400 hover:text-secondary-600 rounded-lg hover:bg-secondary-100 transition-colors"
+                                        title="Expandir Menu"
+                                    >
+                                        <Menu className="w-5 h-5" />
+                                    </button>
+                                </>
+                            )}
                         </div>
 
                         {/* Company Info */}
-                        <div className="px-6 mb-6">
-                            <div className="bg-secondary-50 rounded-lg p-3 border border-secondary-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Building2 className="w-4 h-4 text-secondary-600" />
-                                    <p className="text-sm font-semibold text-secondary-900 truncate">
-                                        {user?.company?.name}
+                        <div className={`mb-6 ${sidebarOpen ? 'px-6' : 'px-3'}`}>
+                            {sidebarOpen ? (
+                                <div className="bg-secondary-50 rounded-lg border border-secondary-200 p-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Building2 className="w-4 h-4 text-secondary-600" />
+                                        <p className="text-sm font-semibold text-secondary-900 truncate">
+                                            {user?.company?.name}
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-secondary-600">
+                                        Plano: {user?.company?.subscription_plan}
                                     </p>
                                 </div>
-                                <p className="text-xs text-secondary-600">
-                                    Plano: {user?.company?.subscription_plan}
-                                </p>
-                            </div>
+                            ) : (
+                                <div
+                                    className="flex justify-center px-3 py-2 bg-secondary-50 border border-secondary-200 rounded-lg cursor-default"
+                                    title={user?.company?.name}
+                                >
+                                    <Building2 className="w-5 h-5 text-secondary-600" />
+                                </div>
+                            )}
                         </div>
 
                         {/* Navigation */}
@@ -108,21 +162,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     <Link
                                         key={item.name}
                                         to={item.href}
+                                        title={!sidebarOpen ? item.name : ''}
                                         className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${isActive
                                             ? 'bg-primary-50 text-primary-700'
                                             : 'text-secondary-700 hover:bg-secondary-50'
-                                            }`}
+                                            } ${!sidebarOpen ? 'justify-center' : ''}`}
                                     >
-                                        <Icon className="w-5 h-5" />
-                                        {item.name}
+                                        <Icon className="w-5 h-5 flex-shrink-0" />
+                                        {sidebarOpen && <span className="truncate">{item.name}</span>}
                                     </Link>
                                 );
                             })}
                         </nav>
 
                         {/* User Menu */}
-                        <div className="flex-shrink-0 px-3 pb-2">
-                            {!isInstalled && (
+                        <div className="flex-shrink-0 px-3 pb-2 pt-2 mt-auto border-t border-secondary-200">
+                            {!isInstalled && sidebarOpen && (
                                 <button
                                     onClick={handleInstallApp}
                                     className="w-full flex items-center gap-3 px-3 py-2 mb-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 rounded-lg shadow-sm transition-all duration-150"
@@ -134,25 +189,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <div className="relative">
                                 <button
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-50 rounded-lg transition-colors duration-150"
+                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-50 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'justify-center' : ''}`}
                                 >
-                                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                                         {user?.profile?.full_name?.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="flex-1 text-left">
-                                        <p className="text-sm font-semibold text-secondary-900 truncate">
-                                            {user?.profile?.full_name}
-                                        </p>
-                                        <p className="text-xs text-secondary-600 truncate">
-                                            {user?.profile?.role}
-                                        </p>
-                                    </div>
-                                    <ChevronDown className="w-4 h-4" />
+                                    {sidebarOpen && (
+                                        <>
+                                            <div className="flex-1 text-left overflow-hidden">
+                                                <p className="text-sm font-semibold text-secondary-900 truncate">
+                                                    {user?.profile?.full_name}
+                                                </p>
+                                                <p className="text-xs text-secondary-600 truncate">
+                                                    {user?.profile?.role}
+                                                </p>
+                                            </div>
+                                            <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                                        </>
+                                    )}
                                 </button>
 
                                 {userMenuOpen && (
-                                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
-
+                                    <div className={`absolute bottom-full mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1 z-50 ${sidebarOpen ? 'left-0 right-0' : 'left-14 w-48'}`}>
                                         <button
                                             onClick={handleSignOut}
                                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
@@ -168,11 +226,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
 
                 {/* Mobile Sidebar */}
-                {sidebarOpen && (
+                {mobileSidebarOpen && (
                     <div className="fixed inset-0 z-40 lg:hidden">
                         <div
                             className="fixed inset-0 bg-secondary-900 bg-opacity-75"
-                            onClick={() => setSidebarOpen(false)}
+                            onClick={() => setMobileSidebarOpen(false)}
                         />
                         <div className="fixed inset-y-0 left-0 flex flex-col w-64 bg-white">
                             <div className="flex items-center justify-between px-6 pt-5 pb-4">
@@ -182,7 +240,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     className="h-8 w-auto"
                                 />
                                 <button
-                                    onClick={() => setSidebarOpen(false)}
+                                    onClick={() => setMobileSidebarOpen(false)}
                                     className="text-secondary-600 hover:text-secondary-900"
                                 >
                                     <X className="w-6 h-6" />
@@ -212,7 +270,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                                         <Link
                                             key={item.name}
                                             to={item.href}
-                                            onClick={() => setSidebarOpen(false)}
+                                            onClick={() => setMobileSidebarOpen(false)}
                                             className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${isActive
                                                 ? 'bg-primary-50 text-primary-700'
                                                 : 'text-secondary-700 hover:bg-secondary-50'
@@ -274,12 +332,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 )}
 
                 {/* Main Content */}
-                <div className="lg:pl-64 flex flex-col flex-1">
+                <div className={`flex flex-col flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'}`}>
                     {/* Top Bar (Mobile & Desktop) */}
                     <div className="sticky top-0 z-10 bg-white border-b border-secondary-200 px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={() => setSidebarOpen(true)}
+                                onClick={() => setMobileSidebarOpen(true)}
                                 className="text-secondary-600 hover:text-secondary-900 lg:hidden"
                             >
                                 <Menu className="w-6 h-6" />
@@ -289,6 +347,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 alt="GestorAuto"
                                 className="h-7 w-auto lg:hidden"
                             />
+                            {/* Global Greeting */}
+                            <div className="hidden lg:block">
+                                <h1 className="text-2xl font-bold text-secondary-900">
+                                    Olá, {user?.profile?.full_name?.split(' ')[0]}!
+                                </h1>
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-2">

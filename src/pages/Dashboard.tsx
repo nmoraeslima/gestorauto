@@ -221,7 +221,7 @@ export const Dashboard: React.FC = () => {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-secondary-900">
-                    Olá, {user?.profile?.full_name}!
+                    Dashboard
                 </h1>
                 <p className="text-base text-secondary-600 mt-1">
                     Aqui está um resumo do seu negócio hoje.

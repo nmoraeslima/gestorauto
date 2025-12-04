@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Filter, DollarSign, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Pencil, DollarSign, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinancialTransaction, TransactionType, TransactionStatus } from '@/types/database';
@@ -18,6 +18,8 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
     const [filteredTransactions, setFilteredTransactions] = useState<FinancialTransaction[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<FinancialTransaction | null>(null);
 
@@ -29,7 +31,7 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
 
     useEffect(() => {
         filterTransactions();
-    }, [transactions, searchTerm, statusFilter]);
+    }, [transactions, searchTerm, statusFilter, startDate, endDate]);
 
     const loadTransactions = async () => {
         try {
@@ -63,6 +65,24 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
 
         if (statusFilter !== 'all') {
             filtered = filtered.filter(t => t.status === statusFilter);
+        }
+
+        // Date range filter (between dates)
+        if (startDate && endDate) {
+            filtered = filtered.filter(t => {
+                const dueDate = t.due_date.split('T')[0]; // Extract YYYY-MM-DD
+                return dueDate >= startDate && dueDate <= endDate;
+            });
+        } else if (startDate) {
+            filtered = filtered.filter(t => {
+                const dueDate = t.due_date.split('T')[0];
+                return dueDate >= startDate;
+            });
+        } else if (endDate) {
+            filtered = filtered.filter(t => {
+                const dueDate = t.due_date.split('T')[0];
+                return dueDate <= endDate;
+            });
         }
 
         setFilteredTransactions(filtered);
@@ -176,8 +196,8 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
 
             {/* Filters */}
             <div className="rounded-lg bg-white p-4 shadow-sm border border-gray-200">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="md:col-span-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    <div className="lg:col-span-2">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                             <input
@@ -188,6 +208,24 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
                                 className="input pl-10"
                             />
                         </div>
+                    </div>
+                    <div>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="input"
+                            placeholder="Data Inicial"
+                        />
+                    </div>
+                    <div>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="input"
+                            placeholder="Data Final"
+                        />
                     </div>
                     <div>
                         <select
@@ -215,7 +253,7 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
                         <DollarSign className="h-12 w-12 mb-4 text-gray-300" />
                         <p className="text-lg font-medium">Nenhuma receita encontrada</p>
                         <p className="text-sm mt-1">
-                            {searchTerm || statusFilter !== 'all'
+                            {searchTerm || statusFilter !== 'all' || startDate || endDate
                                 ? 'Tente ajustar os filtros'
                                 : 'Comece criando sua primeira receita'}
                         </p>
@@ -283,7 +321,7 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
                                                         className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
                                                         title="Editar"
                                                     >
-                                                        <Filter className="h-4 w-4" />
+                                                        <Pencil className="h-4 w-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(transaction)}
