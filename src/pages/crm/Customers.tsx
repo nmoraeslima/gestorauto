@@ -51,7 +51,7 @@ export const Customers: React.FC = () => {
                 query = query.eq('is_active', true);
             }
 
-            const { data, error } = await query.order('created_at', { ascending: false });
+            const { data, error } = await query.order('name', { ascending: true });
 
             if (error) throw error;
             setCustomers(data || []);

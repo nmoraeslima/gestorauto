@@ -46,7 +46,7 @@ export default defineConfig({
         },
     },
     server: {
-        port: 3001,
+        port: 3006,
         host: true, // Permite acesso pela rede local
         open: true,
     },
