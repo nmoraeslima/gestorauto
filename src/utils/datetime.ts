@@ -202,3 +202,36 @@ export const isPast = (date: Date | string): boolean => {
     const d = typeof date === 'string' ? new Date(date) : date;
     return d < new Date();
 };
+
+/**
+ * Convert a date string (YYYY-MM-DD) to ISO string preserving local date
+ * Prevents timezone issues where new Date("2025-12-03") becomes 2025-12-02 in UTC-3
+ * 
+ * @param dateString - Date string in YYYY-MM-DD format or ISO format
+ * @returns ISO string with local date preserved
+ */
+export const toISOLocal = (dateString: string | Date): string => {
+    if (!dateString) return new Date().toISOString();
+
+    // If it's already a Date object, convert to ISO
+    if (dateString instanceof Date) {
+        return dateString.toISOString();
+    }
+
+    // Extract just the date part if it's a full ISO string
+    const datePart = dateString.split('T')[0];
+
+    // Parse the date components
+    const [year, month, day] = datePart.split('-').map(Number);
+
+    // Validate parsed values
+    if (!year || !month || !day) {
+        console.error('Invalid date string:', dateString);
+        return new Date().toISOString();
+    }
+
+    // Create date in local timezone
+    const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+    return date.toISOString();
+};

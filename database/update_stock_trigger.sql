@@ -62,7 +62,7 @@ BEGIN
                     product_record.quantity,
                     'Uso na O.S. #' || NEW.order_number,
                     NEW.assigned_to,
-                    NOW()
+                    COALESCE(NEW.entry_date, NOW())  -- ✅ Usa data de entrada da O.S.
                 );
             END LOOP;
             
@@ -92,13 +92,13 @@ BEGIN
                 'O.S. #' || NEW.order_number,
                 NEW.total,
                 'paid',
-                COALESCE(NEW.completed_at::DATE, CURRENT_DATE), -- ✅ Usa data de conclusão da O.S.
-                NEW.completed_at,                                -- ✅ Usa timestamp de conclusão
+                COALESCE(NEW.entry_date::DATE, CURRENT_DATE),  -- ✅ Usa data de entrada da O.S.
+                COALESCE(NEW.entry_date, NEW.completed_at),    -- ✅ Usa data de entrada para paid_at
                 NEW.id,
                 NEW.customer_id
             );
             
-            RAISE NOTICE 'Transação financeira criada para O.S. % com data %', NEW.order_number, NEW.completed_at;
+            RAISE NOTICE 'Transação financeira criada para O.S. % com data %', NEW.order_number, NEW.entry_date;
         ELSE
             RAISE NOTICE 'Transação financeira já existe para O.S. %, pulando criação', NEW.order_number;
         END IF;

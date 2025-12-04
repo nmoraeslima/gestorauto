@@ -15,7 +15,7 @@ import { TransactionModal } from '@/components/financial/TransactionModal';
 import { Receivables } from './Receivables';
 import { Payables } from './Payables';
 import toast from 'react-hot-toast';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 
 interface FinancialStats {
     totalIncome: number;
@@ -262,7 +262,7 @@ export const FinancialDashboard: React.FC = () => {
                                 {recentTransactions.map((transaction) => (
                                     <tr key={transaction.id}>
                                         <td className="text-sm text-gray-500">
-                                            {new Date(transaction.due_date).toLocaleDateString('pt-BR')}
+                                            {formatDate(transaction.due_date)}
                                         </td>
                                         <td className="font-medium text-gray-900">
                                             {transaction.description}

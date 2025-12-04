@@ -22,7 +22,7 @@ import { formatCurrency, calculateWorkOrderTotal } from '@/utils/calculations';
 import { WorkOrderStatus } from '@/types/database';
 import type { Customer, Vehicle, WorkOrder, Appointment } from '@/types/database';
 import toast from 'react-hot-toast';
-import { formatDate, formatTime } from '@/utils/datetime';
+import { formatDate, formatTime, toISOLocal } from '@/utils/datetime';
 
 interface WorkOrderModalProps {
     isOpen: boolean;
@@ -152,9 +152,9 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 customer_id: workOrder.customer_id,
                 vehicle_id: workOrder.vehicle_id,
                 status: workOrder.status as any,
-                entry_date: new Date(workOrder.entry_date).toISOString().split('T')[0],
+                entry_date: toISOLocal(workOrder.entry_date).split('T')[0],
                 expected_completion_date: workOrder.expected_completion_date
-                    ? new Date(workOrder.expected_completion_date).toISOString().split('T')[0]
+                    ? toISOLocal(workOrder.expected_completion_date).split('T')[0]
                     : '',
                 fuel_level: workOrder.fuel_level || 50,
                 odometer: workOrder.odometer?.toString() || '',
@@ -366,7 +366,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     customer_id: formData.customer_id,
                     vehicle_id: formData.vehicle_id,
                     title: title,
-                    scheduled_at: new Date(formData.entry_date).toISOString(),
+                    scheduled_at: toISOLocal(formData.entry_date),
                     status: 'in_progress',
                     duration_minutes: 60,
                 };
@@ -419,9 +419,9 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 vehicle_id: formData.vehicle_id,
                 order_number: orderNumber,
                 status: tempStatus, // Use temp status first
-                entry_date: new Date(formData.entry_date).toISOString(),
+                entry_date: toISOLocal(formData.entry_date),
                 expected_completion_date: formData.expected_completion_date
-                    ? new Date(formData.expected_completion_date).toISOString()
+                    ? toISOLocal(formData.expected_completion_date)
                     : null,
                 fuel_level: formData.fuel_level,
                 odometer: formData.odometer ? parseInt(formData.odometer) : null,

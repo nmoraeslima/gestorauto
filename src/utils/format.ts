@@ -8,8 +8,16 @@ export const formatCurrency = (value: number): string => {
 
 // Formatação de data
 export const formatDate = (date: string | Date): string => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('pt-BR');
+    if (typeof date === 'string') {
+        // If it's an ISO string from database, parse as UTC and extract date components
+        // to avoid timezone shift (e.g., "2025-12-03T00:00:00Z" should display as 03/12)
+        const d = new Date(date);
+        const year = d.getUTCFullYear();
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        return `${day}/${month}/${year}`;
+    }
+    return date.toLocaleDateString('pt-BR');
 };
 
 // Formatação de data e hora
