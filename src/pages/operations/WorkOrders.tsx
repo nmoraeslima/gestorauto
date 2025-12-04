@@ -292,7 +292,7 @@ export default function WorkOrders() {
                                     <tr key={wo.id}>
                                         <td>
                                             <span className="font-mono text-sm text-neutral-600">
-                                                #{wo.id.slice(0, 8)}
+                                                #{wo.order_number}
                                             </span>
                                         </td>
                                         <td>
