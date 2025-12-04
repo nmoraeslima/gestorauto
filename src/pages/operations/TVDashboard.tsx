@@ -403,8 +403,8 @@ export const TVDashboard: React.FC = () => {
                                         <div className="truncate">
                                             {apt.vehicle?.brand} {apt.vehicle?.model}
                                         </div>
-                                        <div className="font-medium text-primary-300 truncate">
-                                            {apt.services?.[0]?.service?.name}
+                                        <div className="font-medium text-primary-300 text-xs">
+                                            {apt.services?.map(s => s.service?.name).filter(Boolean).join(', ') || 'Sem serviços'}
                                         </div>
                                     </div>
 
@@ -474,7 +474,9 @@ export const TVDashboard: React.FC = () => {
 
                                         <div className="flex items-center gap-2 text-sm text-primary-300 bg-primary-500/5 p-2 rounded">
                                             <div className="w-2 h-2 rounded-full bg-primary-500"></div>
-                                            {apt.services?.[0]?.service?.name}
+                                            <span className="flex-1">
+                                                {apt.services?.map(s => s.service?.name).filter(Boolean).join(', ') || 'Sem serviços'}
+                                            </span>
                                         </div>
                                     </div>
                                 ))
