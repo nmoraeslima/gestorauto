@@ -33,8 +33,11 @@ export const TVDashboard: React.FC = () => {
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [error, setError] = useState<string | null>(null);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const channelRef = useRef<any>(null);
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const previousAppointmentIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         // Clock timer
@@ -47,6 +50,7 @@ export const TVDashboard: React.FC = () => {
 
         loadAppointments();
         setupRealtimeSubscription();
+        setupPollingFallback();
 
         // Initialize audio
         audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -55,6 +59,10 @@ export const TVDashboard: React.FC = () => {
             // Properly cleanup channel
             if (channelRef.current) {
                 supabase.removeChannel(channelRef.current);
+            }
+            // Cleanup polling
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
             }
         };
     }, [user?.company?.id]);
@@ -107,7 +115,7 @@ export const TVDashboard: React.FC = () => {
         );
     }
 
-    const loadAppointments = async () => {
+    const loadAppointments = async (checkForNew = false) => {
         if (!user?.company?.id) return;
 
         try {
@@ -130,7 +138,6 @@ export const TVDashboard: React.FC = () => {
                 .order('created_at', { ascending: true });
 
             if (pendingError) throw pendingError;
-            if (pending) setPendingAppointments(pending);
 
             // Fetch Today's Schedule
             const { data: scheduled, error: scheduledError } = await supabase
@@ -148,6 +155,33 @@ export const TVDashboard: React.FC = () => {
                 .order('scheduled_at', { ascending: true });
 
             if (scheduledError) throw scheduledError;
+
+            // Detect new appointments and play sound
+            if (checkForNew && isAudioEnabled) {
+                const allCurrentIds = new Set([
+                    ...(pending || []).map(a => a.id),
+                    ...(scheduled || []).map(a => a.id)
+                ]);
+
+                const newAppointments = Array.from(allCurrentIds).filter(
+                    id => !previousAppointmentIdsRef.current.has(id)
+                );
+
+                if (newAppointments.length > 0) {
+                    playAlert();
+                    toast('Novo agendamento!', { icon: '🔔' });
+                }
+
+                previousAppointmentIdsRef.current = allCurrentIds;
+            } else if (!checkForNew) {
+                // Initial load - just populate the ref
+                previousAppointmentIdsRef.current = new Set([
+                    ...(pending || []).map(a => a.id),
+                    ...(scheduled || []).map(a => a.id)
+                ]);
+            }
+
+            if (pending) setPendingAppointments(pending);
             if (scheduled) setTodayAppointments(scheduled);
         } catch (err: any) {
             console.error('Error loading appointments:', err);
@@ -172,18 +206,17 @@ export const TVDashboard: React.FC = () => {
                     (payload) => {
                         console.log('Realtime update:', payload);
 
-                        // Play sound on new pending appointment
-                        if (payload.eventType === 'INSERT' && (payload.new as any).status === 'pending') {
-                            playAlert();
-                            toast('Novo agendamento pendente!', { icon: '🔔' });
-                        }
-
-                        // Reload data on any change
-                        loadAppointments();
+                        // Reload data on any change and check for new appointments
+                        loadAppointments(true);
                     }
                 )
                 .subscribe((status) => {
                     console.log('Subscription status:', status);
+                    if (status === 'SUBSCRIBED') {
+                        console.log('✅ Realtime connected');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        console.error('❌ Realtime connection error');
+                    }
                 });
 
             channelRef.current = channel;
@@ -193,18 +226,48 @@ export const TVDashboard: React.FC = () => {
         }
     };
 
+    const setupPollingFallback = () => {
+        // Poll every 45 seconds as a fallback
+        pollingIntervalRef.current = setInterval(() => {
+            console.log('🔄 Polling fallback triggered');
+            loadAppointments(true);
+        }, 45000);
+    };
+
     const playAlert = () => {
+        if (!isAudioEnabled) {
+            console.log('Audio not enabled yet');
+            return;
+        }
+
         if (audioRef.current) {
             audioRef.current.play()
                 .then(() => {
-                    console.log('Alert sound played successfully');
+                    console.log('🔊 Alert sound played successfully');
                 })
                 .catch((e) => {
-                    console.log('Audio play failed (user interaction may be required):', e);
+                    console.log('Audio play failed:', e);
                     // Fallback: show visual notification
-                    toast.error('🔔 Novo agendamento pendente!', {
+                    toast.error('🔔 Novo agendamento!', {
                         duration: 5000,
                     });
+                });
+        }
+    };
+
+    const enableAudio = () => {
+        // Play a silent sound to enable audio context
+        if (audioRef.current) {
+            audioRef.current.volume = 0.01;
+            audioRef.current.play()
+                .then(() => {
+                    audioRef.current!.volume = 1;
+                    setIsAudioEnabled(true);
+                    toast.success('🔊 Monitoramento ativado!');
+                })
+                .catch((e) => {
+                    console.error('Failed to enable audio:', e);
+                    toast.error('Erro ao ativar áudio');
                 });
         }
     };
@@ -245,6 +308,28 @@ export const TVDashboard: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-secondary-900 text-white p-6">
+            {/* Audio Enablement Overlay */}
+            {!isAudioEnabled && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-secondary-800 rounded-2xl p-8 border border-primary-500/30 shadow-2xl max-w-md text-center">
+                        <div className="bg-primary-500/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <AlertCircle className="w-10 h-10 text-primary-400 animate-pulse" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-3">Ativar Monitoramento</h2>
+                        <p className="text-secondary-300 mb-6">
+                            Clique no botão abaixo para ativar as notificações sonoras quando novos agendamentos chegarem.
+                        </p>
+                        <button
+                            onClick={enableAudio}
+                            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-primary-500/30 flex items-center justify-center gap-3"
+                        >
+                            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                            Iniciar Monitoramento
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex justify-between items-center mb-8 border-b border-secondary-700 pb-6">
                 <div>
