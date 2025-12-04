@@ -118,6 +118,8 @@ export const TVDashboard: React.FC = () => {
     const loadAppointments = async (checkForNew = false) => {
         if (!user?.company?.id) return;
 
+        console.log(`📊 loadAppointments called - checkForNew: ${checkForNew}, isAudioEnabled: ${isAudioEnabled}`);
+
         try {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -156,6 +158,8 @@ export const TVDashboard: React.FC = () => {
 
             if (scheduledError) throw scheduledError;
 
+            console.log(`📋 Fetched: ${pending?.length || 0} pending, ${scheduled?.length || 0} scheduled`);
+
             // Detect new appointments and play sound
             if (checkForNew && isAudioEnabled) {
                 const allCurrentIds = new Set([
@@ -163,11 +167,16 @@ export const TVDashboard: React.FC = () => {
                     ...(scheduled || []).map(a => a.id)
                 ]);
 
+                console.log(`🔍 Current IDs: ${allCurrentIds.size}, Previous IDs: ${previousAppointmentIdsRef.current.size}`);
+
                 const newAppointments = Array.from(allCurrentIds).filter(
                     id => !previousAppointmentIdsRef.current.has(id)
                 );
 
+                console.log(`🆕 New appointments detected: ${newAppointments.length}`, newAppointments);
+
                 if (newAppointments.length > 0) {
+                    console.log('🔔 Playing alert sound...');
                     playAlert();
                     toast('Novo agendamento!', { icon: '🔔' });
                 }
@@ -175,10 +184,14 @@ export const TVDashboard: React.FC = () => {
                 previousAppointmentIdsRef.current = allCurrentIds;
             } else if (!checkForNew) {
                 // Initial load - just populate the ref
-                previousAppointmentIdsRef.current = new Set([
+                const initialIds = new Set([
                     ...(pending || []).map(a => a.id),
                     ...(scheduled || []).map(a => a.id)
                 ]);
+                previousAppointmentIdsRef.current = initialIds;
+                console.log(`📝 Initial load - stored ${initialIds.size} appointment IDs`);
+            } else {
+                console.log(`⚠️ Skipping new appointment check - checkForNew: ${checkForNew}, isAudioEnabled: ${isAudioEnabled}`);
             }
 
             if (pending) setPendingAppointments(pending);
@@ -235,23 +248,32 @@ export const TVDashboard: React.FC = () => {
     };
 
     const playAlert = () => {
+        console.log(`🔊 playAlert called - isAudioEnabled: ${isAudioEnabled}`);
+
         if (!isAudioEnabled) {
-            console.log('Audio not enabled yet');
+            console.log('⚠️ Audio not enabled yet');
             return;
         }
 
         if (audioRef.current) {
+            // Reset and ensure volume is correct
+            audioRef.current.currentTime = 0;
+            audioRef.current.volume = 1;
+
+            console.log('🎵 Attempting to play audio...');
             audioRef.current.play()
                 .then(() => {
-                    console.log('🔊 Alert sound played successfully');
+                    console.log('✅ Alert sound played successfully');
                 })
                 .catch((e) => {
-                    console.log('Audio play failed:', e);
+                    console.error('❌ Audio play failed:', e);
                     // Fallback: show visual notification
                     toast.error('🔔 Novo agendamento!', {
                         duration: 5000,
                     });
                 });
+        } else {
+            console.error('❌ Audio ref is null');
         }
     };
 
