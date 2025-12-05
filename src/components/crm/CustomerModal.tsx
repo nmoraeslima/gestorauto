@@ -189,7 +189,14 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         } catch (error: any) {
             console.error('Error saving customer:', error);
             if (error.code === '23505') {
-                toast.error('CPF já cadastrado');
+                // Unique constraint violation
+                if (error.message?.includes('cpf') || error.constraint?.includes('cpf')) {
+                    toast.error('CPF já cadastrado para outro cliente');
+                } else if (error.message?.includes('phone') || error.constraint?.includes('phone')) {
+                    toast.error('Telefone já cadastrado para outro cliente');
+                } else {
+                    toast.error('Já existe um cliente com estes dados');
+                }
             } else {
                 toast.error('Erro ao salvar cliente: ' + error.message);
             }
