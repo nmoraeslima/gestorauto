@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "date-fns": "^3.6.0",
+    "framer-motion": "^12.23.25",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-big-calendar": "^1.19.4",
