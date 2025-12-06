@@ -1,4 +1,3 @@
-import axios, { AxiosInstance } from 'axios';
 import { supabase } from '@/lib/supabase';
 
 interface MessageQueueItem {
@@ -16,8 +15,7 @@ interface EvolutionConfig {
 }
 
 export class AntiBanWhatsAppClient {
-    private client: AxiosInstance;
-    private instanceName: string;
+    private config: EvolutionConfig;
     private messageQueue: MessageQueueItem[] = [];
     private lastMessageTime: number = 0;
     private dailyMessageCount: number = 0;
@@ -33,15 +31,7 @@ export class AntiBanWhatsAppClient {
     private readonly BUSINESS_HOURS_END = 20; // 20h
 
     constructor(config: EvolutionConfig) {
-        this.instanceName = config.instanceName;
-        this.client = axios.create({
-            baseURL: config.baseUrl,
-            headers: {
-                'apikey': config.apiKey,
-                'Content-Type': 'application/json',
-            },
-            timeout: 30000,
-        });
+        this.config = config;
 
         // Iniciar processador de fila
         this.startQueueProcessor();
@@ -156,13 +146,24 @@ export class AntiBanWhatsAppClient {
         try {
             console.log(`📤 Sending message to ${phone}...`);
 
-            const response = await this.client.post(
-                `/message/sendText/${this.instanceName}`,
-                {
+            const response = await fetch(`${this.config.baseUrl}/message/sendText/${this.config.instanceName}`, {
+                method: 'POST',
+                headers: {
+                    'apikey': this.config.apiKey,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
                     number: this.formatPhone(phone),
                     text: this.addHumanVariation(message),
-                }
-            );
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || response.statusText);
+            }
+
+            const data = await response.json();
 
             // Atualizar contadores
             this.lastMessageTime = Date.now();
@@ -175,7 +176,7 @@ export class AntiBanWhatsAppClient {
                 status: 'sent',
                 appointmentId,
                 type,
-                response: response.data,
+                response: data,
             });
 
             console.log(`✅ Message sent successfully. Daily count: ${this.dailyMessageCount}/${this.MAX_MESSAGES_PER_DAY}`);
@@ -338,10 +339,18 @@ export class AntiBanWhatsAppClient {
      */
     async checkInstanceStatus(): Promise<any> {
         try {
-            const response = await this.client.get(
-                `/instance/connectionState/${this.instanceName}`
-            );
-            return response.data;
+            const response = await fetch(`${this.config.baseUrl}/instance/connectionState/${this.config.instanceName}`, {
+                method: 'GET',
+                headers: {
+                    'apikey': this.config.apiKey,
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
+
+            return await response.json();
         } catch (error) {
             console.error('Error checking instance status:', error);
             throw error;

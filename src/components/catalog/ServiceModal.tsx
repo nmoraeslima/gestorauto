@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, Tag, DollarSign, Clock, FileText } from 'lucide-react';
+import { X, Tag, DollarSign, Clock, FileText, Info } from 'lucide-react';
 import type { Service } from '@/types/database';
 import toast from 'react-hot-toast';
 
@@ -167,6 +167,13 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                                 <label className="label">
                                     <Clock className="w-4 h-4 inline mr-2" />
                                     Recorrência (dias)
+                                    <div className="group relative ml-2 inline-block">
+                                        <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                                        <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                                            Define quantos dias após a conclusão do serviço o sistema deve sugerir um retorno ao cliente.
+                                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                        </div>
+                                    </div>
                                 </label>
                                 <input
                                     type="number"

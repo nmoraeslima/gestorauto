@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bell, Calendar, CheckCircle, MessageCircle, XCircle } from 'lucide-react';
+import { addDays } from 'date-fns';
 import type { ServiceReminderWithDetails } from '@/types/database';
 import { formatDate } from '@/utils/datetime';
 import toast from 'react-hot-toast';
@@ -29,7 +30,7 @@ export const ServiceReminders: React.FC = () => {
                 `)
                 .eq('company_id', user?.company?.id)
                 .eq('status', 'pending')
-                .lte('due_date', new Date().toISOString().split('T')[0]) // Due today or before
+                .lte('due_date', addDays(new Date(), 3).toISOString().split('T')[0]) // Show items due within 3 days (or overdue)
                 .order('due_date', { ascending: true });
 
             if (error) throw error;

@@ -64,20 +64,18 @@ Obrigado pela confiança! 🙏`;
 
         // Send via WhatsApp utility
         const { sendWhatsAppMessage } = await import('./whatsapp');
-        const result = await sendWhatsAppMessage(phone, message);
+        sendWhatsAppMessage(phone, message);
 
-        if (result.success) {
-            // Log the notification
-            await supabase.from('whatsapp_logs').insert({
-                phone_number: phone,
-                message_type: 'work_order_completed',
-                reference_id: workOrderId,
-                status: 'sent',
-                message_preview: message.substring(0, 100)
-            });
-        }
+        // Log the notification (optimistic)
+        await supabase.from('whatsapp_logs').insert({
+            phone_number: phone,
+            message_type: 'work_order_completed',
+            reference_id: workOrderId,
+            status: 'sent',
+            message_preview: message.substring(0, 100)
+        });
 
-        return result;
+        return { success: true };
     } catch (error: any) {
         console.error('Error sending work order completion notification:', error);
         return { success: false, error: error.message };

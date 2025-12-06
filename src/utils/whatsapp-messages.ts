@@ -41,8 +41,8 @@ export function generateConfirmationMessage(data: MessageData): string {
         message += `\n`;
     }
 
-    if (appointment.notes) {
-        message += `\n📝 *Observações:* ${appointment.notes}\n`;
+    if (appointment.description) {
+        message += `\n📝 *Observações:* ${appointment.description}\n`;
     }
 
     if (company?.address) {

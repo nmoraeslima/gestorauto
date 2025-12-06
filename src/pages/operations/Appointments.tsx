@@ -398,8 +398,7 @@ export default function Appointments() {
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
 
-                                                {/* WhatsApp Quick Button - Only for confirmed appointments with phone */}
-                                                {appointment.status === 'confirmed' && appointment.customer?.phone && (
+                                                {appointment.status === 'confirmed' && appointment.customer?.phone && user?.company && (
                                                     <QuickWhatsAppButton
                                                         appointment={{ ...appointment, company: user.company } as any}
                                                         type="confirmation"
@@ -444,7 +443,7 @@ export default function Appointments() {
             />
 
             {/* WhatsApp Confirmation Modal */}
-            {showWhatsAppConfirmation && whatsappAppointment && (
+            {showWhatsAppConfirmation && whatsappAppointment && user && (
                 <WhatsAppConfirmationModal
                     appointment={{ ...whatsappAppointment, company: user.company }}
                     onClose={() => {
@@ -469,7 +468,7 @@ export default function Appointments() {
             )}
 
             {/* WhatsApp Cancellation Modal */}
-            {showWhatsAppCancellation && whatsappAppointment && (
+            {showWhatsAppCancellation && whatsappAppointment && user && (
                 <WhatsAppCancellationModal
                     appointment={{ ...whatsappAppointment, company: user.company }}
                     onClose={() => {

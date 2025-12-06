@@ -28,8 +28,8 @@ export class SmartWhatsAppTemplates {
     private static confirmationTemplate1(data: TemplateData): string {
         const { customer, appointment, vehicle, company } = data;
         const firstName = customer.name.split(' ')[0];
-        const date = new Date(appointment.scheduled_date).toLocaleDateString('pt-BR');
-        const time = new Date(appointment.scheduled_date).toLocaleTimeString('pt-BR', {
+        const date = new Date(appointment.scheduled_at).toLocaleDateString('pt-BR');
+        const time = new Date(appointment.scheduled_at).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -48,7 +48,7 @@ ${vehicle ? `🚘 *Veículo:* ${vehicle.brand} ${vehicle.model} - ${vehicle.lice
 📍 *Endereço:*
 ${company.address || 'Consulte nosso endereço'}
 
-${appointment.notes ? `📝 *Observações:*\n${appointment.notes}\n\n` : ''}Para reagendar ou cancelar, responda esta mensagem.
+${appointment.description ? `📝 *Observações:*\n${appointment.description}\n\n` : ''}Para reagendar ou cancelar, responda esta mensagem.
 
 Até breve! ✨`;
     }
@@ -59,8 +59,8 @@ Até breve! ✨`;
     private static confirmationTemplate2(data: TemplateData): string {
         const { customer, appointment, vehicle, company } = data;
         const firstName = customer.name.split(' ')[0];
-        const date = new Date(appointment.scheduled_date).toLocaleDateString('pt-BR');
-        const time = new Date(appointment.scheduled_date).toLocaleTimeString('pt-BR', {
+        const date = new Date(appointment.scheduled_at).toLocaleDateString('pt-BR');
+        const time = new Date(appointment.scheduled_at).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -85,8 +85,8 @@ Nos vemos em breve! 🚗`;
     private static confirmationTemplate3(data: TemplateData): string {
         const { customer, appointment, vehicle } = data;
         const firstName = customer.name.split(' ')[0];
-        const date = new Date(appointment.scheduled_date).toLocaleDateString('pt-BR');
-        const time = new Date(appointment.scheduled_date).toLocaleTimeString('pt-BR', {
+        const date = new Date(appointment.scheduled_at).toLocaleDateString('pt-BR');
+        const time = new Date(appointment.scheduled_at).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -107,8 +107,8 @@ Qualquer dúvida, é só responder.`;
     static reminder24h(data: TemplateData): string {
         const { customer, appointment, vehicle } = data;
         const firstName = customer.name.split(' ')[0];
-        const date = new Date(appointment.scheduled_date).toLocaleDateString('pt-BR');
-        const time = new Date(appointment.scheduled_date).toLocaleTimeString('pt-BR', {
+        const date = new Date(appointment.scheduled_at).toLocaleDateString('pt-BR');
+        const time = new Date(appointment.scheduled_at).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -149,7 +149,7 @@ Confirma presença? 👍`,
     static reminder2h(data: TemplateData): string {
         const { customer, appointment } = data;
         const firstName = customer.name.split(' ')[0];
-        const time = new Date(appointment.scheduled_date).toLocaleTimeString('pt-BR', {
+        const time = new Date(appointment.scheduled_at).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
         });
