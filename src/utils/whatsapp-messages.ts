@@ -26,7 +26,9 @@ export function generateConfirmationMessage(data: MessageData): string {
         minute: '2-digit',
     });
 
-    let message = `Olá, ${firstName}! 👋\n\n`;
+    const companyName = company?.name || 'GestorAuto';
+    let message = `✅ *Agendamento Confirmado - ${companyName} (by GestorAuto)*\n\n`;
+    message += `Olá, ${firstName}! 👋\n\n`;
     message += `Seu agendamento foi confirmado:\n\n`;
     message += `📅 *Data:* ${date}\n`;
     message += `🕐 *Horário:* ${time}\n`;
@@ -76,7 +78,9 @@ export function generateCancellationMessage(
         minute: '2-digit',
     });
 
-    let message = `Olá, ${firstName}!\n\n`;
+    const companyName = data.company?.name || 'GestorAuto';
+    let message = `❌ *Agendamento Cancelado - ${companyName} (by GestorAuto)*\n\n`;
+    message += `Olá, ${firstName}!\n\n`;
     message += `Infelizmente precisamos cancelar seu agendamento:\n\n`;
     message += `📅 *Data:* ${date}\n`;
     message += `🕐 *Horário:* ${time}\n\n`;
@@ -112,7 +116,8 @@ export function generateReminderMessage(data: MessageData): string {
         minute: '2-digit',
     });
 
-    let message = `⏰ *Lembrete de Agendamento*\n\n`;
+    const companyName = data.company?.name || 'GestorAuto';
+    let message = `⏰ *Lembrete de Agendamento - ${companyName} (by GestorAuto)*\n\n`;
     message += `Olá, ${firstName}!\n\n`;
     message += `Lembramos que você tem um agendamento amanhã:\n\n`;
     message += `📅 ${date} às ${time}\n`;
@@ -122,6 +127,56 @@ export function generateReminderMessage(data: MessageData): string {
     }
 
     message += `\nNos vemos em breve! 👋`;
+
+    return message;
+}
+
+/**
+ * Generate work order completion message
+ */
+export function generateWorkOrderCompletionMessage(
+    data: MessageData & {
+        workOrder: {
+            order_number: string;
+            total: number;
+            services: { name: string; quantity: number }[]
+        }
+    }
+): string {
+    const { customer, vehicle, workOrder } = data;
+
+    const firstName = customer.name.split(' ')[0];
+    const totalFormatted = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    }).format(workOrder.total);
+
+    const companyName = data.company?.name || 'GestorAuto';
+    let message = `✅ *Serviço Concluído - ${companyName} (by GestorAuto)*\n\n`;
+    message += `Boa notícia, ${firstName}! Seu veículo está pronto:\n\n`;
+
+    if (vehicle) {
+        message += `🚙 *${vehicle.brand} ${vehicle.model}*`;
+        if (vehicle.license_plate) {
+            message += ` - ${vehicle.license_plate}`;
+        }
+        message += `\n`;
+    }
+
+    message += `📋 O.S. #${workOrder.order_number}\n\n`;
+
+    if (workOrder.services && workOrder.services.length > 0) {
+        message += `*Serviços realizados:*\n`;
+        workOrder.services.forEach(service => {
+            const qty = service.quantity > 1 ? ` (${service.quantity}x)` : '';
+            message += `  ✨ ${service.name}${qty}\n`;
+        });
+        message += `\n`;
+    }
+
+    message += `💰 *Valor Total:* ${totalFormatted}\n\n`;
+    message += `📍 *Você pode retirar seu veículo!*\n\n`;
+    message += `Obrigado pela confiança! 🙏`;
 
     return message;
 }

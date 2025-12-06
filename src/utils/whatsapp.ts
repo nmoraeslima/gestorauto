@@ -18,18 +18,30 @@ export function formatPhoneForWhatsApp(phone: string): string {
 }
 
 /**
- * Send message via WhatsApp Web/Desktop
+ * Send message via WhatsApp Business/Desktop (priority) or Web (fallback)
  * Opens WhatsApp with pre-filled message
+ * Priority: WhatsApp Business Desktop > WhatsApp Desktop > WhatsApp Web
  */
 export function sendWhatsAppMessage(phone: string, message: string): void {
     const formattedPhone = formatPhoneForWhatsApp(phone);
     const encodedMessage = encodeURIComponent(message);
 
-    // WhatsApp Web URL
-    const url = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
+    // Try WhatsApp Desktop/Business first (whatsapp:// protocol)
+    const desktopUrl = `whatsapp://send?phone=${formattedPhone}&text=${encodedMessage}`;
 
-    // Open in new tab
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Fallback to WhatsApp Web
+    const webUrl = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
+
+    // Try to open desktop app first
+    const desktopWindow = window.open(desktopUrl, '_blank');
+
+    // If desktop app doesn't open (returns null or closes immediately), 
+    // fallback to WhatsApp Web after a short delay
+    setTimeout(() => {
+        if (!desktopWindow || desktopWindow.closed) {
+            window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
+    }, 500);
 }
 
 /**

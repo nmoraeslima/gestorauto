@@ -24,6 +24,8 @@ import type { Customer, Vehicle, WorkOrder, Appointment } from '@/types/database
 import toast from 'react-hot-toast';
 import { formatDate, formatTime, toISOLocal } from '@/utils/datetime';
 
+import WorkOrderWhatsAppModal from '@/components/whatsapp/WorkOrderWhatsAppModal';
+
 interface WorkOrderModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -108,6 +110,10 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
     const [selectedServices, setSelectedServices] = useState<ServiceItem[]>([]);
     const [selectedProducts, setSelectedProducts] = useState<ProductItem[]>([]);
+
+    // WhatsApp Modal State
+    const [showWhatsAppConfirmation, setShowWhatsAppConfirmation] = useState(false);
+    const [completedWorkOrder, setCompletedWorkOrder] = useState<any>(null);
 
     useEffect(() => {
         if (isOpen && user?.company?.id) {
@@ -508,7 +514,10 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             if (targetStatus === 'completed' && newWorkOrder.status !== 'completed') {
                 const { error: updateError } = await supabase
                     .from('work_orders')
-                    .update({ status: 'completed' })
+                    .update({
+                        status: 'completed',
+                        completed_at: new Date().toISOString()
+                    })
                     .eq('id', newWorkOrder.id);
 
                 if (updateError) throw updateError;
@@ -560,6 +569,27 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             }
 
             toast.success(workOrder ? 'Ordem de Serviço atualizada!' : 'Ordem de Serviço criada com sucesso!');
+
+            // Send WhatsApp notification if work order was completed
+            // Send WhatsApp notification if work order was completed
+            if (targetStatus === 'completed') {
+                const customer = customers.find(c => c.id === formData.customer_id);
+                const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
+
+                if (customer) {
+                    setCompletedWorkOrder({
+                        ...newWorkOrder,
+                        customer,
+                        vehicle,
+                        services: selectedServices.map(s => ({ name: s.service_name, quantity: s.quantity })),
+                        company: user.company
+                    });
+                    setShowWhatsAppConfirmation(true);
+                    setLoading(false);
+                    return; // Don't close modal yet
+                }
+            }
+
             onSuccess();
             onClose();
         } catch (error: any) {
@@ -571,6 +601,23 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     };
 
     if (!isOpen) return null;
+
+    if (showWhatsAppConfirmation && completedWorkOrder) {
+        return (
+            <WorkOrderWhatsAppModal
+                workOrder={completedWorkOrder}
+                onClose={() => {
+                    setShowWhatsAppConfirmation(false);
+                    setCompletedWorkOrder(null);
+                    onSuccess();
+                    onClose();
+                }}
+                onSent={() => {
+                    toast.success('✅ Notificação WhatsApp enviada!');
+                }}
+            />
+        );
+    }
 
     // Calculate totals (only services, products don't have price)
     const totals = calculateWorkOrderTotal(

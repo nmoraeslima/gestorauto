@@ -148,9 +148,24 @@ export const SignIn: React.FC = () => {
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-xs text-secondary-400">
-                    © 2024 GestorAuto. Todos os direitos reservados.
-                </p>
+                <div className="text-center space-y-2">
+                    <p className="text-xs text-neutral-500">
+                        © {new Date().getFullYear()} GestorAuto. Todos os direitos reservados.
+                    </p>
+                    <div className="flex justify-center gap-4 text-xs">
+                        <Link to="/privacy-policy" className="text-neutral-500 hover:text-primary-600 transition-colors">
+                            Privacidade
+                        </Link>
+                        <span className="text-neutral-400">•</span>
+                        <Link to="/terms-of-service" className="text-neutral-500 hover:text-primary-600 transition-colors">
+                            Termos
+                        </Link>
+                        <span className="text-neutral-400">•</span>
+                        <Link to="/cookie-policy" className="text-neutral-500 hover:text-primary-600 transition-colors">
+                            Cookies
+                        </Link>
+                    </div>
+                </div>
             </div>
         </div>
     );

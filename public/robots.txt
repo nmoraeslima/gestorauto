@@ -1,0 +1,18 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /customers
+Disallow: /vehicles
+Disallow: /services
+Disallow: /appointments
+Disallow: /work-orders
+Disallow: /products
+Disallow: /inventory
+Disallow: /financial
+Disallow: /settings
+Disallow: /tv-dashboard
+Disallow: /subscription
+
+# Sitemap
+Sitemap: https://gestorauto.com.br/sitemap.xml

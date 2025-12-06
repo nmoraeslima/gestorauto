@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { X, AlertTriangle, MessageCircle, Copy, Check } from 'lucide-react';
-import { sendWhatsAppMessage, copyMessageToClipboard } from '@/utils/whatsapp';
-import { generateCancellationMessage } from '@/utils/whatsapp-messages';
+import { useState } from 'react';
+import { AlertTriangle, Check, Copy, MessageCircle, X } from 'lucide-react';
 import { Appointment, Customer, Vehicle } from '@/types/database';
+import { generateCancellationMessage } from '@/utils/whatsapp-messages';
+import { sendWhatsAppMessage, copyMessageToClipboard } from '@/utils/whatsapp';
 
 interface WhatsAppCancellationModalProps {
     appointment: Appointment & {
@@ -10,22 +10,21 @@ interface WhatsAppCancellationModalProps {
         vehicle?: Vehicle;
     };
     onClose: () => void;
-    onConfirm: (reason: string, customReason?: string) => Promise<void>;
+    onConfirm: (reason: string, customReason: string) => Promise<void>;
 }
 
 const CANCELLATION_REASONS = [
-    'Problema técnico na oficina',
-    'Funcionário ausente',
-    'Peça não chegou',
-    'Cliente solicitou reagendamento',
-    'Condições climáticas',
-    'Outro (especificar)',
+    'Cliente desistiu',
+    'Imprevisto pessoal',
+    'Veículo indisponível',
+    'Mudança de planos',
+    'Outro (especificar)'
 ];
 
 export default function WhatsAppCancellationModal({
     appointment,
     onClose,
-    onConfirm,
+    onConfirm
 }: WhatsAppCancellationModalProps) {
     const [reason, setReason] = useState('');
     const [customReason, setCustomReason] = useState('');
@@ -117,13 +116,13 @@ export default function WhatsAppCancellationModal({
                             <div>
                                 <p className="text-gray-600">Data</p>
                                 <p className="font-medium text-gray-900">
-                                    {new Date(appointment.scheduled_date).toLocaleDateString('pt-BR')}
+                                    {new Date(appointment.scheduled_at).toLocaleDateString('pt-BR')}
                                 </p>
                             </div>
                             <div>
                                 <p className="text-gray-600">Horário</p>
                                 <p className="font-medium text-gray-900">
-                                    {new Date(appointment.scheduled_date).toLocaleTimeString('pt-BR', {
+                                    {new Date(appointment.scheduled_at).toLocaleTimeString('pt-BR', {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                     })}
@@ -219,6 +218,7 @@ export default function WhatsAppCancellationModal({
                         {loading ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                dict
                                 Cancelando...
                             </>
                         ) : (

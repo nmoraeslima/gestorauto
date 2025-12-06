@@ -40,6 +40,11 @@ import { ServiceTracker } from './pages/public/ServiceTracker';
 import PublicBooking from './pages/public/PublicBooking';
 import { Landing } from './pages/Landing';
 
+// Legal Pages
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsOfService from './pages/legal/TermsOfService';
+import CookiePolicy from './pages/legal/CookiePolicy';
+
 import { ReloadPrompt } from './components/ReloadPrompt';
 
 // Placeholder components para páginas ainda não implementadas
@@ -92,6 +97,11 @@ function App() {
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/tracker/:id" element={<ServiceTracker />} />
                     <Route path="/book/:company_slug" element={<PublicBooking />} />
+
+                    {/* Legal Pages */}
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/cookie-policy" element={<CookiePolicy />} />
 
                     {/* Subscription Route (accessible even with expired subscription) */}
                     <Route path="/subscription/renew" element={<SubscriptionRenew />} />

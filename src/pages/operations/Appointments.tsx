@@ -25,7 +25,7 @@ import type { Appointment } from '@/types/database';
 import toast from 'react-hot-toast';
 
 interface AppointmentWithDetails extends Appointment {
-    customer?: { name: string };
+    customer?: { name: string; phone: string };
     vehicle?: { brand: string; model: string; license_plate: string };
 }
 
@@ -64,7 +64,7 @@ export default function Appointments() {
             .from('appointments')
             .select(`
                 *,
-                customer:customers(name),
+                customer:customers(name, phone),
                 vehicle:vehicles(brand, model, license_plate)
             `)
             .eq('company_id', user.company.id)
@@ -100,358 +100,385 @@ export default function Appointments() {
     };
 
     const handleModalClose = () => {
+        setShowModal(false);
+        setSelectedAppointment(null);
+    };
 
-        const handleCancelClick = async (appointment: Appointment) => {
-            // Fetch full appointment details for WhatsApp
+    const handleSuccess = async () => {
+        await loadAppointments();
+
+        // Get the newly created/updated appointment with full details
+        if (selectedAppointment?.id) {
             const { data } = await supabase
                 .from('appointments')
                 .select(`
+                    *,
+                    customer:customers(*),
+                    vehicle:vehicles(*),
+                    company:companies(*)
+                `)
+                .eq('id', selectedAppointment.id)
+                .single();
+
+            // Only show WhatsApp modal if status is 'confirmed'
+            if (data && data.status === 'confirmed') {
+                setWhatsappAppointment(data);
+                setShowWhatsAppConfirmation(true);
+            }
+        }
+    };
+
+    const handleCancelClick = async (appointment: Appointment) => {
+        // Fetch full appointment details for WhatsApp
+        const { data } = await supabase
+            .from('appointments')
+            .select(`
                 *,
                 customer:customers(*),
                 vehicle:vehicles(*),
                 company:companies(*)
             `)
-                .eq('id', appointment.id)
-                .single();
+            .eq('id', appointment.id)
+            .single();
 
-            if (data) {
-                setWhatsappAppointment(data);
-                setShowWhatsAppCancellation(true);
-            }
+        if (data) {
+            setWhatsappAppointment(data);
+            setShowWhatsAppCancellation(true);
+        }
+    };
+
+    const handleCancelConfirm = async (reason: string, customReason?: string) => {
+        if (!whatsappAppointment) return;
+
+        await supabase
+            .from('appointments')
+            .update({
+                status: 'cancelled',
+                cancellation_reason: reason === 'Outro (especificar)' ? customReason : reason,
+                cancelled_by: user?.id,
+                cancelled_at: new Date().toISOString(),
+            })
+            .eq('id', whatsappAppointment.id);
+
+        // Log message (optional analytics)
+        if (user?.company?.id && user?.id) {
+            await logWhatsAppMessage({
+                appointmentId: whatsappAppointment.id,
+                customerName: whatsappAppointment.customer.name,
+                phone: whatsappAppointment.customer.phone,
+                messageType: 'cancellation',
+                messagePreview: `Cancelamento: ${reason}`,
+                companyId: user.company.id,
+                userId: user.id,
+            });
+        }
+
+        loadAppointments();
+    };
+
+    // Filter appointments
+    const filteredAppointments = appointments.filter((appointment) => {
+        const matchesSearch =
+            appointment.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            appointment.vehicle?.license_plate.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
+
+        let matchesDate = true;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const appointmentDate = new Date(appointment.scheduled_at);
+        appointmentDate.setHours(0, 0, 0, 0);
+
+        if (dateFilter === 'today') {
+            matchesDate = appointmentDate.getTime() === today.getTime();
+        } else if (dateFilter === 'upcoming') {
+            matchesDate = appointmentDate.getTime() >= today.getTime();
+        } else if (dateFilter === 'past') {
+            matchesDate = appointmentDate.getTime() < today.getTime();
+        }
+
+        return matchesSearch && matchesStatus && matchesDate;
+    });
+
+    // Get status badge
+    const getStatusBadge = (status: string) => {
+        const badges: Record<string, { label: string; className: string }> = {
+            pending: { label: 'Pendente', className: 'badge-yellow' },
+            confirmed: { label: 'Confirmado', className: 'badge-green' },
+            in_progress: { label: 'Em Andamento', className: 'badge-purple' },
+            completed: { label: 'Concluído', className: 'badge-primary' },
+            cancelled: { label: 'Cancelado', className: 'badge-red' },
         };
 
-        const handleCancelConfirm = async (reason: string, customReason?: string) => {
-            if (!whatsappAppointment) return;
+        const badge = badges[status] || badges.confirmed;
+        return <span className={`badge ${badge.className}`}>{badge.label}</span>;
+    };
 
-            await supabase
-                .from('appointments')
-                .update({
-                    status: 'cancelled',
-                    cancellation_reason: reason === 'Outro (especificar)' ? customReason : reason,
-                    cancelled_by: user?.id,
-                    cancelled_at: new Date().toISOString(),
-                })
-                .eq('id', whatsappAppointment.id);
-
-            // Log message (optional analytics)
-            if (user?.company?.id && user?.id) {
-                await logWhatsAppMessage({
-                    appointmentId: whatsappAppointment.id,
-                    customerName: whatsappAppointment.customer.name,
-                    phone: whatsappAppointment.customer.phone,
-                    messageType: 'cancellation',
-                    messagePreview: `Cancelamento: ${reason}`,
-                    companyId: user.company.id,
-                    userId: user.id,
-                });
-            }
-
-            loadAppointments();
-        };
-
-        // Filter appointments
-        const filteredAppointments = appointments.filter((appointment) => {
-            const matchesSearch =
-                appointment.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                appointment.vehicle?.license_plate.toLowerCase().includes(searchTerm.toLowerCase());
-
-            const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
-
-            let matchesDate = true;
+    // Stats (based on filtered appointments)
+    const stats = {
+        total: filteredAppointments.length,
+        pending: filteredAppointments.filter((a) => a.status === 'pending').length,
+        confirmed: filteredAppointments.filter((a) => a.status === 'confirmed').length,
+        cancelled: filteredAppointments.filter((a) => a.status === 'cancelled').length,
+        today: filteredAppointments.filter((a) => {
+            const date = new Date(a.scheduled_at);
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const appointmentDate = new Date(appointment.scheduled_at);
-            appointmentDate.setHours(0, 0, 0, 0);
+            return date.toDateString() === today.toDateString();
+        }).length,
+    };
 
-            if (dateFilter === 'today') {
-                matchesDate = appointmentDate.getTime() === today.getTime();
-            } else if (dateFilter === 'upcoming') {
-                matchesDate = appointmentDate.getTime() >= today.getTime();
-            } else if (dateFilter === 'past') {
-                matchesDate = appointmentDate.getTime() < today.getTime();
-            }
-
-            return matchesSearch && matchesStatus && matchesDate;
-        });
-
-        // Get status badge
-        const getStatusBadge = (status: string) => {
-            const badges: Record<string, { label: string; className: string }> = {
-                pending: { label: 'Pendente', className: 'badge-yellow' },
-                confirmed: { label: 'Confirmado', className: 'badge-green' },
-                in_progress: { label: 'Em Andamento', className: 'badge-purple' },
-                completed: { label: 'Concluído', className: 'badge-primary' },
-                cancelled: { label: 'Cancelado', className: 'badge-red' },
-            };
-
-            const badge = badges[status] || badges.confirmed;
-            return <span className={`badge ${badge.className}`}>{badge.label}</span>;
-        };
-
-        // Stats (based on filtered appointments)
-        const stats = {
-            total: filteredAppointments.length,
-            pending: filteredAppointments.filter((a) => a.status === 'pending').length,
-            confirmed: filteredAppointments.filter((a) => a.status === 'confirmed').length,
-            cancelled: filteredAppointments.filter((a) => a.status === 'cancelled').length,
-            today: filteredAppointments.filter((a) => {
-                const date = new Date(a.scheduled_at);
-                const today = new Date();
-                return date.toDateString() === today.toDateString();
-            }).length,
-        };
-
-        return (
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-secondary-600">Agendamentos</h1>
-                        <p className="text-neutral-500 mt-1">
-                            Gerencie os agendamentos de serviços
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Link to="/tv-dashboard" className="btn btn-outline flex items-center gap-2">
-                            <Clock className="w-5 h-5" />
-                            Modo TV
-                        </Link>
-                        <button onClick={handleCreate} className="btn btn-primary flex items-center gap-2">
-                            <Plus className="w-5 h-5" />
-                            Novo Agendamento
-                        </button>
-                    </div>
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-secondary-600">Agendamentos</h1>
+                    <p className="text-neutral-500 mt-1">
+                        Gerencie os agendamentos de serviços
+                    </p>
                 </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="card p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-neutral-500">Total</p>
-                                <p className="text-2xl font-bold text-secondary-600">{stats.total}</p>
-                            </div>
-                            <CalendarIcon className="w-8 h-8 text-primary-300" />
-                        </div>
-                    </div>
-                    <div className="card p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-neutral-500">Pendentes</p>
-                                <p className="text-2xl font-bold text-warning-600">{stats.pending}</p>
-                            </div>
-                            <Clock className="w-8 h-8 text-warning-600" />
-                        </div>
-                    </div>
-                    <div className="card p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-neutral-500">Confirmados</p>
-                                <p className="text-2xl font-bold text-success-600">{stats.confirmed}</p>
-                            </div>
-                            <CheckCircle className="w-8 h-8 text-success-600" />
-                        </div>
-                    </div>
-                    <div className="card p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-neutral-500">Cancelados</p>
-                                <p className="text-2xl font-bold text-danger-600">{stats.cancelled}</p>
-                            </div>
-                            <XIcon className="w-8 h-8 text-danger-600" />
-                        </div>
-                    </div>
+                <div className="flex gap-3">
+                    <Link to="/tv-dashboard" className="btn btn-outline flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Modo TV
+                    </Link>
+                    <button onClick={handleCreate} className="btn btn-primary flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        Novo Agendamento
+                    </button>
                 </div>
+            </div>
 
-                {/* Filters */}
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="card p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                            <input
-                                type="text"
-                                placeholder="Buscar por cliente ou placa..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="input pl-10"
-                            />
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-neutral-500">Total</p>
+                            <p className="text-2xl font-bold text-secondary-600">{stats.total}</p>
                         </div>
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="input pl-10"
-                            >
-                                <option value="all">Todos os Status</option>
-                                <option value="pending">Pendente</option>
-                                <option value="confirmed">Confirmado</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                        </div>
-                        <div className="relative">
-                            <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                            <select
-                                value={dateFilter}
-                                onChange={(e) => setDateFilter(e.target.value)}
-                                className="input pl-10"
-                            >
-                                <option value="all">Todas as Datas</option>
-                                <option value="today">Hoje</option>
-                                <option value="upcoming">Próximos</option>
-                                <option value="past">Passados</option>
-                            </select>
-                        </div>
+                        <CalendarIcon className="w-8 h-8 text-primary-300" />
                     </div>
                 </div>
-
-                {/* Appointments List */}
-                <div className="card overflow-hidden">
-                    {loading ? (
-                        <div className="p-8 text-center">
-                            <div className="spinner mx-auto mb-4"></div>
-                            <p className="text-neutral-500">Carregando agendamentos...</p>
+                <div className="card p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-neutral-500">Pendentes</p>
+                            <p className="text-2xl font-bold text-warning-600">{stats.pending}</p>
                         </div>
-                    ) : filteredAppointments.length === 0 ? (
-                        <div className="p-8 text-center text-neutral-500">
-                            <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                            <p>Nenhum agendamento encontrado</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Data/Hora</th>
-                                        <th>Cliente</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredAppointments.map((appointment) => (
-                                        <tr key={appointment.id}>
-                                            <td>
-                                                <div className="flex items-center gap-2">
-                                                    <CalendarIcon className="w-4 h-4 text-neutral-400" />
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {formatDate(appointment.scheduled_at)}
-                                                        </p>
-                                                        <p className="text-sm text-neutral-500">
-                                                            {formatTime(appointment.scheduled_at)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex flex-col gap-1">
-                                                    <p className="font-medium text-secondary-900">
-                                                        {appointment.customer?.name || '-'}
-                                                    </p>
-                                                    {appointment.vehicle && (
-                                                        <div className="flex items-center gap-1.5 text-sm text-neutral-600">
-                                                            <Car className="w-3.5 h-3.5 text-neutral-400" />
-                                                            <span>
-                                                                {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    <div className="mt-1">
-                                                        {getStatusBadge(appointment.status)}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(appointment)}
-                                                        className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-
-                                                    {/* WhatsApp Quick Button */}
-                                                    {appointment.status !== 'cancelled' && appointment.customer && (
-                                                        <QuickWhatsAppButton
-                                                            appointment={appointment as any}
-                                                            type="confirmation"
-                                                            size="sm"
-                                                        />
-                                                    )}
-
-                                                    {/* Cancel Button */}
-                                                    {appointment.status !== 'cancelled' && (
-                                                        <button
-                                                            onClick={() => handleCancelClick(appointment)}
-                                                            className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
-                                                            title="Cancelar agendamento"
-                                                        >
-                                                            <XIcon className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-
-                                                    <button
-                                                        onClick={() => handleDelete(appointment.id)}
-                                                        className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
-                                                        title="Excluir"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                        <Clock className="w-8 h-8 text-warning-600" />
+                    </div>
                 </div>
+                <div className="card p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-neutral-500">Confirmados</p>
+                            <p className="text-2xl font-bold text-success-600">{stats.confirmed}</p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-success-600" />
+                    </div>
+                </div>
+                <div className="card p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-neutral-500">Cancelados</p>
+                            <p className="text-2xl font-bold text-danger-600">{stats.cancelled}</p>
+                        </div>
+                        <XIcon className="w-8 h-8 text-danger-600" />
+                    </div>
+                </div>
+            </div>
 
-                {/* Appointment Modal */}
-                <AppointmentModal
-                    isOpen={showModal}
-                    onClose={handleModalClose}
-                    appointment={selectedAppointment}
-                    onSuccess={handleSuccess}
-                />
+            {/* Filters */}
+            <div className="card p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por cliente ou placa..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="input pl-10"
+                        />
+                    </div>
+                    <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="input pl-10"
+                        >
+                            <option value="all">Todos os Status</option>
+                            <option value="pending">Pendente</option>
+                            <option value="confirmed">Confirmado</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div className="relative">
+                        <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <select
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            className="input pl-10"
+                        >
+                            <option value="all">Todas as Datas</option>
+                            <option value="today">Hoje</option>
+                            <option value="upcoming">Próximos</option>
+                            <option value="past">Passados</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-                {/* WhatsApp Confirmation Modal */}
-                {showWhatsAppConfirmation && whatsappAppointment && (
-                    <WhatsAppConfirmationModal
-                        appointment={whatsappAppointment}
-                        onClose={() => {
-                            setShowWhatsAppConfirmation(false);
-                            setWhatsappAppointment(null);
-                        }}
-                        onSent={async () => {
-                            // Log message (optional analytics)
-                            if (user?.company?.id && user?.id) {
-                                await logWhatsAppMessage({
-                                    appointmentId: whatsappAppointment.id,
-                                    customerName: whatsappAppointment.customer.name,
-                                    phone: whatsappAppointment.customer.phone,
-                                    messageType: 'confirmation',
-                                    messagePreview: 'Agendamento confirmado',
-                                    companyId: user.company.id,
-                                    userId: user.id,
-                                });
-                            }
-                        }}
-                    />
-                )}
+            {/* Appointments List */}
+            <div className="card overflow-hidden">
+                {loading ? (
+                    <div className="p-8 text-center">
+                        <div className="spinner mx-auto mb-4"></div>
+                        <p className="text-neutral-500">Carregando agendamentos...</p>
+                    </div>
+                ) : filteredAppointments.length === 0 ? (
+                    <div className="p-8 text-center text-neutral-500">
+                        <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                        <p>Nenhum agendamento encontrado</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Cliente</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredAppointments.map((appointment) => (
+                                    <tr key={appointment.id}>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <CalendarIcon className="w-4 h-4 text-neutral-400" />
+                                                <div>
+                                                    <p className="font-medium">
+                                                        {formatDate(appointment.scheduled_at)}
+                                                    </p>
+                                                    <p className="text-sm text-neutral-500">
+                                                        {formatTime(appointment.scheduled_at)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="flex flex-col gap-1">
+                                                <p className="font-medium text-secondary-900">
+                                                    {appointment.customer?.name || '-'}
+                                                </p>
+                                                {appointment.vehicle && (
+                                                    <div className="flex items-center gap-1.5 text-sm text-neutral-600">
+                                                        <Car className="w-3.5 h-3.5 text-neutral-400" />
+                                                        <span>
+                                                            {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="mt-1">
+                                                    {getStatusBadge(appointment.status)}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(appointment)}
+                                                    className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
 
-                {/* WhatsApp Cancellation Modal */}
-                {showWhatsAppCancellation && whatsappAppointment && (
-                    <WhatsAppCancellationModal
-                        appointment={whatsappAppointment}
-                        onClose={() => {
-                            setShowWhatsAppCancellation(false);
-                            setWhatsappAppointment(null);
-                        }}
-                        onConfirm={handleCancelConfirm}
-                    />
+                                                {/* WhatsApp Quick Button - Only for confirmed appointments with phone */}
+                                                {appointment.status === 'confirmed' && appointment.customer?.phone && (
+                                                    <QuickWhatsAppButton
+                                                        appointment={{ ...appointment, company: user.company } as any}
+                                                        type="confirmation"
+                                                        size="sm"
+                                                    />
+                                                )}
+
+                                                {/* Cancel Button */}
+                                                {appointment.status !== 'cancelled' && (
+                                                    <button
+                                                        onClick={() => handleCancelClick(appointment)}
+                                                        className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                                                        title="Cancelar agendamento"
+                                                    >
+                                                        <XIcon className="w-4 h-4" />
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() => handleDelete(appointment.id)}
+                                                    className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
-        );
-    }
+
+            {/* Appointment Modal */}
+            <AppointmentModal
+                isOpen={showModal}
+                onClose={handleModalClose}
+                appointment={selectedAppointment}
+                onSuccess={handleSuccess}
+            />
+
+            {/* WhatsApp Confirmation Modal */}
+            {showWhatsAppConfirmation && whatsappAppointment && (
+                <WhatsAppConfirmationModal
+                    appointment={{ ...whatsappAppointment, company: user.company }}
+                    onClose={() => {
+                        setShowWhatsAppConfirmation(false);
+                        setWhatsappAppointment(null);
+                    }}
+                    onSent={async () => {
+                        // Log message (optional analytics)
+                        if (user?.company?.id && user?.id) {
+                            await logWhatsAppMessage({
+                                appointmentId: whatsappAppointment.id,
+                                customerName: whatsappAppointment.customer.name,
+                                phone: whatsappAppointment.customer.phone,
+                                messageType: 'confirmation',
+                                messagePreview: 'Agendamento confirmado',
+                                companyId: user.company.id,
+                                userId: user.id,
+                            });
+                        }
+                    }}
+                />
+            )}
+
+            {/* WhatsApp Cancellation Modal */}
+            {showWhatsAppCancellation && whatsappAppointment && (
+                <WhatsAppCancellationModal
+                    appointment={{ ...whatsappAppointment, company: user.company }}
+                    onClose={() => {
+                        setShowWhatsAppCancellation(false);
+                        setWhatsappAppointment(null);
+                    }}
+                    onConfirm={handleCancelConfirm}
+                />
+            )}
+        </div>
+    );
+}

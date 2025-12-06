@@ -16,6 +16,8 @@ export const SignUp: React.FC = () => {
         company_slug: '',
         phone: '',
     });
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,6 +30,11 @@ export const SignUp: React.FC = () => {
 
         if (formData.password.length < 6) {
             alert('A senha deve ter no mínimo 6 caracteres!');
+            return;
+        }
+
+        if (!acceptedTerms || !acceptedPrivacy) {
+            alert('Você deve aceitar os Termos de Uso e a Política de Privacidade para continuar.');
             return;
         }
 
@@ -260,25 +267,74 @@ export const SignUp: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* LGPD Consent Checkboxes */}
+                        <div className="space-y-3 pt-4 border-t border-neutral-200">
+                            <div className="flex items-start gap-3">
+                                <input
+                                    id="accept-terms"
+                                    type="checkbox"
+                                    checked={acceptedTerms}
+                                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                    className="mt-1 h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+                                />
+                                <label htmlFor="accept-terms" className="text-sm text-neutral-700">
+                                    Li e aceito os{' '}
+                                    <Link
+                                        to="/terms-of-service"
+                                        target="_blank"
+                                        className="text-primary-600 hover:text-primary-700 underline font-medium"
+                                    >
+                                        Termos de Uso
+                                    </Link>
+                                    {' '}*
+                                </label>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <input
+                                    id="accept-privacy"
+                                    type="checkbox"
+                                    checked={acceptedPrivacy}
+                                    onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+                                    className="mt-1 h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500"
+                                />
+                                <label htmlFor="accept-privacy" className="text-sm text-neutral-700">
+                                    Li e aceito a{' '}
+                                    <Link
+                                        to="/privacy-policy"
+                                        target="_blank"
+                                        className="text-primary-600 hover:text-primary-700 underline font-medium"
+                                    >
+                                        Política de Privacidade
+                                    </Link>
+                                    {' '}e autorizo o tratamento dos meus dados pessoais conforme descrito *
+                                </label>
+                            </div>
+
+                            <p className="text-xs text-neutral-500 italic">
+                                * Campos obrigatórios para criar sua conta
+                            </p>
+                        </div>
+
                         {/* Botão de Cadastro */}
                         <button
                             type="submit"
-                            disabled={loading}
-                            className={`w-full btn-primary ${loading ? 'btn-loading' : ''}`}
+                            disabled={loading || !acceptedTerms || !acceptedPrivacy}
+                            className={`w-full btn-primary ${loading || !acceptedTerms || !acceptedPrivacy ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {loading ? 'Criando conta...' : 'Criar conta e começar trial gratuito'}
                         </button>
 
-                        {/* Termos */}
-                        <p className="text-xs text-center text-secondary-500">
-                            Ao criar uma conta, você concorda com nossos{' '}
-                            <a href="#" className="text-primary-600 hover:underline">
-                                Termos de Serviço
-                            </a>{' '}
-                            e{' '}
-                            <a href="#" className="text-primary-600 hover:underline">
-                                Política de Privacidade
-                            </a>
+                        {/* Informação sobre Cookies */}
+                        <p className="text-xs text-center text-neutral-500">
+                            Ao usar nossa plataforma, você concorda com o uso de cookies conforme nossa{' '}
+                            <Link
+                                to="/cookie-policy"
+                                target="_blank"
+                                className="text-primary-600 hover:underline"
+                            >
+                                Política de Cookies
+                            </Link>
                             .
                         </p>
                     </form>
