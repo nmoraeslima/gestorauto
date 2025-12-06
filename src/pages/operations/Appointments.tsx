@@ -22,6 +22,7 @@ import QuickWhatsAppButton from '@/components/whatsapp/QuickWhatsAppButton';
 import { logWhatsAppMessage } from '@/utils/whatsapp-logging';
 import { formatDate, formatTime } from '@/utils/datetime';
 import type { Appointment } from '@/types/database';
+import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
 import toast from 'react-hot-toast';
 
 interface AppointmentWithDetails extends Appointment {
@@ -120,10 +121,15 @@ export default function Appointments() {
                 .eq('id', selectedAppointment.id)
                 .single();
 
-            // Only show WhatsApp modal if status is 'confirmed'
+            // Only show WhatsApp modal if status is 'confirmed' AND feature is enabled
             if (data && data.status === 'confirmed') {
-                setWhatsappAppointment(data);
-                setShowWhatsAppConfirmation(true);
+                const plan = user?.company?.subscription_plan || 'basic';
+                const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
+
+                if (canUseWhatsApp) {
+                    setWhatsappAppointment(data);
+                    setShowWhatsAppConfirmation(true);
+                }
             }
         }
     };
@@ -467,17 +473,203 @@ export default function Appointments() {
                 />
             )}
 
+            {/* Filters */}
+            <div className="card p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por cliente ou placa..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="input pl-10"
+                        />
+                    </div>
+                    <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="input pl-10"
+                        >
+                            <option value="all">Todos os Status</option>
+                            <option value="pending">Pendente</option>
+                            <option value="confirmed">Confirmado</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div className="relative">
+                        <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <select
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            className="input pl-10"
+                        >
+                            <option value="all">Todas as Datas</option>
+                            <option value="today">Hoje</option>
+                            <option value="upcoming">Próximos</option>
+                            <option value="past">Passados</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Appointments List */}
+            <div className="card overflow-hidden">
+                {
+                    loading ? (
+                        <div className="p-8 text-center" >
+                            <div className="spinner mx-auto mb-4"></div>
+                            <p className="text-neutral-500">Carregando agendamentos...</p>
+                        </div>
+                    ) : filteredAppointments.length === 0 ? (
+                        <div className="p-8 text-center text-neutral-500">
+                            <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                            <p>Nenhum agendamento encontrado</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Data/Hora</th>
+                                        <th>Cliente</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredAppointments.map((appointment) => (
+                                        <tr key={appointment.id}>
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <CalendarIcon className="w-4 h-4 text-neutral-400" />
+                                                    <div>
+                                                        <p className="font-medium">
+                                                            {formatDate(appointment.scheduled_at)}
+                                                        </p>
+                                                        <p className="text-sm text-neutral-500">
+                                                            {formatTime(appointment.scheduled_at)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex flex-col gap-1">
+                                                    <p className="font-medium text-secondary-900">
+                                                        {appointment.customer?.name || '-'}
+                                                    </p>
+                                                    {appointment.vehicle && (
+                                                        <div className="flex items-center gap-1.5 text-sm text-neutral-600">
+                                                            <Car className="w-3.5 h-3.5 text-neutral-400" />
+                                                            <span>
+                                                                {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <div className="mt-1">
+                                                        {getStatusBadge(appointment.status)}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(appointment)}
+                                                        className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+
+                                                    {appointment.status === 'confirmed' && appointment.customer?.phone && user?.company && (
+                                                        <QuickWhatsAppButton
+                                                            appointment={{ ...appointment, company: user.company } as any}
+                                                            type="confirmation"
+                                                            size="sm"
+                                                        />
+                                                    )}
+
+                                                    {/* Cancel Button */}
+                                                    {appointment.status !== 'cancelled' && (
+                                                        <button
+                                                            onClick={() => handleCancelClick(appointment)}
+                                                            className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                                                            title="Cancelar agendamento"
+                                                        >
+                                                            <XIcon className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        onClick={() => handleDelete(appointment.id)}
+                                                        className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )
+                }
+            </div>
+
+            {/* Appointment Modal */}
+            <AppointmentModal
+                isOpen={showModal}
+                onClose={handleModalClose}
+                appointment={selectedAppointment}
+                onSuccess={handleSuccess}
+            />
+
+            {/* WhatsApp Confirmation Modal */}
+            {
+                showWhatsAppConfirmation && whatsappAppointment && user && (
+                    <WhatsAppConfirmationModal
+                        appointment={{ ...whatsappAppointment, company: user.company }}
+                        onClose={() => {
+                            setShowWhatsAppConfirmation(false);
+                            setWhatsappAppointment(null);
+                        }}
+                        onSent={async () => {
+                            // Log message (optional analytics)
+                            if (user?.company?.id && user?.id) {
+                                await logWhatsAppMessage({
+                                    appointmentId: whatsappAppointment.id,
+                                    customerName: whatsappAppointment.customer.name,
+                                    phone: whatsappAppointment.customer.phone,
+                                    messageType: 'confirmation',
+                                    messagePreview: 'Agendamento confirmado',
+                                    companyId: user.company.id,
+                                    userId: user.id,
+                                });
+                            }
+                        }}
+                    />
+                )
+            }
+
             {/* WhatsApp Cancellation Modal */}
-            {showWhatsAppCancellation && whatsappAppointment && user && (
-                <WhatsAppCancellationModal
-                    appointment={{ ...whatsappAppointment, company: user.company }}
-                    onClose={() => {
-                        setShowWhatsAppCancellation(false);
-                        setWhatsappAppointment(null);
-                    }}
-                    onConfirm={handleCancelConfirm}
-                />
-            )}
-        </div>
+            {
+                showWhatsAppCancellation && whatsappAppointment && user && (
+                    <WhatsAppCancellationModal
+                        appointment={{ ...whatsappAppointment, company: user.company }}
+                        onClose={() => {
+                            setShowWhatsAppCancellation(false);
+                            setWhatsappAppointment(null);
+                        }}
+                        onConfirm={handleCancelConfirm}
+                        enableWhatsApp={
+                            PLAN_LIMITS[(user?.company?.subscription_plan as SubscriptionPlan) || 'basic']?.features?.whatsapp_integration
+                        }
+                    />
+                )
+            }
+        </div >
     );
 }

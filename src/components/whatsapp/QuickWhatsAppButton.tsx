@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Lock } from 'lucide-react';
 import { sendWhatsAppMessage } from '@/utils/whatsapp';
 import { generateConfirmationMessage, generateCancellationMessage, generateReminderMessage } from '@/utils/whatsapp-messages';
 import { Appointment, Customer, Vehicle, Company } from '@/types/database';
+import { useAuth } from '@/contexts/AuthContext';
+import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
 
 interface QuickWhatsAppButtonProps {
     appointment: Appointment & {
@@ -23,6 +25,7 @@ export default function QuickWhatsAppButton({
     size = 'sm',
     className = '',
 }: QuickWhatsAppButtonProps) {
+    const { user } = useAuth();
     const [sending, setSending] = useState(false);
 
     const getMessage = () => {
@@ -50,6 +53,15 @@ export default function QuickWhatsAppButton({
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent row click if in table
 
+        // Feature Gate Check
+        const plan = user?.company?.subscription_plan || 'basic';
+        const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
+
+        if (!canUseWhatsApp) {
+            window.dispatchEvent(new Event('openUpgradeModal'));
+            return;
+        }
+
         setSending(true);
         const message = getMessage();
         sendWhatsAppMessage(appointment.customer.phone, message);
@@ -68,6 +80,10 @@ export default function QuickWhatsAppButton({
         md: 'h-5 w-5',
     };
 
+    // Check restriction for UI
+    const plan = user?.company?.subscription_plan || 'basic';
+    const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
+
     return (
         <button
             onClick={handleClick}
@@ -75,16 +91,23 @@ export default function QuickWhatsAppButton({
             className={`
         inline-flex items-center justify-center
         rounded-lg
-        text-green-600 hover:bg-green-50
+        ${canUseWhatsApp ? 'text-green-600 hover:bg-green-50' : 'text-neutral-400 hover:bg-neutral-100'}
         transition-all duration-200
         disabled:opacity-50
         ${sizeClasses[size]}
         ${sending ? 'scale-95' : 'hover:scale-105'}
         ${className}
       `}
-            title={`Enviar ${type === 'confirmation' ? 'confirmação' : type === 'reminder' ? 'lembrete' : 'mensagem'} via WhatsApp`}
+            title={!canUseWhatsApp ? 'Disponível no plano Profissional' : `Enviar ${type === 'confirmation' ? 'confirmação' : type === 'reminder' ? 'lembrete' : 'mensagem'} via WhatsApp`}
         >
-            <MessageCircle className={`${iconSizes[size]} ${sending ? 'animate-pulse' : ''}`} />
+            {canUseWhatsApp ? (
+                <MessageCircle className={`${iconSizes[size]} ${sending ? 'animate-pulse' : ''}`} />
+            ) : (
+                <div className="relative">
+                    <MessageCircle className={`${iconSizes[size]} opacity-50`} />
+                    <Lock className="absolute -top-1 -right-1 w-2.5 h-2.5 text-amber-500 bg-white rounded-full p-0.5" />
+                </div>
+            )}
         </button>
     );
 }

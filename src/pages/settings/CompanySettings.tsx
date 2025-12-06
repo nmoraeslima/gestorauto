@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Building2, CreditCard, Users as UsersIcon, Save, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
+import { Building2, CreditCard, Users as UsersIcon, Save, AlertCircle, CheckCircle, Calendar, Star, Clock, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
 
 type TabType = 'company' | 'subscription' | 'users';
 
@@ -37,6 +38,9 @@ export const CompanySettings: React.FC = () => {
         address: '',
         logo_url: '',
     });
+
+    const plan = (user?.company?.subscription_plan as SubscriptionPlan) || 'basic';
+    const isPublicLinksAllowed = PLAN_LIMITS[plan]?.features?.public_links;
 
     // Load company data
     useEffect(() => {
@@ -184,6 +188,8 @@ export const CompanySettings: React.FC = () => {
                     </div>
                 </div>
 
+
+
                 {/* Online Booking CTA Card */}
                 <div className="mt-6 bg-gradient-to-r from-primary-50 to-primary-100 border-2 border-primary-300 rounded-lg p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -198,12 +204,23 @@ export const CompanySettings: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-                        <a
-                            href="/settings/booking"
-                            className="btn btn-primary whitespace-nowrap w-full sm:w-auto justify-center"
-                        >
-                            Configurar Agora
-                        </a>
+                        {isPublicLinksAllowed ? (
+                            <a
+                                href="/settings/booking"
+                                className="btn btn-primary whitespace-nowrap w-full sm:w-auto justify-center"
+                            >
+                                Configurar Agora
+                            </a>
+                        ) : (
+                            <button
+                                onClick={() => window.dispatchEvent(new CustomEvent('openUpgradeModal'))}
+                                className="btn btn-primary opacity-75 whitespace-nowrap w-full sm:w-auto justify-center flex items-center gap-2 cursor-pointer"
+                                title="Recurso exclusivo do plano Elite"
+                            >
+                                <Lock className="w-4 h-4" />
+                                Configurar Agora
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -358,78 +375,113 @@ export const CompanySettings: React.FC = () => {
 
                 {/* Subscription Tab */}
                 {activeTab === 'subscription' && (
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-8">
                         <div>
-                            <h2 className="text-lg font-semibold text-secondary-900 mb-4">Detalhes da Assinatura</h2>
+                            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <CreditCard className="w-6 h-6 text-primary-600" />
+                                Gestão da Assinatura
+                            </h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Plan */}
-                                <div className="bg-secondary-50 rounded-lg p-4 border border-secondary-200">
-                                    <p className="text-sm text-secondary-600 mb-1">Plano Atual</p>
-                                    <p className="text-2xl font-bold text-secondary-900 capitalize">
-                                        {user?.company?.subscription_plan}
-                                    </p>
+                                {/* Plan Card */}
+                                <div className="bg-white rounded-xl border-2 border-primary-100 shadow-sm overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 bg-primary-100 text-primary-700 text-xs font-bold px-3 py-1 rounded-bl-lg">
+                                        PLANO ATUAL
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Seu Plano</p>
+                                                <h3 className="text-3xl font-extrabold text-blue-900 mt-1 capitalize">
+                                                    {user?.company?.subscription_plan === 'basic' ? 'Starter' :
+                                                        user?.company?.subscription_plan === 'intermediate' ? 'Profissional' :
+                                                            user?.company?.subscription_plan === 'premium' ? 'Elite' :
+                                                                user?.company?.subscription_plan}
+                                                </h3>
+                                            </div>
+                                            {user?.company?.subscription_plan === 'premium' && (
+                                                <div className="bg-black text-white p-2 rounded-lg">
+                                                    <Star className="w-6 h-6 fill-current" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                                <span className="text-gray-600">Usuários Ativos</span>
+                                                <span className="font-semibold text-gray-900">
+                                                    {users.length} / {user?.company?.max_users === -1 ? '∞' : user?.company?.max_users}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                                <span className="text-gray-600">Clientes Cadastrados</span>
+                                                <span className="font-semibold text-gray-900">
+                                                    {/* We would need the real count here, but for now we show limit */}
+                                                    Limite: {user?.company?.max_customers === -1 ? '∞' : user?.company?.max_customers}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6">
+                                            <a
+                                                href="/subscription/plans"
+                                                className="block w-full text-center px-4 py-2 bg-white border-2 border-primary-600 text-primary-700 rounded-lg hover:bg-primary-50 font-semibold transition-colors"
+                                            >
+                                                Mudar de Plano
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Status */}
-                                <div className="bg-secondary-50 rounded-lg p-4 border border-secondary-200">
-                                    <p className="text-sm text-secondary-600 mb-1">Status</p>
-                                    <div className="flex items-center gap-2">
-                                        {user?.company?.subscription_status === 'active' ? (
-                                            <CheckCircle className="w-5 h-5 text-success-600" />
-                                        ) : (
-                                            <AlertCircle className="w-5 h-5 text-warning-600" />
+                                {/* Status Card */}
+                                <div className="bg-gray-50 rounded-xl border border-gray-200 p-6 flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500 font-medium uppercase tracking-wider mb-2">Status da Conta</p>
+                                        <div className="flex items-center gap-3 mb-6">
+                                            {user?.company?.subscription_status === 'active' ? (
+                                                <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full font-bold text-sm">
+                                                    <CheckCircle className="w-4 h-4" /> ATIVO
+                                                </div>
+                                            ) : user?.company?.subscription_status === 'trial' ? (
+                                                <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-bold text-sm">
+                                                    <Clock className="w-4 h-4" /> PERÍODO DE TESTE
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full font-bold text-sm">
+                                                    <AlertCircle className="w-4 h-4" /> INATIVO
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {user?.company?.trial_ends_at && user?.company?.subscription_status === 'trial' && (
+                                            <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded-r mb-4">
+                                                <div className="flex items-start">
+                                                    <div className="flex-shrink-0">
+                                                        <Clock className="h-5 w-5 text-blue-500" />
+                                                    </div>
+                                                    <div className="ml-3">
+                                                        <p className="text-sm text-blue-700">
+                                                            Seu período de teste termina em: <br />
+                                                            <span className="font-bold text-lg">
+                                                                {new Date(user.company.trial_ends_at).toLocaleDateString()}
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
-                                        <p className="text-lg font-semibold text-secondary-900 capitalize">
-                                            {user?.company?.subscription_status === 'active' ? 'Ativo' :
-                                                user?.company?.subscription_status === 'trial' ? 'Trial' :
-                                                    user?.company?.subscription_status === 'expired' ? 'Expirado' : 'Cancelado'}
-                                        </p>
                                     </div>
-                                </div>
 
-                                {/* Limits */}
-                                <div className="md:col-span-2 bg-secondary-50 rounded-lg p-4 border border-secondary-200">
-                                    <p className="text-sm font-medium text-secondary-700 mb-3">Limites do Plano</p>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-xs text-secondary-600">Usuários</p>
-                                            <p className="text-lg font-semibold text-secondary-900">
-                                                {user?.company?.max_users === -1 ? 'Ilimitado' : user?.company?.max_users}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-secondary-600">Clientes</p>
-                                            <p className="text-lg font-semibold text-secondary-900">
-                                                {user?.company?.max_customers === -1 ? 'Ilimitado' : user?.company?.max_customers}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    {user?.company?.subscription_status !== 'active' && (
+                                        <a
+                                            href="/subscription/plans"
+                                            className="block w-full text-center px-4 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg hover:from-green-700 hover:to-green-600 font-bold shadow-lg transform transition hover:scale-[1.02]"
+                                        >
+                                            Assinar Agora
+                                        </a>
+                                    )}
                                 </div>
-
-                                {/* Trial/Expiration Date */}
-                                {user?.company?.trial_ends_at && user?.company?.subscription_status === 'trial' && (
-                                    <div className="md:col-span-2 bg-warning-50 rounded-lg p-4 border border-warning-200">
-                                        <p className="text-sm text-warning-800">
-                                            <strong>Trial termina em:</strong>{' '}
-                                            {new Date(user.company.trial_ends_at).toLocaleDateString('pt-BR')}
-                                        </p>
-                                    </div>
-                                )}
                             </div>
-
-                            {/* Renew Link */}
-                            {user?.company?.subscription_status !== 'active' && (
-                                <div className="mt-6 pt-6 border-t border-secondary-200">
-                                    <a
-                                        href="/subscription/renew"
-                                        className="inline-flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                                    >
-                                        <CreditCard className="w-4 h-4" />
-                                        Renovar Assinatura
-                                    </a>
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
@@ -437,11 +489,31 @@ export const CompanySettings: React.FC = () => {
                 {/* Users Tab */}
                 {activeTab === 'users' && (
                     <div className="p-6">
-                        <div className="mb-4">
-                            <h2 className="text-lg font-semibold text-secondary-900">Usuários da Empresa</h2>
-                            <p className="text-sm text-secondary-600 mt-1">
-                                {users.length} usuário{users.length !== 1 ? 's' : ''} cadastrado{users.length !== 1 ? 's' : ''}
-                            </p>
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-semibold text-secondary-900">Usuários da Empresa</h2>
+                                <p className="text-sm text-secondary-600 mt-1">
+                                    {users.length} usuário{users.length !== 1 ? 's' : ''} cadastrado{users.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    // Check limits
+                                    const maxUsers = user?.company?.max_users || 1;
+                                    if (maxUsers !== -1 && users.length >= maxUsers) {
+                                        toast.error(`Seu plano permite apenas ${maxUsers} usuário(s). Faça upgrade para adicionar mais.`);
+                                        window.dispatchEvent(new CustomEvent('openUpgradeModal'));
+                                        return;
+                                    }
+                                    // TODO: Open User Modal (Not implemented in this file yet, just alert for now or placeholder)
+                                    toast('Funcionalidade de criar usuário em desenvolvimento', { icon: '🚧' });
+                                }}
+                                className="btn btn-primary flex items-center gap-2"
+                            >
+                                <UsersIcon className="w-4 h-4" />
+                                Novo Usuário
+                            </button>
                         </div>
 
                         <div className="overflow-x-auto -mx-6 sm:mx-0">

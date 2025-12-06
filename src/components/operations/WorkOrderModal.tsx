@@ -19,10 +19,11 @@ import { ServiceSelector } from './ServiceSelector';
 import { ProductSelector } from './ProductSelector';
 import { PhotoManager } from '../workOrder/PhotoManager';
 import { formatCurrency, calculateWorkOrderTotal } from '@/utils/calculations';
-import { WorkOrderStatus } from '@/types/database';
+import { WorkOrderStatus, PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
 import type { Customer, Vehicle, WorkOrder, Appointment } from '@/types/database';
 import toast from 'react-hot-toast';
 import { formatDate, formatTime, toISOLocal } from '@/utils/datetime';
+import { Lock } from 'lucide-react';
 
 import WorkOrderWhatsAppModal from '@/components/whatsapp/WorkOrderWhatsAppModal';
 
@@ -572,21 +573,27 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
             // Send WhatsApp notification if work order was completed
             // Send WhatsApp notification if work order was completed
+            // Send WhatsApp notification if work order was completed
             if (targetStatus === 'completed') {
-                const customer = customers.find(c => c.id === formData.customer_id);
-                const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
+                const plan = user?.company?.subscription_plan || 'basic';
+                const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
 
-                if (customer) {
-                    setCompletedWorkOrder({
-                        ...newWorkOrder,
-                        customer,
-                        vehicle,
-                        services: selectedServices.map(s => ({ name: s.service_name, quantity: s.quantity })),
-                        company: user.company
-                    });
-                    setShowWhatsAppConfirmation(true);
-                    setLoading(false);
-                    return; // Don't close modal yet
+                if (canUseWhatsApp) {
+                    const customer = customers.find(c => c.id === formData.customer_id);
+                    const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
+
+                    if (customer) {
+                        setCompletedWorkOrder({
+                            ...newWorkOrder,
+                            customer,
+                            vehicle,
+                            services: selectedServices.map(s => ({ name: s.service_name, quantity: s.quantity })),
+                            company: user.company
+                        });
+                        setShowWhatsAppConfirmation(true);
+                        setLoading(false);
+                        return; // Don't close modal yet
+                    }
                 }
             }
 
@@ -642,6 +649,15 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                             {workOrder && (
                                 <button
                                     onClick={() => {
+                                        // Feature Gate Check
+                                        const plan = user?.company?.subscription_plan || 'basic';
+                                        const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
+
+                                        if (!canUseWhatsApp) {
+                                            window.dispatchEvent(new Event('openUpgradeModal'));
+                                            return;
+                                        }
+
                                         const url = `${window.location.origin}/tracker/${workOrder.id}`;
                                         const customerName = customers.find(c => c.id === workOrder.customer_id)?.name || 'Cliente';
                                         const vehicleModel = vehicles.find(v => v.id === workOrder.vehicle_id)?.model || 'seu veículo';
@@ -659,10 +675,11 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                         window.open(whatsappUrl, '_blank');
                                     }}
                                     className="btn btn-secondary text-xs py-1 px-3 flex items-center gap-2"
-                                    title="Enviar Link por WhatsApp"
+                                    title={user?.company?.subscription_plan === 'basic' ? 'Disponível no plano Profissional' : 'Enviar Link por WhatsApp'}
                                 >
                                     <LinkIcon className="w-3 h-3" />
                                     Enviar no WhatsApp
+                                    {user?.company?.subscription_plan === 'basic' && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
                                 </button>
                             )}
                             <button

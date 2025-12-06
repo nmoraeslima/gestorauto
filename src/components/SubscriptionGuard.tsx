@@ -78,9 +78,10 @@ export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({ children }
         );
     }
 
-    // Redirecionar para página de renovação se bloqueado
-    if (isBlocked && location.pathname !== '/subscription/renew') {
-        return <Navigate to="/subscription/renew" replace />;
+    // Redirecionar para página de planos se bloqueado
+    if (isBlocked && location.pathname !== '/subscription/plans') {
+        const reason = user?.company?.subscription_status === 'trial' ? 'trial_ended' : 'expired';
+        return <Navigate to={`/subscription/plans?reason=${reason}`} replace />;
     }
 
     // Permitir acesso

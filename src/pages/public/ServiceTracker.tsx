@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Timeline } from '@/components/tracker/Timeline';
 import { BeforeAfterSlider } from '@/components/tracker/BeforeAfterSlider';
-import { Car, MapPin, Phone, Share2, Loader2, Calendar } from 'lucide-react';
+import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
 
 interface TrackerData {
@@ -20,6 +20,7 @@ export const ServiceTracker: React.FC = () => {
     const [data, setData] = useState<TrackerData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -46,6 +47,20 @@ export const ServiceTracker: React.FC = () => {
                 supabase.from('work_order_services').select('*').eq('work_order_id', id),
                 supabase.from('work_order_photos').select('*').eq('work_order_id', id)
             ]);
+
+            // Check Plan Permission for Public Links
+            const plan = companyRes.data.subscription_plan || 'basic';
+            // Import PLAN_LIMITS inside the Logic or use a hard check for now if import is tricky with relative paths
+            // We'll trust the hard check for simplicity and performance on public page
+            // Premium = 'premium'
+
+            const isPremium = plan === 'premium';
+
+            if (!isPremium) {
+                setAccessDenied(true);
+                setLoading(false);
+                return;
+            }
 
             setData({
                 workOrder: wo,
@@ -86,6 +101,18 @@ export const ServiceTracker: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+            </div>
+        );
+    }
+
+    if (accessDenied) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
+                <div className="bg-white p-8 rounded-2xl shadow-sm max-w-sm">
+                    <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h1 className="text-xl font-bold text-gray-900">Acesso Restrito</h1>
+                    <p className="text-gray-500 mt-2">Esta empresa não possui o módulo de rastreamento online ativo.</p>
+                </div>
             </div>
         );
     }

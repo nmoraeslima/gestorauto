@@ -1,22 +1,55 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, CheckCircle, MessageCircle, XCircle } from 'lucide-react';
+import { Bell, Calendar, CheckCircle, MessageCircle, XCircle, Lock } from 'lucide-react';
 import { addDays } from 'date-fns';
 import type { ServiceReminderWithDetails } from '@/types/database';
 import { formatDate } from '@/utils/datetime';
 import toast from 'react-hot-toast';
+import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
 
 export const ServiceReminders: React.FC = () => {
     const { user } = useAuth();
     const [reminders, setReminders] = useState<ServiceReminderWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const plan = (user?.company?.subscription_plan as SubscriptionPlan) || 'basic';
+    const isAllowed = PLAN_LIMITS[plan]?.features?.crm_recurrence;
+
     useEffect(() => {
-        if (user?.company?.id) {
+        if (user?.company?.id && isAllowed) {
             loadReminders();
+        } else if (!isAllowed) {
+            // Set dummy data for blurred view
+            setReminders([
+                {
+                    id: '1',
+                    customer: { name: 'João Silva', phone: '11999999999' },
+                    vehicle: { model: 'Toyota Corolla', brand: 'Toyota', license_plate: 'ABC-1234' },
+                    service: { name: 'Polimento Técnico' },
+                    due_date: new Date().toISOString(),
+                    status: 'pending'
+                },
+                {
+                    id: '2',
+                    customer: { name: 'Maria Santos', phone: '11988888888' },
+                    vehicle: { model: 'Honda Civic', brand: 'Honda', license_plate: 'XYZ-5678' },
+                    service: { name: 'Higienização Interna' },
+                    due_date: new Date().toISOString(),
+                    status: 'pending'
+                },
+                {
+                    id: '3',
+                    customer: { name: 'Carlos Oliveira', phone: '11977777777' },
+                    vehicle: { model: 'Jeep Compass', brand: 'Jeep', license_plate: 'DEF-9012' },
+                    service: { name: 'Vitrificação' },
+                    due_date: new Date().toISOString(),
+                    status: 'pending'
+                }
+            ] as any);
+            setLoading(false);
         }
-    }, [user]);
+    }, [user, isAllowed]);
 
     const loadReminders = async () => {
         try {
@@ -94,10 +127,28 @@ export const ServiceReminders: React.FC = () => {
 
     if (loading) return <div className="animate-pulse h-20 bg-gray-100 rounded-lg"></div>;
 
-    if (reminders.length === 0) return null;
+    if (reminders.length === 0 && isAllowed) return null;
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-secondary-100 overflow-hidden mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-secondary-100 overflow-hidden mb-6 relative group">
+            {!isAllowed && (
+                <div
+                    className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-4 cursor-pointer transition-colors hover:bg-white/70"
+                    onClick={() => window.dispatchEvent(new CustomEvent('openUpgradeModal'))}
+                >
+                    <div className="bg-white p-3 rounded-full shadow-lg mb-3 transform group-hover:scale-110 transition-transform duration-200">
+                        <Lock className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900 mb-1">Fidelize seus Clientes</h3>
+                    <p className="text-sm text-gray-600 max-w-sm mb-3">
+                        Lembretes de retorno aumentam em 30% a recorrência.
+                    </p>
+                    <button className="btn btn-primary btn-sm shadow-md">
+                        Desbloquear Lembretes
+                    </button>
+                </div>
+            )}
+
             <div className="p-4 border-b border-secondary-100 bg-secondary-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Bell className="w-5 h-5 text-primary-600" />
@@ -108,9 +159,9 @@ export const ServiceReminders: React.FC = () => {
                 </span>
             </div>
 
-            <div className="divide-y divide-secondary-100">
+            <div className={`divide-y divide-secondary-100 ${!isAllowed ? 'max-h-[320px] overflow-hidden' : ''}`}>
                 {reminders.map((reminder) => (
-                    <div key={reminder.id} className="p-4 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div key={reminder.id} className={`p-4 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${!isAllowed ? 'select-none blur-[2px]' : ''}`}>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-secondary-900">{reminder.customer?.name}</span>
@@ -127,17 +178,19 @@ export const ServiceReminders: React.FC = () => {
 
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => handleSendWhatsApp(reminder)}
+                                onClick={isAllowed ? () => handleSendWhatsApp(reminder) : undefined}
                                 className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
                                 title="Enviar WhatsApp"
+                                disabled={!isAllowed}
                             >
                                 <MessageCircle className="w-3.5 h-3.5 text-green-600" />
                                 Enviar
                             </button>
                             <button
-                                onClick={() => handleDismiss(reminder.id)}
+                                onClick={isAllowed ? () => handleDismiss(reminder.id) : undefined}
                                 className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Dispensar"
+                                disabled={!isAllowed}
                             >
                                 <XCircle className="w-5 h-5" />
                             </button>

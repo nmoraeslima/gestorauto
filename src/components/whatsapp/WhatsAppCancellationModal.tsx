@@ -11,6 +11,7 @@ interface WhatsAppCancellationModalProps {
     };
     onClose: () => void;
     onConfirm: (reason: string, customReason: string) => Promise<void>;
+    enableWhatsApp?: boolean;
 }
 
 const CANCELLATION_REASONS = [
@@ -24,7 +25,8 @@ const CANCELLATION_REASONS = [
 export default function WhatsAppCancellationModal({
     appointment,
     onClose,
-    onConfirm
+    onConfirm,
+    enableWhatsApp = true
 }: WhatsAppCancellationModalProps) {
     const [reason, setReason] = useState('');
     const [customReason, setCustomReason] = useState('');
@@ -51,7 +53,9 @@ export default function WhatsAppCancellationModal({
         setLoading(true);
         try {
             await onConfirm(reason, customReason);
-            sendWhatsAppMessage(appointment.customer.phone, message);
+            if (enableWhatsApp) {
+                sendWhatsAppMessage(appointment.customer.phone, message);
+            }
             onClose();
         } catch (error) {
             console.error('Error cancelling appointment:', error);
@@ -168,8 +172,33 @@ export default function WhatsAppCancellationModal({
                         </div>
                     )}
 
+                    {!enableWhatsApp && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+                            <div className="shrink-0">
+                                <MessageCircle className="h-5 w-5 text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-medium text-amber-800">
+                                    Notificação via WhatsApp indisponível
+                                </h3>
+                                <div className="mt-1 text-sm text-amber-700">
+                                    <p>O envio automático da justificativa para o cliente é exclusivo dos planos Profissional e Elite.</p>
+                                </div>
+                                <div className="mt-2 text-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => window.dispatchEvent(new Event('openUpgradeModal'))}
+                                        className="font-medium text-amber-800 hover:text-amber-900 underline"
+                                    >
+                                        Fazer Upgrade &rarr;
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Message Preview */}
-                    {message && (
+                    {message && enableWhatsApp ? (
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-sm font-medium text-gray-700">
@@ -198,7 +227,7 @@ export default function WhatsAppCancellationModal({
                                 </pre>
                             </div>
                         </div>
-                    )}
+                    ) : null}
                 </div>
 
                 {/* Footer */}
@@ -218,13 +247,12 @@ export default function WhatsAppCancellationModal({
                         {loading ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                dict
                                 Cancelando...
                             </>
                         ) : (
                             <>
-                                <MessageCircle className="h-4 w-4" />
-                                Cancelar e Notificar
+                                <MessageCircle className={`h-4 w-4 ${!enableWhatsApp ? 'hidden' : ''}`} />
+                                {enableWhatsApp ? 'Cancelar e Notificar' : 'Confirmar Cancelamento'}
                             </>
                         )}
                     </button>

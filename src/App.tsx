@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedLayout } from './components/ProtectedLayout';
+import { ProtectedFeatureRoute } from './components/subscription/ProtectedFeatureRoute';
 
 // Auth Pages
 import { SignIn } from './pages/auth/SignIn';
@@ -13,6 +14,7 @@ import { notificationService } from './services/notificationService';
 // App Pages
 import { Dashboard } from './pages/Dashboard';
 import { SubscriptionRenew } from './pages/subscription/SubscriptionRenew';
+import { Plans } from './pages/subscription/Plans';
 
 // CRM Pages
 import { Customers } from './pages/crm/Customers';
@@ -105,9 +107,17 @@ function App() {
 
                     {/* Subscription Route (accessible even with expired subscription) */}
                     <Route path="/subscription/renew" element={<SubscriptionRenew />} />
+                    <Route path="/subscription/plans" element={<Plans />} />
 
-                    {/* TV Dashboard - Fullscreen mode without layout */}
-                    <Route path="/tv-dashboard" element={<TVDashboard />} />
+                    {/* TV Dashboard - Restricted to Premium */}
+                    <Route
+                        path="/tv-dashboard"
+                        element={
+                            <ProtectedFeatureRoute feature="tv_panel">
+                                <TVDashboard />
+                            </ProtectedFeatureRoute>
+                        }
+                    />
 
                     {/* Protected Routes */}
                     <Route element={<ProtectedLayout />}>
@@ -119,9 +129,33 @@ function App() {
                         <Route path="/work-orders" element={<WorkOrders />} />
                         <Route path="/products" element={<Products />} />
                         <Route path="/inventory" element={<Inventory />} />
-                        <Route path="/financial" element={<FinancialDashboard />} />
-                        <Route path="/financial/receivables" element={<Receivables />} />
-                        <Route path="/financial/payables" element={<Payables />} />
+
+                        {/* Financial Pages - Restricted to Pro/Premium */}
+                        <Route
+                            path="/financial"
+                            element={
+                                <ProtectedFeatureRoute feature="financial">
+                                    <FinancialDashboard />
+                                </ProtectedFeatureRoute>
+                            }
+                        />
+                        <Route
+                            path="/financial/receivables"
+                            element={
+                                <ProtectedFeatureRoute feature="financial">
+                                    <Receivables />
+                                </ProtectedFeatureRoute>
+                            }
+                        />
+                        <Route
+                            path="/financial/payables"
+                            element={
+                                <ProtectedFeatureRoute feature="financial">
+                                    <Payables />
+                                </ProtectedFeatureRoute>
+                            }
+                        />
+
                         <Route path="/settings" element={<CompanySettings />} />
                         <Route path="/settings/booking" element={<BookingSettings />} />
                     </Route>

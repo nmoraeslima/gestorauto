@@ -11,6 +11,7 @@ import {
     Loader2,
     Calendar,
     ArrowRight,
+    Lock,
 } from 'lucide-react';
 import { DashboardStats } from '@/types/database';
 import { Link } from 'react-router-dom';
@@ -189,6 +190,7 @@ export const Dashboard: React.FC = () => {
             color: 'primary',
             bgColor: 'bg-primary-100',
             textColor: 'text-primary-600',
+            restricted: false
         },
         {
             title: 'O.S. em Andamento',
@@ -197,6 +199,7 @@ export const Dashboard: React.FC = () => {
             color: 'warning',
             bgColor: 'bg-warning-100',
             textColor: 'text-warning-600',
+            restricted: false
         },
         {
             title: 'Receita Mensal',
@@ -205,6 +208,7 @@ export const Dashboard: React.FC = () => {
             color: 'success',
             bgColor: 'bg-success-100',
             textColor: 'text-success-600',
+            restricted: user?.company?.subscription_plan === 'basic'
         },
         {
             title: 'A Receber',
@@ -213,6 +217,7 @@ export const Dashboard: React.FC = () => {
             color: 'warning',
             bgColor: 'bg-warning-100',
             textColor: 'text-warning-600',
+            restricted: user?.company?.subscription_plan === 'basic'
         },
     ];
 
@@ -240,8 +245,22 @@ export const Dashboard: React.FC = () => {
                     return (
                         <div
                             key={index}
-                            className="bg-white rounded-xl shadow-card p-6 border border-secondary-100 hover:shadow-soft transition-shadow duration-200"
+                            className={`bg-white rounded-xl shadow-card p-6 border border-secondary-100 hover:shadow-soft transition-shadow duration-200 relative overflow-hidden ${stat.restricted ? 'cursor-pointer' : ''}`}
+                            onClick={() => {
+                                if (stat.restricted) {
+                                    // Trigger global upgrade modal event or specific logic
+                                    // ideally use a context or direct prop, but for now we can just use window dispatch or local state if component had it
+                                    // Creating a Custom Event to trigger the modal from Layout
+                                    window.dispatchEvent(new CustomEvent('openUpgradeModal'));
+                                }
+                            }}
                         >
+                            {stat.restricted && (
+                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-2 text-primary-600 font-semibold group">
+                                    <Lock className="w-8 h-8 mb-2 text-primary-500 group-hover:scale-110 transition-transform" />
+                                    <span className="text-sm">Recurso Premium</span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-secondary-600">
@@ -300,7 +319,24 @@ export const Dashboard: React.FC = () => {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Revenue Chart */}
-                <div className="lg:col-span-2 bg-white rounded-xl shadow-card p-6 border border-secondary-100">
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-card p-6 border border-secondary-100 relative overflow-hidden group">
+                    {user?.company?.subscription_plan === 'basic' && (
+                        <div
+                            className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-4 cursor-pointer"
+                            onClick={() => window.dispatchEvent(new CustomEvent('openUpgradeModal'))}
+                        >
+                            <div className="bg-white p-4 rounded-full shadow-lg mb-4 transform group-hover:scale-110 transition-transform duration-200">
+                                <Lock className="w-8 h-8 text-primary-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">Análise Financeira Avançada</h3>
+                            <p className="text-gray-600 max-w-sm mb-4">
+                                Desbloqueie gráficos detalhados de receita e tome decisões melhores com o Plano Profissional.
+                            </p>
+                            <button className="btn btn-primary shadow-lg animate-pulse">
+                                Quero desbloquear agora
+                            </button>
+                        </div>
+                    )}
                     <h2 className="text-xl font-semibold text-secondary-900 mb-6">
                         Receita (Últimos 6 Meses)
                     </h2>

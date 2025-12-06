@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -19,9 +19,11 @@ import {
     Building2,
     Tag,
     Download,
+    Lock,
 } from 'lucide-react';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import toast from 'react-hot-toast';
 
 
@@ -44,6 +46,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     });
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const { isInstallable, isInstalled, isIOS, install, showManualInstructions, getManualInstructions } = usePWAInstall();
+    const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -57,6 +60,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'Financeiro', href: '/financial', icon: DollarSign },
         { name: 'Configurações', href: '/settings', icon: Settings },
     ];
+
+    // Global Event Listener for Upgrade Modal
+    useEffect(() => {
+        const handleOpenUpgradeModal = () => setShowUpgradePrompt(true);
+        window.addEventListener('openUpgradeModal', handleOpenUpgradeModal);
+        return () => window.removeEventListener('openUpgradeModal', handleOpenUpgradeModal);
+    }, []);
 
     const handleSignOut = async () => {
         await signOut();
@@ -158,19 +168,48 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             {navigation.map((item) => {
                                 const Icon = item.icon;
                                 const isActive = location.pathname === item.href;
+
+                                // Feature Gating Logic
+                                let isLocked = false;
+                                if (item.href === '/financial' && !user?.company?.subscription_plan || (user?.company?.subscription_plan === 'basic' && item.href === '/financial')) {
+                                    isLocked = true;
+                                }
+
                                 return (
-                                    <Link
-                                        key={item.name}
-                                        to={item.href}
-                                        title={!sidebarOpen ? item.name : ''}
-                                        className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${isActive
-                                            ? 'bg-primary-50 text-primary-700'
-                                            : 'text-secondary-700 hover:bg-secondary-50'
-                                            } ${!sidebarOpen ? 'justify-center' : ''}`}
-                                    >
-                                        <Icon className="w-5 h-5 flex-shrink-0" />
-                                        {sidebarOpen && <span className="truncate">{item.name}</span>}
-                                    </Link>
+                                    <div key={item.name}>
+                                        {isLocked ? (
+                                            <button
+                                                onClick={() => setShowUpgradePrompt(true)}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 text-gray-400 hover:bg-gray-50 cursor-pointer group ${!sidebarOpen ? 'justify-center' : ''}`}
+                                                title={!sidebarOpen ? `${item.name} (Bloqueado)` : ''}
+                                            >
+                                                <div className="relative">
+                                                    <Icon className="w-5 h-5 flex-shrink-0" />
+                                                    <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5">
+                                                        <Lock className="w-3 h-3 text-red-500" />
+                                                    </div>
+                                                </div>
+                                                {sidebarOpen && (
+                                                    <div className="flex-1 flex items-center justify-between">
+                                                        <span className="truncate">{item.name}</span>
+                                                        <Lock className="w-3 h-3 text-gray-400 group-hover:text-red-500 transition-colors" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                to={item.href}
+                                                title={!sidebarOpen ? item.name : ''}
+                                                className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${isActive
+                                                    ? 'bg-primary-50 text-primary-700'
+                                                    : 'text-secondary-700 hover:bg-secondary-50'
+                                                    } ${!sidebarOpen ? 'justify-center' : ''}`}
+                                            >
+                                                <Icon className="w-5 h-5 flex-shrink-0" />
+                                                {sidebarOpen && <span className="truncate">{item.name}</span>}
+                                            </Link>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </nav>
@@ -415,6 +454,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Global Upgrade Prompt Modal */}
+            {showUpgradePrompt && (
+                <UpgradePrompt
+                    isOpen={showUpgradePrompt}
+                    onClose={() => setShowUpgradePrompt(false)}
+                    feature="Gestão Financeira e Relatórios e muito mais..."
+                />
             )}
         </NotificationProvider >
     );

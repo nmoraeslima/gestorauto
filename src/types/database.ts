@@ -435,27 +435,61 @@ export interface SubscriptionInfo {
   days_remaining: number;
 }
 
+export interface PlanFeatures {
+  financial: boolean;
+  crm_recurrence: boolean;
+  tv_panel: boolean;
+  public_links: boolean;
+  whatsapp_automation: boolean;
+  whatsapp_integration: boolean;
+  has_advanced_reports: boolean;
+}
+
 export interface PlanLimits {
   max_users: number;
   max_customers: number;
-  has_advanced_reports: boolean;
+  features: PlanFeatures;
 }
 
 export const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
   [SubscriptionPlan.BASIC]: {
-    max_users: 2,
+    max_users: 1,
     max_customers: 50,
-    has_advanced_reports: false
+    features: {
+      financial: false,
+      crm_recurrence: false,
+      tv_panel: false,
+      public_links: false,
+      whatsapp_automation: false,
+      whatsapp_integration: false, // No WhatsApp at all
+      has_advanced_reports: false
+    }
   },
   [SubscriptionPlan.INTERMEDIATE]: {
-    max_users: 5,
-    max_customers: 200,
-    has_advanced_reports: false
+    max_users: 3,
+    max_customers: 300,
+    features: {
+      financial: true,
+      crm_recurrence: true,
+      tv_panel: false,
+      public_links: false,
+      whatsapp_automation: false,
+      whatsapp_integration: true, // Can use manual WhatsApp buttons
+      has_advanced_reports: true
+    }
   },
   [SubscriptionPlan.PREMIUM]: {
     max_users: 999999,
     max_customers: 999999,
-    has_advanced_reports: true
+    features: {
+      financial: true,
+      crm_recurrence: true,
+      tv_panel: true,
+      public_links: true,
+      whatsapp_automation: true,
+      whatsapp_integration: true,
+      has_advanced_reports: true
+    }
   }
 };
 
