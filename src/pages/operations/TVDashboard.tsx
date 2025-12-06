@@ -151,7 +151,7 @@ export const TVDashboard: React.FC = () => {
                     services:appointment_services(service:services(name))
                 `)
                 .eq('company_id', user.company.id)
-                .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
+                .in('status', ['pending', 'confirmed', 'in_progress', 'completed'])
                 .gte('scheduled_at', today.toISOString())
                 .lt('scheduled_at', tomorrow.toISOString())
                 .order('scheduled_at', { ascending: true });
@@ -298,7 +298,7 @@ export const TVDashboard: React.FC = () => {
         try {
             const { error } = await supabase
                 .from('appointments')
-                .update({ status: 'scheduled' })
+                .update({ status: 'confirmed' })
                 .eq('id', id);
 
             if (error) throw error;

@@ -184,7 +184,7 @@ export class NotificationService {
                 .from('appointments')
                 .select('id, customer_id, scheduled_at, description, customers(name)')
                 .eq('company_id', companyId)
-                .eq('status', 'scheduled')
+                .eq('status', 'confirmed')
                 .gte('scheduled_at', now.toISOString())
                 .lte('scheduled_at', oneHourLater.toISOString());
 

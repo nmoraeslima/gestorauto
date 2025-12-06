@@ -35,7 +35,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         scheduled_date: '',
         scheduled_time: '',
         duration_minutes: 60,
-        status: 'scheduled' as 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+        status: 'pending' as 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
         notes: '',
     });
 
@@ -54,7 +54,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 scheduled_date: '',
                 scheduled_time: '',
                 duration_minutes: 60,
-                status: 'scheduled' as 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+                status: 'pending' as 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
                 notes: '',
             });
             setVehicles([]);
@@ -109,7 +109,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 scheduled_date: '',
                 scheduled_time: '',
                 duration_minutes: 60,
-                status: 'scheduled' as 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
+                status: 'pending' as 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled',
                 notes: '',
             });
             setVehicles([]);
@@ -500,7 +500,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     disabled={formData.status === 'in_progress' || formData.status === 'completed'}
                                 >
                                     <option value="pending">Pendente</option>
-                                    <option value="scheduled">Agendado</option>
                                     <option value="confirmed">Confirmado</option>
                                     <option value="cancelled">Cancelado</option>
                                     {(formData.status === 'in_progress' || formData.status === 'completed') && (
@@ -562,7 +561,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setFormData({ ...formData, status: 'scheduled' });
+                                            setFormData({ ...formData, status: 'confirmed' });
                                         }}
                                         className="btn bg-green-600 hover:bg-green-700 text-white flex-1"
                                     >

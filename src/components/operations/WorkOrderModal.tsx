@@ -250,7 +250,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 vehicle:vehicles(brand, model, license_plate)
             `)
             .eq('company_id', user.company.id)
-            .in('status', ['scheduled', 'confirmed', 'in_progress'])
+            .in('status', ['pending', 'confirmed', 'in_progress'])
             .order('scheduled_at', { ascending: false });
 
         if (data) setAppointments(data as AppointmentWithDetails[]);

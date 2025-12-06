@@ -33,10 +33,7 @@ export enum CustomerType {
 
 export enum AppointmentStatus {
   PENDING = 'pending',
-  SCHEDULED = 'scheduled',
   CONFIRMED = 'confirmed',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
   CANCELLED = 'cancelled'
 }
 
