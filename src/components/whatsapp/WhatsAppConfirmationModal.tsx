@@ -137,7 +137,7 @@ export default function WhatsAppConfirmationModal({
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-800">
                             <strong>💡 Como funciona:</strong> Ao clicar em "Enviar WhatsApp",
-                            o WhatsApp Web será aberto em uma nova aba com a mensagem já digitada.
+                            o aplicativo do WhatsApp será aberto com a mensagem já digitada.
                             Você só precisa clicar em "Enviar".
                         </p>
                     </div>

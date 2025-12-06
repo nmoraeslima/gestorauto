@@ -26,22 +26,13 @@ export function sendWhatsAppMessage(phone: string, message: string): void {
     const formattedPhone = formatPhoneForWhatsApp(phone);
     const encodedMessage = encodeURIComponent(message);
 
-    // Try WhatsApp Desktop/Business first (whatsapp:// protocol)
-    const desktopUrl = `whatsapp://send?phone=${formattedPhone}&text=${encodedMessage}`;
+    // Use the universal WhatsApp URL (wa.me)
+    // This automatically handles opening the app (Business or Personal) on mobile/desktop
+    // and avoids forcing the Web interface unless the user specifically chooses it generally.
+    const url = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
 
-    // Fallback to WhatsApp Web
-    const webUrl = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
-
-    // Try to open desktop app first
-    const desktopWindow = window.open(desktopUrl, '_blank');
-
-    // If desktop app doesn't open (returns null or closes immediately), 
-    // fallback to WhatsApp Web after a short delay
-    setTimeout(() => {
-        if (!desktopWindow || desktopWindow.closed) {
-            window.open(webUrl, '_blank', 'noopener,noreferrer');
-        }
-    }, 500);
+    // Open in new tab
+    window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 /**

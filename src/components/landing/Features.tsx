@@ -9,33 +9,33 @@ const featureCategories = [
     {
         title: "Gestão Completa",
         features: [
-            { icon: Users, title: 'Clientes e Veículos', desc: 'Cadastro detalhado com histórico completo.' },
-            { icon: Wrench, title: 'Ordens de Serviço', desc: 'Controle de status, checklists e aprovações.' },
-            { icon: Calendar, title: 'Agendamento Inteligente', desc: 'Evite conflitos e organize sua agenda.' },
-            { icon: Package, title: 'Estoque Automático', desc: 'Baixa automática de produtos ao usar na O.S.' },
+            { icon: Users, title: 'Clientes e Veículos', desc: 'Conheça seu cliente pelo nome e tenha todo o histórico do veículo em mãos.' },
+            { icon: Wrench, title: 'Ordens de Serviço', desc: 'Profissionalize seus orçamentos e transmita confiança com checklists digitais.' },
+            { icon: Calendar, title: 'Agendamento Inteligente', desc: 'Otimize seu tempo e elimine conflitos de horários com uma agenda visual.' },
+            { icon: Package, title: 'Controle de Estoque', desc: 'Nunca mais perca produtos. Baixa automática integrada às Ordens de Serviço.' },
         ]
     },
     {
         title: "Financeiro e Estratégia",
         features: [
-            { icon: DollarSign, title: 'Fluxo de Caixa', desc: 'Contas a pagar, receber e lucro real.' },
-            { icon: BarChart3, title: 'Relatórios Avançados', desc: 'Análise de faturamento e desempenho.' },
-            { icon: ShieldCheck, title: 'Múltiplos Usuários', desc: 'Controle de acesso e permissões por cargo.' },
+            { icon: DollarSign, title: 'Fluxo de Caixa', desc: 'Clareza total sobre lucros e despesas. Tome decisões baseadas em números reais.' },
+            { icon: BarChart3, title: 'Relatórios Gerenciais', desc: 'Entenda o desempenho do seu negócio e descubra onde crescer.' },
+            { icon: ShieldCheck, title: 'Gestão de Equipe', desc: 'Controle de acesso granular e segurança para seus dados.' },
         ]
     },
     {
-        title: "CRM e Vendas",
+        title: "CRM e Fidelização",
         features: [
-            { icon: Bell, title: 'Lembretes de Retorno', desc: 'Avise o cliente quando vencer a proteção.' },
-            { icon: MessageCircle, title: 'Integração WhatsApp', desc: 'Envie orçamentos e avisos com um clique.' },
-            { icon: Share2, title: 'Agendamento Online', desc: 'Link para o cliente agendar sozinho.' },
+            { icon: Bell, title: 'Lembretes Automáticos', desc: 'O sistema avisa o cliente quando é hora de voltar. Fidelização no piloto automático.' },
+            { icon: MessageCircle, title: 'Integração WhatsApp', desc: 'Envie orçamentos, agendamentos e lembretes com um clique. Sem salvar contato.' },
+            { icon: Share2, title: 'Agendamento Online', desc: 'Seu negócio aberto 24h. Deixe seu cliente agendar pelo link exclusivo.' },
         ]
     },
     {
-        title: "Exclusivos GestorAuto",
+        title: "Diferenciais Exclusivos",
         features: [
-            { icon: Monitor, title: 'Painel TV', desc: 'Mostre a fila de carros na TV da sala de espera.' },
-            { icon: Smartphone, title: 'App do Cliente', desc: 'Seu cliente acompanha o serviço pelo celular.' },
+            { icon: Monitor, title: 'Painel TV (Recepção)', desc: 'Impressione quem chega. Mostre a fila de serviços e status na TV da sua loja.' },
+            { icon: Smartphone, title: 'App do Cliente', desc: 'Transparência total. Seu cliente acompanha o serviço na palma da mão.' },
         ]
     }
 ];
@@ -46,11 +46,11 @@ export const Features: React.FC = () => {
             <div className="container mx-auto px-4">
                 <div className="section-header text-center mb-16">
                     <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">
-                        Uma plataforma completa. <br />
-                        <span className="text-primary-600">Sem limites para crescer.</span>
+                        Um Ecossistema de Performance. <br />
+                        <span className="text-primary-600">Projetado para sua Evolução.</span>
                     </h2>
                     <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                        Do agendamento ao pós-venda, cuidamos de tudo para você focar na qualidade do serviço.
+                        Mais que um sistema, uma suíte completa de ferramentas para transformar sua operação e encantar seus clientes.
                     </p>
                 </div>
 

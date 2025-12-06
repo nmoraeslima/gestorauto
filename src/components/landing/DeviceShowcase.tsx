@@ -7,12 +7,12 @@ export const DeviceShowcase: React.FC = () => {
             <div className="container mx-auto px-4">
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-                        Controle total. <br />
-                        <span className="text-primary-600">Em qualquer dispositivo.</span>
+                        O Comando da Sua Empresa, <br />
+                        <span className="text-primary-600">Onde Você Estiver.</span>
                     </h2>
                     <p className="text-xl text-gray-600">
-                        Seja no balcão da recepção, no tablet da oficina ou no celular em casa.
-                        O GestorAuto te acompanha onde você estiver.
+                        Do balcão da recepção ao conforto da sua casa.
+                        Uma experiência fluida, consistente e poderosa em qualquer dispositivo.
                     </p>
                 </div>
 
