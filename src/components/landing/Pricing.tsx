@@ -71,12 +71,12 @@ export const Pricing: React.FC = () => {
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center max-w-3xl mx-auto mb-16">
+                <div className="text-center max-w-3xl mx-auto mb-24">
                     <h2 className="text-primary-600 font-semibold tracking-wide uppercase text-sm mb-2">Planos e Preços</h2>
                     <h3 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700">
                         Investimento que se paga no <span className="text-primary-600">primeiro serviço</span>
                     </h3>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                    <p className="text-xl text-gray-600 max-w-3xl mx-auto text-center">
                         Comece com 7 dias grátis. Sem fidelidade, cancele quando quiser.
                         Escolha a ferramenta certa para escalar sua estética.
                     </p>
@@ -87,8 +87,8 @@ export const Pricing: React.FC = () => {
                         <div
                             key={index}
                             className={`relative bg-white rounded-2xl transition-all duration-300 ${plan.highlight
-                                    ? 'shadow-2xl md:-mt-8 md:mb-8 border-2 border-primary-500 z-10 scale-105'
-                                    : 'shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1'
+                                ? 'shadow-2xl md:-mt-8 md:mb-8 border-2 border-primary-500 z-10 scale-105'
+                                : 'shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1'
                                 }`}
                         >
                             {plan.popular && (
@@ -121,8 +121,8 @@ export const Pricing: React.FC = () => {
                                 <Link
                                     to={`/signup?plan=${plan.name.toLowerCase()}`}
                                     className={`w-full flex items-center justify-center px-6 py-4 border text-base font-bold rounded-xl transition-all duration-200 transform active:scale-95 ${plan.highlight
-                                            ? 'bg-primary-600 border-transparent text-white hover:bg-primary-700 shadow-lg hover:shadow-primary-500/30'
-                                            : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300'
+                                        ? 'bg-primary-600 border-transparent text-white hover:bg-primary-700 shadow-lg hover:shadow-primary-500/30'
+                                        : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50 hover:border-gray-300'
                                         }`}
                                 >
                                     {plan.cta}

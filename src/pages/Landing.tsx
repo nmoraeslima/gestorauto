@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { Hero } from '@/components/landing/Hero';
-import { DashboardPreview } from '@/components/landing/DashboardPreview';
+import { DeviceShowcase } from '@/components/landing/DeviceShowcase';
 import { Features } from '@/components/landing/Features';
 import { Benefits } from '@/components/landing/Benefits';
 import { MobileApp } from '@/components/landing/MobileApp';
@@ -35,7 +35,7 @@ export const Landing: React.FC = () => {
             <LandingHeader />
             <main>
                 <Hero />
-                <DashboardPreview />
+                <DeviceShowcase />
                 <Features />
                 <Benefits />
                 <MobileApp />

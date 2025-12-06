@@ -1003,8 +1003,8 @@
         gap: 3rem;
     }
 
+    /* Footer styling handled by Tailwind classes in component */
     .landing-page .footer-container {
-        flex-direction: row;
-        justify-content: space-between;
+        /* Legacy fallback */
     }
 }

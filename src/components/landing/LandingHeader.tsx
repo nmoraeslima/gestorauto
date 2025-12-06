@@ -43,7 +43,11 @@ export const LandingHeader: React.FC = () => {
             <header className={`header ${scrolled ? 'scrolled' : ''}`}>
                 <div className="container header-container">
                     <Link to="/" className="logo">
-                        GestorAuto
+                        <img
+                            src="/assets/logo-horizontal-dark.png"
+                            alt="GestorAuto"
+                            style={{ height: '40px', width: 'auto' }}
+                        />
                     </Link>
 
                     <nav className="nav-menu">
