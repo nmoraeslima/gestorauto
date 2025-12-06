@@ -16,9 +16,9 @@ export const DeviceShowcase: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="relative max-w-6xl mx-auto mt-20 h-[400px] md:h-[600px] lg:h-[700px]">
+                <div className="relative max-w-6xl mx-auto mt-20 h-auto md:h-[600px] lg:h-[700px] flex flex-col md:block items-center gap-12 md:gap-0">
                     {/* Desktop Mockup (Center) */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 w-[90%] md:w-[75%] z-20 top-0 shadow-2xl rounded-xl border-4 border-gray-800 bg-gray-900 overflow-hidden">
+                    <div className="relative md:absolute md:left-1/2 md:transform md:-translate-x-1/2 w-full md:w-[75%] z-20 md:top-0 shadow-2xl rounded-xl border-4 border-gray-800 bg-gray-900 overflow-hidden">
                         <div className="aspect-[16/9] bg-gray-800 relative">
                             {/* Browser Bar */}
                             <div className="h-6 md:h-8 bg-gray-800 flex items-center px-4 space-x-2">
@@ -35,7 +35,7 @@ export const DeviceShowcase: React.FC = () => {
                     </div>
 
                     {/* Tablet Mockup (Left) */}
-                    <div className="absolute top-[20%] -left-[5%] md:left-0 w-[55%] md:w-[40%] z-30 shadow-2xl rounded-[1.5rem] border-4 border-gray-800 bg-gray-900 overflow-hidden hidden sm:block transform -rotate-2 hover:rotate-0 transition-transform duration-500">
+                    <div className="relative md:absolute md:top-[20%] md:left-0 w-[90%] md:w-[40%] z-30 shadow-2xl rounded-[1.5rem] border-4 border-gray-800 bg-gray-900 overflow-hidden transform md:-rotate-2 hover:rotate-0 transition-transform duration-500">
                         <div className="aspect-[3/4] bg-gray-800 relative">
                             {/* Camera notch placeholder */}
                             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-4 bg-black rounded-b-xl z-20"></div>
@@ -48,7 +48,7 @@ export const DeviceShowcase: React.FC = () => {
                     </div>
 
                     {/* Mobile Mockup (Right) */}
-                    <div className="absolute top-[35%] -right-[5%] md:right-[5%] w-[35%] md:w-[20%] z-40 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <div className="relative md:absolute md:top-[35%] md:right-[5%] w-[60%] md:w-[20%] z-40 transform md:rotate-3 hover:rotate-0 transition-transform duration-500">
                         <div className="rounded-[2.5rem] border-[8px] border-gray-900 bg-gray-900 overflow-hidden drop-shadow-2xl">
                             <img
                                 src="/landing/app-mobile.png"
