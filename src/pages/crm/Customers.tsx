@@ -316,7 +316,11 @@ export const Customers: React.FC = () => {
                             </thead>
                             <tbody>
                                 {filteredCustomers.map((customer) => (
-                                    <tr key={customer.id}>
+                                    <tr
+                                        key={customer.id}
+                                        onDoubleClick={() => handleEdit(customer)}
+                                        className="hover:bg-gray-50 transition-colors"
+                                    >
                                         <td>
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-2">
