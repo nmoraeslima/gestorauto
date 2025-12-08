@@ -27,7 +27,7 @@ import { formatDate, formatTime, toISOLocal } from '@/utils/datetime';
 import WorkOrderWhatsAppModal from '@/components/whatsapp/WorkOrderWhatsAppModal';
 import { workOrderService, CreateWorkOrderDTO } from '@/services/workOrderService';
 import { customerService } from '@/services/customerService';
-import { appointmentService } from '@/services/appointmentService';
+import { appointmentService, AppointmentWithDetails } from '@/services/appointmentService';
 
 interface WorkOrderModalProps {
     isOpen: boolean;
@@ -50,11 +50,6 @@ interface ProductItem {
     quantity: number;
     available_stock: number;
     unit?: string;
-}
-
-interface AppointmentWithDetails extends Appointment {
-    customer: { name: string };
-    vehicle: { brand: string; model: string; license_plate: string };
 }
 
 interface WorkOrderFormData {
