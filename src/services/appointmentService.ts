@@ -92,6 +92,10 @@ export class AppointmentService {
         return result;
     }
 
+    async listOpen(companyId: string): Promise<AppointmentWithDetails[]> {
+        return this.list(companyId, { status: 'scheduled' });
+    }
+
     async getById(id: string) {
         const { data, error } = await supabase
             .from('appointments')

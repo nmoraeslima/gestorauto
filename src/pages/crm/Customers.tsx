@@ -166,12 +166,7 @@ export const Customers: React.FC = () => {
         }
 
         try {
-            const { error } = await supabase
-                .from('customers')
-                .update({ is_active: true })
-                .eq('id', customer.id);
-
-            if (error) throw error;
+            await customerService.toggleActive(customer.id, true);
             toast.success('Cliente reativado com sucesso');
             loadCustomers();
         } catch (error: any) {

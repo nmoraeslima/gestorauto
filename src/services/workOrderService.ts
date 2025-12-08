@@ -4,6 +4,8 @@ import { WorkOrder, WorkOrderService as DBWorkOrderService, WorkOrderProduct } f
 export interface WorkOrderWithDetails extends WorkOrder {
     customer?: { name: string };
     vehicle?: { brand: string; model: string; license_plate: string };
+    services?: any[];
+    products?: any[];
 }
 
 export interface CreateWorkOrderDTO {
