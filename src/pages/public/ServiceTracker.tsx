@@ -30,30 +30,26 @@ export const ServiceTracker: React.FC = () => {
         try {
             if (!id) return;
 
-            // 1. Fetch Work Order
-            const { data: wo, error: woError } = await supabase
-                .from('work_orders')
-                .select('*')
-                .eq('id', id)
-                .single();
+            // Secure Fetch via RPC
+            const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_work_order', {
+                p_work_order_id: id
+            });
 
-            if (woError || !wo) throw woError;
+            if (rpcError) {
+                console.error('RPC Error:', rpcError);
+                throw rpcError;
+            }
 
-            // 2. Fetch Related Data (Parallel)
-            const [companyRes, customerRes, vehicleRes, servicesRes, photosRes] = await Promise.all([
-                supabase.from('companies').select('*').eq('id', wo.company_id).single(),
-                supabase.from('customers').select('*').eq('id', wo.customer_id).single(),
-                supabase.from('vehicles').select('*').eq('id', wo.vehicle_id).single(),
-                supabase.from('work_order_services').select('*').eq('work_order_id', id),
-                supabase.from('work_order_photos').select('*').eq('work_order_id', id)
-            ]);
+            if (!rpcData) {
+                // If RPC returns null, it means ID wasn't found or error occurred
+                throw new Error('Work Order not found');
+            }
 
-            // Check Plan Permission for Public Links
-            const plan = companyRes.data.subscription_plan || 'basic';
-            // Import PLAN_LIMITS inside the Logic or use a hard check for now if import is tricky with relative paths
-            // We'll trust the hard check for simplicity and performance on public page
-            // Premium = 'premium'
+            // Safe access from JSON response
+            const company = rpcData.company;
 
+            // Check Plan Permission
+            const plan = company?.subscription_plan || 'basic';
             const isPremium = plan === 'premium';
 
             if (!isPremium) {
@@ -63,12 +59,12 @@ export const ServiceTracker: React.FC = () => {
             }
 
             setData({
-                workOrder: wo,
-                company: companyRes.data,
-                customer: customerRes.data,
-                vehicle: vehicleRes.data,
-                services: servicesRes.data || [],
-                photos: photosRes.data || []
+                workOrder: rpcData.workOrder,
+                company: rpcData.company,
+                customer: rpcData.customer,
+                vehicle: rpcData.vehicle,
+                services: rpcData.services || [],
+                photos: rpcData.photos || []
             });
 
         } catch (err) {
