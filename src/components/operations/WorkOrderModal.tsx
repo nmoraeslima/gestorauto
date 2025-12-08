@@ -642,7 +642,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                             onChange={handleAppointmentChange}
                                             options={appointments.map(a => ({
                                                 value: a.id,
-                                                label: `${formatDate(a.scheduled_at)} - ${a.customer.name}`,
+                                                label: `${formatDate(a.scheduled_at)} - ${a.customer?.name || 'N/A'}`,
                                                 subLabel: `${a.vehicle?.brand} ${a.vehicle?.model} (${a.vehicle?.license_plate || 'Sem placa'})`
                                             }))}
                                             placeholder="Selecione um agendamento"
