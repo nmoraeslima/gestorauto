@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setDataLoading(true);
         try {
-            console.log('Loading user data for:', authUser.id);
+
 
             // Buscar perfil
             const { data: profile, error: profileError } = await supabase
@@ -120,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             if (!mounted) return;
 
-            console.log('Auth state changed:', event);
+
             setSession(currentSession);
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -172,14 +172,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
 
             if (authError) {
-                // TODO: Idealmente deletaríamos a empresa criada se o auth falhar
-                // mas por enquanto vamos apenas lançar o erro
+                // Rollback: Deletar a empresa criada pois o usuário falhou
+                console.error('Auth failed, performing rollback for company:', companyId);
+                try {
+                    await supabase.rpc('rollback_company_signup', { p_company_id: companyId });
+                } catch (rollbackError) {
+                    console.error('Failed to rollback company:', rollbackError);
+                    // Não podemos fazer muito mais aqui, mas o erro original será lançado
+                }
+
                 throw authError;
             }
 
             if (authData.user) {
                 toast.success('Conta criada com sucesso! Você tem 7 dias de trial gratuito.');
-                
+
                 // Forçar recarregamento dos dados do usuário
                 await loadUserData(authData.user);
                 return { error: null };
@@ -189,7 +196,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         } catch (error: any) {
             console.error('Sign up error:', error);
-            toast.error('Erro ao criar conta: ' + (error.message || 'Erro desconhecido'));
+
+            // Tratamento de erro específico para chave duplicada (slug)
+            if (error?.message?.includes('duplicate key')) {
+                toast.error('Esta URL de empresa já está em uso. Tente outra.');
+            } else {
+                toast.error('Erro ao criar conta: ' + (error.message || 'Erro desconhecido'));
+            }
+
             return { error };
         }
     };

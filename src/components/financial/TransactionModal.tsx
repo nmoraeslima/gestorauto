@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { X, Lock } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { TransactionType, TransactionStatus, FinancialTransaction } from '@/types/database';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import toast from 'react-hot-toast';
+import { financialService } from '@/services/financialService';
 
 interface TransactionModalProps {
     isOpen: boolean;
@@ -61,19 +61,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             };
 
             if (transaction) {
-                const { error } = await supabase
-                    .from('financial_transactions')
-                    .update(transactionData)
-                    .eq('id', transaction.id);
-
-                if (error) throw error;
+                await financialService.update(transaction.id, transactionData);
                 toast.success('Transação atualizada com sucesso!');
             } else {
-                const { error } = await supabase
-                    .from('financial_transactions')
-                    .insert(transactionData);
-
-                if (error) throw error;
+                await financialService.create(transactionData);
                 toast.success('Transação criada com sucesso!');
             }
 

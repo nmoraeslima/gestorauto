@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     FileText,
@@ -8,24 +7,18 @@ import {
     Search,
     Filter,
     User,
-    Car,
-    Edit2,
-    Eye,
-    DollarSign,
     Calendar,
     CheckCircle,
     Trash2,
+    Edit2,
+    DollarSign,
 } from 'lucide-react';
 import { WorkOrderModal } from '@/components/operations/WorkOrderModal';
 import { formatDate } from '@/utils/datetime';
 import { formatCurrency } from '@/utils/calculations';
 import type { WorkOrder } from '@/types/database';
 import toast from 'react-hot-toast';
-
-interface WorkOrderWithDetails extends WorkOrder {
-    customer?: { name: string };
-    vehicle?: { brand: string; model: string; license_plate: string };
-}
+import { workOrderService, WorkOrderWithDetails } from '@/services/workOrderService';
 
 export default function WorkOrders() {
     const { user } = useAuth();
@@ -52,24 +45,15 @@ export default function WorkOrders() {
         if (!user?.company?.id) return;
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('work_orders')
-            .select(`
-                *,
-                customer:customers(name),
-                vehicle:vehicles(brand, model, license_plate)
-            `)
-            .eq('company_id', user.company.id)
-            .order('created_at', { ascending: false });
-
-        if (error) {
+        try {
+            const data = await workOrderService.list(user.company.id);
+            setWorkOrders(data);
+        } catch (error) {
             console.error('Error loading work orders:', error);
             toast.error('Erro ao carregar ordens de serviço');
-        } else if (data) {
-            console.log('Loaded work orders:', data.length);
-            setWorkOrders(data as WorkOrderWithDetails[]);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleCreate = () => {
@@ -95,16 +79,10 @@ export default function WorkOrders() {
         if (!confirm('Tem certeza que deseja excluir esta Ordem de Serviço?')) return;
 
         try {
-            const { error } = await supabase
-                .from('work_orders')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
+            await workOrderService.delete(id);
             toast.success('Ordem de Serviço excluída com sucesso');
             loadWorkOrders();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error deleting work order:', error);
             toast.error('Erro ao excluir ordem de serviço');
         }
@@ -156,7 +134,6 @@ export default function WorkOrders() {
         totalRevenue: workOrders
             .filter((wo) => wo.status === 'completed')
             .reduce((sum, wo) => {
-                console.log('WO Total:', wo.order_number, wo.total);
                 return sum + (Number(wo.total) || 0);
             }, 0),
         pendingPayment: workOrders

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { X, Tag, DollarSign, Clock, FileText, Info } from 'lucide-react';
 import type { Service } from '@/types/database';
+import { catalogService } from '@/services/catalogService';
 import toast from 'react-hot-toast';
 
 interface ServiceModalProps {
@@ -67,19 +67,10 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
             };
 
             if (service) {
-                const { error } = await supabase
-                    .from('services')
-                    .update(serviceData)
-                    .eq('id', service.id);
-
-                if (error) throw error;
+                await catalogService.update(service.id, serviceData);
                 toast.success('Serviço atualizado com sucesso!');
             } else {
-                const { error } = await supabase
-                    .from('services')
-                    .insert(serviceData);
-
-                if (error) throw error;
+                await catalogService.create(serviceData);
                 toast.success('Serviço criado com sucesso!');
             }
 

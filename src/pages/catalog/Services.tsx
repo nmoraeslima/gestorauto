@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Edit2, Trash2, Tag } from 'lucide-react';
 import { ServiceModal } from '@/components/catalog/ServiceModal';
-import type { Service } from '@/types/database';
+import { Service } from '@/types/database';
 import { formatCurrency } from '@/utils/format';
+import { catalogService } from '@/services/catalogService';
 import toast from 'react-hot-toast';
 
 export const Services: React.FC = () => {
@@ -19,14 +19,11 @@ export const Services: React.FC = () => {
         if (!user?.company?.id) return;
 
         try {
-            const { data, error } = await supabase
-                .from('services')
-                .select('*')
-                .eq('company_id', user.company.id)
-                .order('name');
-
-            if (error) throw error;
-            setServices(data || []);
+            // Using service layer with memory search for filtered list
+            const data = await catalogService.list(user.company.id, {
+                activeOnly: false // Show all service to admin
+            });
+            setServices(data);
         } catch (error: any) {
             console.error('Error loading services:', error);
             toast.error('Erro ao carregar serviços');
@@ -43,12 +40,7 @@ export const Services: React.FC = () => {
         if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
 
         try {
-            const { error } = await supabase
-                .from('services')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            await catalogService.delete(id);
             toast.success('Serviço excluído com sucesso!');
             loadServices();
         } catch (error: any) {

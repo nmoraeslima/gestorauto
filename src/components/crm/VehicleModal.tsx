@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { supabase } from '@/lib/supabase';
 import { Customer, Vehicle, VehicleFormData } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { maskLicensePlate, unmaskLicensePlate, validateLicensePlate } from '@/utils/masks';
+import { vehicleService } from '@/services/vehicleService';
+import { customerService } from '@/services/customerService';
 import toast from 'react-hot-toast';
 
 interface VehicleModalProps {
@@ -72,15 +73,10 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
     }, [vehicle, customers, reset]);
 
     const loadCustomers = async () => {
+        if (!user?.company?.id) return;
         try {
-            const { data, error } = await supabase
-                .from('customers')
-                .select('*')
-                .is('deleted_at', null)
-                .order('name');
-
-            if (error) throw error;
-            setCustomers(data || []);
+            const data = await customerService.list(user.company.id);
+            setCustomers(data);
         } catch (error: any) {
             console.error('Error loading customers:', error);
             toast.error('Erro ao carregar clientes');
@@ -107,17 +103,13 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
             };
 
             if (isEditing && vehicle) {
-                const { error } = await supabase
-                    .from('vehicles')
-                    .update(vehicleData)
-                    .eq('id', vehicle.id);
-
-                if (error) throw error;
+                await vehicleService.update(vehicle.id, vehicleData);
                 toast.success('Veículo atualizado com sucesso!');
             } else {
-                const { error } = await supabase.from('vehicles').insert(vehicleData);
-
-                if (error) throw error;
+                await vehicleService.create(vehicleData as any);
+                // casting as any for create DTO match if necessary, or ensure interface match
+                // VehicleFormData roughly matches CreateVehicleDTO but DTO has strict types.
+                // data from form has strings/numbers.
                 toast.success('Veículo criado com sucesso!');
             }
 

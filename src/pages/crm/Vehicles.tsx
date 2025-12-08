@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Vehicle } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { VehicleModal } from '@/components/crm/VehicleModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { maskLicensePlate } from '@/utils/masks';
+import { vehicleService } from '@/services/vehicleService';
 import toast from 'react-hot-toast';
 
 interface VehicleWithCustomer extends Vehicle {
@@ -21,6 +22,8 @@ export const Vehicles: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
 
     useEffect(() => {
         if (user?.company) {
@@ -33,18 +36,12 @@ export const Vehicles: React.FC = () => {
     }, [vehicles, searchTerm]);
 
     const loadVehicles = async () => {
+        if (!user?.company?.id) return;
+
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('vehicles')
-                .select(`
-          *,
-          customer:customer_id(name)
-        `)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setVehicles(data || []);
+            const data = await vehicleService.list(user.company.id);
+            setVehicles(data);
         } catch (error: any) {
             console.error('Error loading vehicles:', error);
             toast.error('Erro ao carregar veículos');
@@ -75,21 +72,29 @@ export const Vehicles: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (vehicle: Vehicle) => {
-        if (!confirm(`Tem certeza que deseja excluir o veículo "${vehicle.brand} ${vehicle.model}"?`)) {
-            return;
-        }
+    const handleDeleteClick = (vehicle: Vehicle) => {
+        setVehicleToDelete(vehicle);
+        setShowConfirmDialog(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!vehicleToDelete) return;
 
         try {
-            const { error } = await supabase.from('vehicles').delete().eq('id', vehicle.id);
-
-            if (error) throw error;
+            await vehicleService.delete(vehicleToDelete.id);
             toast.success('Veículo excluído com sucesso');
+            setShowConfirmDialog(false);
+            setVehicleToDelete(null);
             loadVehicles();
         } catch (error: any) {
             console.error('Error deleting vehicle:', error);
             toast.error('Erro ao excluir veículo');
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowConfirmDialog(false);
+        setVehicleToDelete(null);
     };
 
     const handleNewVehicle = () => {
@@ -194,7 +199,7 @@ export const Vehicles: React.FC = () => {
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(vehicle)}
+                                                    onClick={() => handleDeleteClick(vehicle)}
                                                     className="rounded-lg p-2 text-red-600 hover:bg-red-50"
                                                     title="Excluir"
                                                 >
@@ -224,6 +229,18 @@ export const Vehicles: React.FC = () => {
                 onClose={handleModalClose}
                 vehicle={selectedVehicle}
                 onSuccess={loadVehicles}
+            />
+
+            {/* Confirm Delete Dialog */}
+            <ConfirmDialog
+                isOpen={showConfirmDialog}
+                title="Confirmar Exclusão"
+                message={vehicleToDelete ? `Tem certeza que deseja excluir o veículo "${vehicleToDelete.brand} ${vehicleToDelete.model}"?` : ''}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+                danger
             />
         </div>
     );

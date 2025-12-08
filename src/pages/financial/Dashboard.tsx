@@ -8,7 +8,7 @@ import {
     Wallet,
     LayoutDashboard
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { financialService } from '@/services/financialService';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinancialTransaction, TransactionType, TransactionStatus } from '@/types/database';
 import { TransactionModal } from '@/components/financial/TransactionModal';
@@ -59,13 +59,9 @@ export const FinancialDashboard: React.FC = () => {
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
 
-            const { data: transactions, error } = await supabase
-                .from('financial_transactions')
-                .select('*')
-                .gte('due_date', startOfMonth.toISOString().split('T')[0])
-                .order('due_date', { ascending: false });
-
-            if (error) throw error;
+            const transactions = await financialService.list(user!.company!.id, {
+                startDate: startOfMonth.toISOString().split('T')[0]
+            });
 
             // Calcular estatísticas
             const income = transactions?.filter(t => t.type === 'income' && t.status === 'paid')

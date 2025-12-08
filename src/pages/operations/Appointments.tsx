@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     Calendar as CalendarIcon,
@@ -16,19 +15,16 @@ import {
     X as XIcon,
 } from 'lucide-react';
 import { AppointmentModal } from '@/components/operations/AppointmentModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import WhatsAppConfirmationModal from '@/components/whatsapp/WhatsAppConfirmationModal';
 import WhatsAppCancellationModal from '@/components/whatsapp/WhatsAppCancellationModal';
 import QuickWhatsAppButton from '@/components/whatsapp/QuickWhatsAppButton';
 import { logWhatsAppMessage } from '@/utils/whatsapp-logging';
 import { formatDate, formatTime } from '@/utils/datetime';
-import type { Appointment } from '@/types/database';
+import { Appointment } from '@/types/database';
 import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
+import { appointmentService, AppointmentWithDetails } from '@/services/appointmentService';
 import toast from 'react-hot-toast';
-
-interface AppointmentWithDetails extends Appointment {
-    customer?: { name: string; phone: string };
-    vehicle?: { brand: string; model: string; license_plate: string };
-}
 
 export default function Appointments() {
     const { user } = useAuth();
@@ -46,9 +42,19 @@ export default function Appointments() {
     const [showWhatsAppCancellation, setShowWhatsAppCancellation] = useState(false);
     const [whatsappAppointment, setWhatsappAppointment] = useState<any>(null);
 
+    // Delete confirmation
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
+
     useEffect(() => {
         loadAppointments();
-    }, [user]);
+    }, [user, statusFilter, dateFilter, searchTerm]); // Trigger load on filters to use service filtering efficiently if needed, or just load once and filter in memory? 
+    // The previous implementation loaded ONCE and filtered in render. 
+    // But now I implemented filtering in the service.
+    // Let's stick to the previous pattern of Client-Side filtering for responsiveness unless the dataset is huge, 
+    // OR use the service's filtering capabilities. 
+    // `appointmentService.list` SUPPORTS memory filtering options.
+    // Let's use `appointmentService.list` with the options! This is cleaner.
 
     useEffect(() => {
         if (searchParams.get('new') === 'true') {
@@ -61,33 +67,44 @@ export default function Appointments() {
         if (!user?.company?.id) return;
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('appointments')
-            .select(`
-                *,
-                customer:customers(name, phone),
-                vehicle:vehicles(brand, model, license_plate)
-            `)
-            .eq('company_id', user.company.id)
-            .order('scheduled_at', { ascending: false });
-
-        if (!error && data) {
-            setAppointments(data as AppointmentWithDetails[]);
+        try {
+            const data = await appointmentService.list(user.company.id, {
+                status: statusFilter,
+                dateFilter: dateFilter as any,
+                searchTerm: searchTerm
+            });
+            setAppointments(data);
+        } catch (error) {
+            console.error('Error loading appointments:', error);
+            toast.error('Erro ao carregar agendamentos');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
+    const handleDeleteClick = (id: string) => {
+        setAppointmentToDelete(id);
+        setShowDeleteConfirm(true);
+    };
 
-        const { error } = await supabase.from('appointments').delete().eq('id', id);
+    const handleDeleteConfirm = async () => {
+        if (!appointmentToDelete) return;
 
-        if (error) {
-            toast.error('Erro ao excluir agendamento');
-        } else {
+        try {
+            await appointmentService.delete(appointmentToDelete);
             toast.success('Agendamento excluído com sucesso');
+            setShowDeleteConfirm(false);
+            setAppointmentToDelete(null);
             loadAppointments();
+        } catch (error) {
+            console.error('Error deleting appointment:', error);
+            toast.error('Erro ao excluir agendamento');
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+        setAppointmentToDelete(null);
     };
 
     const handleEdit = (appointment: Appointment) => {
@@ -110,76 +127,70 @@ export default function Appointments() {
 
         // Get the newly created/updated appointment with full details
         if (selectedAppointment?.id) {
-            const { data } = await supabase
-                .from('appointments')
-                .select(`
-                    *,
-                    customer:customers(*),
-                    vehicle:vehicles(*),
-                    company:companies(*)
-                `)
-                .eq('id', selectedAppointment.id)
-                .single();
+            try {
+                // Use getById to get full details including relations
+                const data = await appointmentService.getById(selectedAppointment.id);
 
-            // Only show WhatsApp modal if status is 'confirmed' AND feature is enabled
-            if (data && data.status === 'confirmed') {
-                const plan = user?.company?.subscription_plan || 'basic';
-                const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
+                // Only show WhatsApp modal if status is 'confirmed' AND feature is enabled
+                if (data && data.status === 'confirmed') {
+                    const plan = user?.company?.subscription_plan || 'basic';
+                    const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
 
-                if (canUseWhatsApp) {
-                    setWhatsappAppointment(data);
-                    setShowWhatsAppConfirmation(true);
+                    if (canUseWhatsApp) {
+                        setWhatsappAppointment(data);
+                        setShowWhatsAppConfirmation(true);
+                    }
                 }
+            } catch (error) {
+                console.error('Error fetching details for WA:', error);
             }
         }
     };
 
     const handleCancelClick = async (appointment: Appointment) => {
-        // Fetch full appointment details for WhatsApp
-        const { data } = await supabase
-            .from('appointments')
-            .select(`
-                *,
-                customer:customers(*),
-                vehicle:vehicles(*),
-                company:companies(*)
-            `)
-            .eq('id', appointment.id)
-            .single();
+        try {
+            // Fetch full appointment details for WhatsApp
+            const data = await appointmentService.getById(appointment.id);
 
-        if (data) {
-            setWhatsappAppointment(data);
-            setShowWhatsAppCancellation(true);
+            if (data) {
+                setWhatsappAppointment(data);
+                setShowWhatsAppCancellation(true);
+            }
+        } catch (error) {
+            console.error('Error fetching appointment details:', error);
+            toast.error('Erro ao preparar cancelamento');
         }
     };
 
     const handleCancelConfirm = async (reason: string, customReason?: string) => {
         if (!whatsappAppointment) return;
 
-        await supabase
-            .from('appointments')
-            .update({
+        try {
+            await appointmentService.update(whatsappAppointment.id, {
                 status: 'cancelled',
                 cancellation_reason: reason === 'Outro (especificar)' ? customReason : reason,
                 cancelled_by: user?.id,
                 cancelled_at: new Date().toISOString(),
-            })
-            .eq('id', whatsappAppointment.id);
-
-        // Log message (optional analytics)
-        if (user?.company?.id && user?.id) {
-            await logWhatsAppMessage({
-                appointmentId: whatsappAppointment.id,
-                customerName: whatsappAppointment.customer.name,
-                phone: whatsappAppointment.customer.phone,
-                messageType: 'cancellation',
-                messagePreview: `Cancelamento: ${reason}`,
-                companyId: user.company.id,
-                userId: user.id,
             });
-        }
 
-        loadAppointments();
+            // Log message (optional analytics)
+            if (user?.company?.id && user?.id) {
+                await logWhatsAppMessage({
+                    appointmentId: whatsappAppointment.id,
+                    customerName: whatsappAppointment.customer.name,
+                    phone: whatsappAppointment.customer.phone,
+                    messageType: 'cancellation',
+                    messagePreview: `Cancelamento: ${reason}`,
+                    companyId: user.company.id,
+                    userId: user.id,
+                });
+            }
+
+            loadAppointments();
+        } catch (error) {
+            console.error('Error cancelling appointment:', error);
+            toast.error('Erro ao cancelar agendamento');
+        }
     };
 
     // Filter appointments
@@ -424,7 +435,7 @@ export default function Appointments() {
                                                 )}
 
                                                 <button
-                                                    onClick={() => handleDelete(appointment.id)}
+                                                    onClick={() => handleDeleteClick(appointment.id)}
                                                     className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
                                                     title="Excluir"
                                                 >
@@ -602,7 +613,7 @@ export default function Appointments() {
                                                     )}
 
                                                     <button
-                                                        onClick={() => handleDelete(appointment.id)}
+                                                        onClick={() => handleDeleteClick(appointment.id)}
                                                         className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
                                                         title="Excluir"
                                                     >
@@ -670,6 +681,18 @@ export default function Appointments() {
                     />
                 )
             }
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                title="Confirmar Exclusão"
+                message="Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita."
+                confirmText="Excluir"
+                cancelText="Cancelar"
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+                danger
+            />
         </div >
     );
 }

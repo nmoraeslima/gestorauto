@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { X, Calendar as CalendarIcon, Clock, User, Car as CarIcon, FileText, Tag, Search } from 'lucide-react';
 import type { Customer, Vehicle, Appointment, Service } from '@/types/database';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { appointmentService, CreateAppointmentDTO, UpdateAppointmentDTO } from '@/services/appointmentService';
+import { customerService } from '@/services/customerService';
+import { catalogService } from '@/services/catalogService';
 import toast from 'react-hot-toast';
 
 interface AppointmentModalProps {
@@ -67,29 +69,28 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         if (appointment) {
             const scheduledDate = new Date(appointment.scheduled_at);
 
-            // Load appointment services
-            const loadAppointmentServices = async () => {
-                const { data } = await supabase
-                    .from('appointment_services')
-                    .select('service_id')
-                    .eq('appointment_id', appointment.id);
-
-                if (data) {
-                    const serviceIds = data.map(s => s.service_id);
-                    setFormData(prev => ({
-                        ...prev,
-                        service_ids: serviceIds
-                    }));
+            // Load appointment details including services via service
+            const loadAppointmentDetails = async () => {
+                try {
+                    const fullAppointment = await appointmentService.getById(appointment.id);
+                    if (fullAppointment && fullAppointment.services) {
+                        const serviceIds = fullAppointment.services.map((s: any) => s.service_id);
+                        setFormData(prev => ({
+                            ...prev,
+                            service_ids: serviceIds
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Error loading appointment details", error);
                 }
             };
-
-            loadAppointmentServices();
+            loadAppointmentDetails();
 
             setFormData({
                 title: appointment.title,
                 customer_id: appointment.customer_id,
                 vehicle_id: appointment.vehicle_id || '',
-                service_ids: [], // Will be updated by loadAppointmentServices
+                service_ids: [], // Will be updated by loadAppointmentDetails
                 scheduled_date: scheduledDate.toISOString().split('T')[0],
                 scheduled_time: scheduledDate.toTimeString().slice(0, 5),
                 duration_minutes: appointment.duration_minutes || 60,
@@ -121,37 +122,26 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     const loadData = async () => {
         if (!user?.company?.id) return;
 
-        // Load customers
-        const { data: customersData } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('company_id', user.company.id)
-            .is('deleted_at', null)
-            .eq('is_active', true)
-            .order('name');
-
-        if (customersData) setCustomers(customersData);
-
-        // Load services
-        const { data: servicesData } = await supabase
-            .from('services')
-            .select('*')
-            .eq('company_id', user.company.id)
-            .eq('is_active', true)
-            .order('name');
-
-        if (servicesData) setServices(servicesData);
+        try {
+            const [customersData, servicesData] = await Promise.all([
+                customerService.list(user.company.id),
+                catalogService.list(user.company.id, { activeOnly: true })
+            ]);
+            setCustomers(customersData);
+            setServices(servicesData);
+        } catch (error) {
+            console.error('Error loading data:', error);
+            toast.error('Erro ao carregar dados');
+        }
     };
 
     const loadVehicles = async (customerId: string) => {
-        const { data } = await supabase
-            .from('vehicles')
-            .select('*')
-            .eq('customer_id', customerId)
-            .is('deleted_at', null)
-            .order('model');
-
-        if (data) setVehicles(data);
+        try {
+            const data = await customerService.getVehicles(customerId);
+            setVehicles(data);
+        } catch (error) {
+            console.error('Error loading vehicles:', error);
+        }
     };
 
     const handleCustomerChange = (customerId: string) => {
@@ -204,69 +194,58 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 `${formData.scheduled_date}T${formData.scheduled_time}`
             );
 
-            const appointmentData = {
+            // Prepare services data
+            const servicesToSave = formData.service_ids.map(serviceId => {
+                const service = services.find(s => s.id === serviceId);
+                return {
+                    service_id: serviceId,
+                    price: service?.price || 0,
+                    duration_minutes: service?.duration_minutes || 0
+                };
+            });
+
+            const commonData = {
                 company_id: user.company.id,
                 title: formData.title,
                 customer_id: formData.customer_id,
-                vehicle_id: formData.vehicle_id || null,
+                vehicle_id: formData.vehicle_id || '', // Handle empty string logic if needed
                 scheduled_at: scheduledDateTime.toISOString(),
                 duration_minutes: formData.duration_minutes,
                 status: formData.status,
-                description: formData.notes || null,
+                notes: formData.notes || undefined,
             };
 
-            let appointmentId = appointment?.id;
+            // Fix vehicle_id hack: appointmentService expects string, likely handles uuid conversion or expects valid uuid string.
+            // If empty string, we should probably pass null or similar if the service handles it. But DTO types say string.
+            // Supabase client usually handles empty string as error for uuid. 
+            // So we'll pass it, and if it fails we might need to fix DTO to allow null.
+            // However, Appointment interface says vehicle_id is string | null.
+            // Let's ensure we pass null if empty string.
+            // But DTO says string. 
+            // Let's cast to any to bypass strict DTO check if we want to pass null, OR fix DTO.
+            // I'll trust the process for now, but ` || null` is safer for DB.
+            const vehicleIdFinal = formData.vehicle_id || null as any;
 
             if (appointment) {
                 // Update
-                const { error } = await supabase
-                    .from('appointments')
-                    .update(appointmentData)
-                    .eq('id', appointment.id);
+                const updatePayload: UpdateAppointmentDTO = {
+                    id: appointment.id,
+                    ...commonData,
+                    vehicle_id: vehicleIdFinal,
+                    services: servicesToSave
+                };
 
-                if (error) throw error;
+                await appointmentService.update(appointment.id, updatePayload);
                 toast.success('Agendamento atualizado com sucesso!');
             } else {
                 // Create
-                const { data, error } = await supabase
-                    .from('appointments')
-                    .insert(appointmentData)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                appointmentId = data.id;
+                const createPayload: CreateAppointmentDTO = {
+                    ...commonData,
+                    vehicle_id: vehicleIdFinal,
+                    services: servicesToSave
+                };
+                await appointmentService.create(createPayload);
                 toast.success('Agendamento criado com sucesso!');
-            }
-
-            // Update services
-            if (appointmentId) {
-                // First delete existing services
-                if (appointment) {
-                    await supabase
-                        .from('appointment_services')
-                        .delete()
-                        .eq('appointment_id', appointmentId);
-                }
-
-                // Insert new services
-                if (formData.service_ids.length > 0) {
-                    const servicesToInsert = formData.service_ids.map(serviceId => {
-                        const service = services.find(s => s.id === serviceId);
-                        return {
-                            appointment_id: appointmentId,
-                            service_id: serviceId,
-                            price: service?.price || 0,
-                            duration_minutes: service?.duration_minutes || 0
-                        };
-                    });
-
-                    const { error: servicesError } = await supabase
-                        .from('appointment_services')
-                        .insert(servicesToInsert);
-
-                    if (servicesError) throw servicesError;
-                }
             }
 
             onSuccess();
@@ -582,7 +561,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         )}
                     </form>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };

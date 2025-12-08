@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Pencil, TrendingDown, Calendar, CheckCircle, XCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FinancialTransaction, TransactionType, TransactionStatus } from '@/types/database';
 import { TransactionModal } from '@/components/financial/TransactionModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { formatCurrency, formatDate } from '@/utils/format';
 import toast from 'react-hot-toast';
+import { financialService } from '@/services/financialService';
 
 interface PayablesProps {
     onDataChange?: () => void;
@@ -23,6 +24,8 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
     const [endDate, setEndDate] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<FinancialTransaction | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [transactionToDelete, setTransactionToDelete] = useState<FinancialTransaction | null>(null);
 
     useEffect(() => {
         if (user?.company) {
@@ -37,13 +40,7 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
     const loadTransactions = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('financial_transactions')
-                .select('*')
-                .eq('type', TransactionType.EXPENSE)
-                .order('due_date', { ascending: false });
-
-            if (error) throw error;
+            const data = await financialService.list(user!.company!.id, { type: TransactionType.EXPENSE });
             setTransactions(data || []);
         } catch (error: any) {
             console.error('Error loading transactions:', error);
@@ -105,15 +102,11 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
 
     const handleMarkAsPaid = async (transaction: FinancialTransaction) => {
         try {
-            const { error } = await supabase
-                .from('financial_transactions')
-                .update({
-                    status: TransactionStatus.PAID,
-                    paid_at: new Date().toISOString()
-                })
-                .eq('id', transaction.id);
+            await financialService.update(transaction.id, {
+                status: TransactionStatus.PAID,
+                paid_at: new Date().toISOString()
+            });
 
-            if (error) throw error;
             toast.success('Pagamento registrado com sucesso!');
             loadTransactions();
             onDataChange?.(); // Notify parent to refresh
@@ -123,23 +116,30 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
         }
     };
 
-    const handleDelete = async (transaction: FinancialTransaction) => {
-        if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
+    const handleDeleteClick = (transaction: FinancialTransaction) => {
+        setTransactionToDelete(transaction);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!transactionToDelete) return;
 
         try {
-            const { error } = await supabase
-                .from('financial_transactions')
-                .delete()
-                .eq('id', transaction.id);
-
-            if (error) throw error;
+            await financialService.delete(transactionToDelete.id);
             toast.success('Transação excluída com sucesso!');
+            setShowDeleteConfirm(false);
+            setTransactionToDelete(null);
             loadTransactions();
             onDataChange?.(); // Notify parent to refresh
         } catch (error: any) {
             console.error('Error deleting transaction:', error);
             toast.error('Erro ao excluir transação');
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+        setTransactionToDelete(null);
     };
 
     const stats = {
@@ -343,7 +343,7 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
                                                         <Pencil className="h-4 w-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDelete(transaction)}
+                                                        onClick={() => handleDeleteClick(transaction)}
                                                         className="rounded-lg p-2 text-red-600 hover:bg-red-50"
                                                         title="Excluir"
                                                     >
@@ -373,6 +373,18 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
                     loadTransactions();
                     onDataChange?.(); // Notify parent to refresh
                 }}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                title="Confirmar Exclusão"
+                message={transactionToDelete ? `Tem certeza que deseja excluir a transação "${transactionToDelete.description}"?` : ''}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+                danger
             />
         </div>
     );

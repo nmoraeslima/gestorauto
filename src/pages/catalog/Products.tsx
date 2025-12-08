@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     Package,
@@ -15,7 +14,8 @@ import {
 import { ProductModal } from '@/components/catalog/ProductModal';
 import { formatCurrency } from '@/utils/calculations';
 import { formatQuantity } from '@/utils/format';
-import type { Product } from '@/types/database';
+import { Product } from '@/types/database';
+import { inventoryService } from '@/services/inventoryService';
 import toast from 'react-hot-toast';
 
 export default function Products() {
@@ -43,16 +43,28 @@ export default function Products() {
         if (!user?.company?.id) return;
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('company_id', user.company.id)
-            .order('name');
+        try {
+            // Using service layer with memory filtering since we also want to filter by category in memory or via service
+            // The service now supports searchTerm (via OR name/sku) and category filters
+            const data = await inventoryService.list(user.company.id, {
+                // Pass filters to service for efficiency if implemented, otherwise keep local filtering
+                // Service implementation uses strict equality for category so we pass 'all' handling logic
+                category: categoryFilter,
+                searchTerm: searchTerm // Service uses ILIKE
+            });
 
-        if (!error && data) {
+            // To maintain existing behavior exactly, we might need to rely on the service's filtering
+            // or perform client side if the service one isn't 100% matching the complex regex
+            // Let's rely on the service for the bulk and do client side Refinement if needed
+            // Actually the service implementation I wrote handles category and basic search
+
             setProducts(data);
+        } catch (error) {
+            console.error('Error loading products:', error);
+            toast.error('Erro ao carregar produtos');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleCreate = () => {
@@ -69,12 +81,7 @@ export default function Products() {
         if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
         try {
-            const { error } = await supabase
-                .from('products')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            await inventoryService.delete(id);
 
             toast.success('Produto excluído com sucesso');
             loadProducts();

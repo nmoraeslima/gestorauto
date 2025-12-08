@@ -25,7 +25,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         try {
             const { data, error } = await supabase
-                .from('notifications')
+                .from('app_notifications')
                 .select('*')
                 .eq('company_id', user.company.id)
                 .order('created_at', { ascending: false })
@@ -44,7 +44,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const markAsRead = async (id: string) => {
         try {
             const { error } = await supabase
-                .from('notifications')
+                .from('app_notifications')
                 .update({ read: true })
                 .eq('id', id);
 
@@ -63,7 +63,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         try {
             const { error } = await supabase
-                .from('notifications')
+                .from('app_notifications')
                 .update({ read: true })
                 .eq('company_id', user.company.id)
                 .eq('read', false);
@@ -91,7 +91,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     {
                         event: 'INSERT',
                         schema: 'public',
-                        table: 'notifications',
+                        table: 'app_notifications',
                         filter: `company_id=eq.${user.company.id}`,
                     },
                     (payload) => {

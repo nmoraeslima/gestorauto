@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Package, Tag, DollarSign, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
-import type { Product } from '@/types/database';
+import { Product } from '@/types/database';
+import { inventoryService } from '@/services/inventoryService';
 
 interface ProductModalProps {
     isOpen: boolean;
@@ -73,19 +73,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             };
 
             if (product) {
-                const { error } = await supabase
-                    .from('products')
-                    .update(productData)
-                    .eq('id', product.id);
-
-                if (error) throw error;
+                await inventoryService.update(product.id, productData);
                 toast.success('Produto atualizado com sucesso!');
             } else {
-                const { error } = await supabase
-                    .from('products')
-                    .insert(productData);
-
-                if (error) throw error;
+                await inventoryService.create(productData);
                 toast.success('Produto criado com sucesso!');
             }
 

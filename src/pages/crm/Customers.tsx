@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Plus, Edit2, Trash2, Car, Crown, Check } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Customer } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomerModal } from '@/components/crm/CustomerModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { customerService } from '@/services/customerService';
 import { maskCPF, maskPhone } from '@/utils/masks';
 import toast from 'react-hot-toast';
 
@@ -20,6 +21,14 @@ export const Customers: React.FC = () => {
     const [showInactive, setShowInactive] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+    // Delete confirmation state
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteConfirmMessage, setDeleteConfirmMessage] = useState('');
+    const [deleteConfirmTitle, setDeleteConfirmTitle] = useState('');
+    const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+    const [deleteAction, setDeleteAction] = useState<'delete' | 'deactivate'>('delete');
+    const [deleteCounts, setDeleteCounts] = useState<any>(null);
 
     useEffect(() => {
         if (user?.company) {
@@ -41,19 +50,7 @@ export const Customers: React.FC = () => {
     const loadCustomers = async () => {
         try {
             setLoading(true);
-            let query = supabase
-                .from('customers')
-                .select('*')
-                .is('deleted_at', null);
-
-            // Filter by active status
-            if (!showInactive) {
-                query = query.eq('is_active', true);
-            }
-
-            const { data, error } = await query.order('name', { ascending: true });
-
-            if (error) throw error;
+            const data = await customerService.list(user!.company!.id, showInactive);
             setCustomers(data || []);
         } catch (error: any) {
             console.error('Error loading customers:', error);
@@ -96,80 +93,71 @@ export const Customers: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (customer: Customer) => {
+    const handleDeleteClick = async (customer: Customer) => {
         try {
-            // Check for operational dependencies in a single optimized query
-            const [vehiclesResult, appointmentsResult, workOrdersResult, transactionsResult] = await Promise.all([
-                supabase.from('vehicles').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
-                supabase.from('appointments').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
-                supabase.from('work_orders').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
-                supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('customer_id', customer.id),
-            ]);
+            const { hasDependencies, counts } = await customerService.checkDependencies(customer.id);
 
-            const vehicleCount = vehiclesResult.count || 0;
-            const appointmentCount = appointmentsResult.count || 0;
-            const workOrderCount = workOrdersResult.count || 0;
-            const transactionCount = transactionsResult.count || 0;
+            setCustomerToDelete(customer);
+            setDeleteCounts(counts);
 
-            const hasOperationalData = appointmentCount > 0 || workOrderCount > 0 || transactionCount > 0;
-
-            if (hasOperationalData) {
-                // Customer has operational data - must deactivate instead of delete
-                const confirmMessage = `Este cliente possui movimentações operacionais (${appointmentCount} agendamento${appointmentCount !== 1 ? 's' : ''}, ${workOrderCount} O.S., ${transactionCount} transação${transactionCount !== 1 ? 'ões' : ''}) e não pode ser excluído.\n\nDeseja inativar este cliente? Ele ficará oculto mas seus dados serão preservados.`;
-
-                if (!confirm(confirmMessage)) {
-                    return;
+            if (hasDependencies) {
+                setDeleteAction('deactivate');
+                setDeleteConfirmTitle('Inativar Cliente');
+                setDeleteConfirmMessage(
+                    `Este cliente possui movimentações operacionais (${counts.appointments} agendamento${counts.appointments !== 1 ? 's' : ''}, ${counts.workOrders} O.S., ${counts.transactions} transação${counts.transactions !== 1 ? 'ões' : ''}) e não pode ser excluído.\n\nDeseja inativar este cliente? Ele ficará oculto mas seus dados serão preservados.`
+                );
+            } else {
+                setDeleteAction('delete');
+                setDeleteConfirmTitle('Confirmar Exclusão');
+                let message = `Tem certeza que deseja excluir o cliente "${customer.name}"?`;
+                if (counts.vehicles > 0) {
+                    message += `\n\n⚠️ Este cliente possui ${counts.vehicles} veículo${counts.vehicles > 1 ? 's' : ''} cadastrado${counts.vehicles > 1 ? 's' : ''}, que também ${counts.vehicles > 1 ? 'serão excluídos' : 'será excluído'}.`;
                 }
+                setDeleteConfirmMessage(message);
+            }
 
-                // Deactivate customer
-                const { error } = await supabase
-                    .from('customers')
-                    .update({ is_active: false })
-                    .eq('id', customer.id);
+            setShowDeleteConfirm(true);
+        } catch (error: any) {
+            console.error('Error checking dependencies:', error);
+            toast.error('Erro ao verificar dependências do cliente');
+        }
+    };
 
-                if (error) throw error;
+    const handleDeleteConfirm = async () => {
+        if (!customerToDelete) return;
+
+        try {
+            if (deleteAction === 'deactivate') {
+                await customerService.toggleActive(customerToDelete.id, false);
                 toast.success('Cliente inativado com sucesso');
             } else {
-                // Customer can be deleted (only has vehicles or nothing)
-                let confirmMessage = `Tem certeza que deseja excluir o cliente "${customer.name}"?`;
-                if (vehicleCount > 0) {
-                    confirmMessage += `\n\n⚠️ Este cliente possui ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} cadastrado${vehicleCount > 1 ? 's' : ''}, que também ${vehicleCount > 1 ? 'serão excluídos' : 'será excluído'}.`;
+                if (deleteCounts && deleteCounts.vehicles > 0) {
+                    await customerService.deleteVehicles(customerToDelete.id);
                 }
 
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
+                await customerService.delete(customerToDelete.id);
 
-                // Delete vehicles first (if any)
-                if (vehicleCount > 0) {
-                    const { error: deleteVehiclesError } = await supabase
-                        .from('vehicles')
-                        .delete()
-                        .eq('customer_id', customer.id);
-
-                    if (deleteVehiclesError) throw deleteVehiclesError;
-                }
-
-                // Then soft delete the customer
-                const { error } = await supabase
-                    .from('customers')
-                    .update({ deleted_at: new Date().toISOString() })
-                    .eq('id', customer.id);
-
-                if (error) throw error;
-
-                if (vehicleCount > 0) {
-                    toast.success(`Cliente e ${vehicleCount} veículo${vehicleCount > 1 ? 's' : ''} excluído${vehicleCount > 1 ? 's' : ''} com sucesso`);
+                if (deleteCounts && deleteCounts.vehicles > 0) {
+                    toast.success(`Cliente e ${deleteCounts.vehicles} veículo${deleteCounts.vehicles > 1 ? 's' : ''} excluído${deleteCounts.vehicles > 1 ? 's' : ''} com sucesso`);
                 } else {
                     toast.success('Cliente excluído com sucesso');
                 }
             }
 
+            setShowDeleteConfirm(false);
+            setCustomerToDelete(null);
+            setDeleteCounts(null);
             loadCustomers();
         } catch (error: any) {
             console.error('Error deleting/deactivating customer:', error);
             toast.error('Erro ao processar solicitação');
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+        setCustomerToDelete(null);
+        setDeleteCounts(null);
     };
 
     const handleActivate = async (customer: Customer) => {
@@ -377,7 +365,7 @@ export const Customers: React.FC = () => {
                                                 </button>
                                                 {customer.is_active ? (
                                                     <button
-                                                        onClick={() => handleDelete(customer)}
+                                                        onClick={() => handleDeleteClick(customer)}
                                                         className="rounded-lg p-2 text-red-600 hover:bg-red-50"
                                                         title="Excluir"
                                                     >
@@ -410,6 +398,18 @@ export const Customers: React.FC = () => {
                 onClose={handleModalClose}
                 customer={selectedCustomer}
                 onSuccess={loadCustomers}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                title={deleteConfirmTitle}
+                message={deleteConfirmMessage}
+                confirmText={deleteAction === 'deactivate' ? 'Inativar' : 'Excluir'}
+                cancelText="Cancelar"
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+                danger
             />
         </div>
     );

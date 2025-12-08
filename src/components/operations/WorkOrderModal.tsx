@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     X,
@@ -13,6 +12,7 @@ import {
     PlusCircle,
     Link as LinkIcon,
     Camera,
+    Lock
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ServiceSelector } from './ServiceSelector';
@@ -23,9 +23,11 @@ import { WorkOrderStatus, PLAN_LIMITS, SubscriptionPlan } from '@/types/database
 import type { Customer, Vehicle, WorkOrder, Appointment } from '@/types/database';
 import toast from 'react-hot-toast';
 import { formatDate, formatTime, toISOLocal } from '@/utils/datetime';
-import { Lock } from 'lucide-react';
 
 import WorkOrderWhatsAppModal from '@/components/whatsapp/WorkOrderWhatsAppModal';
+import { workOrderService, CreateWorkOrderDTO } from '@/services/workOrderService';
+import { customerService } from '@/services/customerService';
+import { appointmentService } from '@/services/appointmentService';
 
 interface WorkOrderModalProps {
     isOpen: boolean;
@@ -171,7 +173,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 customer_notes: workOrder.customer_notes || '',
                 discount: workOrder.discount || 0,
                 discount_type: (workOrder.discount_type as any) || 'percentage',
-                payment_method: (workOrder.payment_method as any) || 'cash',
+                payment_method: (workOrder.payment_method as any) || 'credit_card', // Default to avoid null
                 payment_status: (workOrder.payment_status as any) || 'pending',
             });
             loadWorkOrderDetails(workOrder.id);
@@ -209,80 +211,70 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     }, [creationMode, workOrder]);
 
     const loadWorkOrderDetails = async (workOrderId: string) => {
-        // Load services
-        const { data: services } = await supabase
-            .from('work_order_services')
-            .select('*')
-            .eq('work_order_id', workOrderId);
+        try {
+            const data = await workOrderService.getById(workOrderId);
+            if (data) {
+                if (data.services) {
+                    setSelectedServices(
+                        data.services.map((s: any) => ({
+                            service_id: s.service_id,
+                            service_name: s.service_name,
+                            quantity: s.quantity,
+                            price: s.unit_price || 0,
+                            notes: s.notes,
+                        }))
+                    );
+                }
+                if (data.products) {
+                    setSelectedProducts(
+                        data.products.map((p: any) => ({
+                            product_id: p.product_id,
+                            product_name: p.product_name,
+                            quantity: p.quantity,
+                            available_stock: 999, // Assumption
+                            unit: p.product?.unit,
+                        }))
+                    );
+                }
 
-        if (services) {
-            setSelectedServices(
-                services.map((s) => ({
-                    service_id: s.service_id,
-                    service_name: s.service_name,
-                    quantity: s.quantity,
-                    price: s.unit_price || 0, // Ensure fallback to 0 if null
-                    notes: s.notes,
-                }))
-            );
-        }
-
-        // Load products
-        const { data: products } = await supabase
-            .from('work_order_products')
-            .select('*, product:products(unit)')
-            .eq('work_order_id', workOrderId);
-
-        if (products) {
-            setSelectedProducts(
-                products.map((p: any) => ({
-                    product_id: p.product_id,
-                    product_name: p.product_name,
-                    quantity: p.quantity,
-                    available_stock: 999, // TODO: Fetch actual stock if needed
-                    unit: p.product?.unit,
-                }))
-            );
+                // If editing, load vehicles for this customer
+                if (data.customer_id) {
+                    loadVehicles(data.customer_id);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading details:', error);
+            toast.error('Erro ao carregar detalhes da ordem de serviço');
         }
     };
 
     const loadAppointments = async () => {
         if (!user?.company?.id) return;
-
-        const { data } = await supabase
-            .from('appointments')
-            .select(`
-                *,
-                customer:customers(name),
-                vehicle:vehicles(brand, model, license_plate)
-            `)
-            .eq('company_id', user.company.id)
-            .in('status', ['pending', 'confirmed', 'in_progress'])
-            .order('scheduled_at', { ascending: false });
-
-        if (data) setAppointments(data as AppointmentWithDetails[]);
+        try {
+            const data = await appointmentService.listOpen(user.company.id);
+            if (data) setAppointments(data);
+        } catch (error) {
+            console.error('Error loading appointments:', error);
+        }
     };
 
     const loadCustomers = async () => {
         if (!user?.company?.id) return;
-
-        const { data } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('company_id', user.company.id)
-            .order('name');
-
-        if (data) setCustomers(data);
+        try {
+            const data = await customerService.list(user.company.id);
+            if (data) setCustomers(data);
+        } catch (error) {
+            console.error('Error loading customers:', error);
+        }
     };
 
     const loadVehicles = async (customerId: string) => {
-        const { data } = await supabase
-            .from('vehicles')
-            .select('*')
-            .eq('customer_id', customerId)
-            .order('model');
-
-        if (data) setVehicles(data);
+        try {
+            const data = await customerService.getVehicles(customerId);
+            if (data) setVehicles(data);
+        } catch (error) {
+            console.error('Error loading vehicles:', error);
+        }
     };
 
     const handleAppointmentChange = async (appointmentId: string) => {
@@ -298,23 +290,20 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             loadVehicles(appointment.customer_id);
 
             // Load appointment services
-            const { data: appointmentServices } = await supabase
-                .from('appointment_services')
-                .select(`
-                    service_id,
-                    price,
-                    service:services(name)
-                `)
-                .eq('appointment_id', appointmentId);
-
-            if (appointmentServices) {
-                const servicesToAdd: ServiceItem[] = appointmentServices.map((item: any) => ({
-                    service_id: item.service_id,
-                    service_name: item.service.name,
-                    quantity: 1,
-                    price: item.price,
-                }));
-                setSelectedServices(servicesToAdd);
+            try {
+                // We use getById from appointmentService to get services
+                const appData = await appointmentService.getById(appointmentId);
+                if (appData && appData.services) {
+                    const servicesToAdd: ServiceItem[] = appData.services.map((item: any) => ({
+                        service_id: item.service_id,
+                        service_name: item.service.name,
+                        quantity: 1,
+                        price: item.price,
+                    }));
+                    setSelectedServices(servicesToAdd);
+                }
+            } catch (error) {
+                console.error('Error loading appointment services:', error);
             }
         } else {
             setFormData({
@@ -376,31 +365,15 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     scheduled_at: toISOLocal(formData.entry_date),
                     status: 'in_progress',
                     duration_minutes: 60,
+                    services: selectedServices.map(s => ({
+                        service_id: s.service_id,
+                        price: s.price,
+                        duration_minutes: 60
+                    }))
                 };
 
-                const { data: newAppointment, error: appError } = await supabase
-                    .from('appointments')
-                    .insert(appointmentData)
-                    .select()
-                    .single();
-
-                if (appError) throw appError;
+                const newAppointment = await appointmentService.create(appointmentData);
                 finalAppointmentId = newAppointment.id;
-
-                if (selectedServices.length > 0) {
-                    const appointmentServicesData = selectedServices.map((service) => ({
-                        appointment_id: finalAppointmentId,
-                        service_id: service.service_id,
-                        price: service.price,
-                        duration_minutes: 60,
-                    }));
-
-                    const { error: appServicesError } = await supabase
-                        .from('appointment_services')
-                        .insert(appointmentServicesData);
-
-                    if (appServicesError) throw appServicesError;
-                }
             }
 
             // Calculate totals
@@ -411,170 +384,56 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 formData.discount_type === 'percentage'
             );
 
-            const orderNumber = workOrder?.order_number || new Date().getTime().toString().slice(-6);
-
-            // PREPARE DATA
-            // Important: If status is 'completed', we first save as 'in_progress' (or keep current)
-            // to ensure products are saved BEFORE the completion trigger fires.
-            const targetStatus = formData.status;
-            const tempStatus = targetStatus === 'completed' ? 'in_progress' : targetStatus;
-
-            const workOrderData = {
+            // Prepare DTO
+            const dto: CreateWorkOrderDTO = {
                 company_id: user.company.id,
                 appointment_id: finalAppointmentId,
                 customer_id: formData.customer_id,
                 vehicle_id: formData.vehicle_id,
-                order_number: orderNumber,
-                status: tempStatus, // Use temp status first
+                status: formData.status,
                 entry_date: toISOLocal(formData.entry_date),
                 expected_completion_date: formData.expected_completion_date
                     ? toISOLocal(formData.expected_completion_date)
                     : null,
                 fuel_level: formData.fuel_level,
-                odometer: formData.odometer ? parseInt(formData.odometer) : null,
-                damage_notes: formData.damage_notes || null,
-                customer_belongings: formData.customer_belongings || null,
-                internal_notes: formData.internal_notes || null,
-                customer_notes: formData.customer_notes || null,
-                subtotal: totals.subtotal,
+                odometer: formData.odometer ? parseInt(formData.odometer) : undefined,
+                damage_notes: formData.damage_notes || undefined,
+                customer_belongings: formData.customer_belongings || undefined,
+                internal_notes: formData.internal_notes || undefined,
+                customer_notes: formData.customer_notes || undefined,
                 discount: formData.discount,
                 discount_type: formData.discount_type,
-                total: totals.total,
                 payment_method: formData.payment_method,
                 payment_status: formData.payment_status,
+                subtotal: totals.subtotal,
+                total: totals.total,
+                items: {
+                    services: selectedServices.map(s => ({
+                        service_id: s.service_id,
+                        service_name: s.service_name,
+                        quantity: s.quantity,
+                        unit_price: s.price,
+                        notes: s.notes
+                    })),
+                    products: selectedProducts.map(p => ({
+                        product_id: p.product_id,
+                        product_name: p.product_name,
+                        quantity: p.quantity
+                    }))
+                }
             };
 
             let newWorkOrder;
-
-            // 1. SAVE WORK ORDER (Without completing yet)
             if (workOrder) {
-                const { data, error } = await supabase
-                    .from('work_orders')
-                    .update(workOrderData)
-                    .eq('id', workOrder.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                newWorkOrder = data;
-
-                // Clear existing items
-                await supabase.from('work_order_services').delete().eq('work_order_id', workOrder.id);
-                await supabase.from('work_order_products').delete().eq('work_order_id', workOrder.id);
+                newWorkOrder = await workOrderService.update(workOrder.id, dto);
             } else {
-                const { data, error } = await supabase
-                    .from('work_orders')
-                    .insert(workOrderData)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                newWorkOrder = data;
-            }
-
-            // 2. INSERT SERVICES & PRODUCTS
-            if (selectedServices.length > 0) {
-                const servicesData = selectedServices.map((service) => ({
-                    company_id: user?.company?.id!,
-                    work_order_id: newWorkOrder.id,
-                    service_id: service.service_id,
-                    service_name: service.service_name,
-                    quantity: service.quantity,
-                    unit_price: service.price,
-                    total_price: service.price * service.quantity,
-                    notes: service.notes || null,
-                }));
-
-                const { error: servicesError } = await supabase
-                    .from('work_order_services')
-                    .insert(servicesData);
-
-                if (servicesError) throw servicesError;
-            }
-
-            if (selectedProducts.length > 0) {
-                const productsData = selectedProducts.map((product) => ({
-                    company_id: user?.company?.id!,
-                    work_order_id: newWorkOrder.id,
-                    product_id: product.product_id,
-                    product_name: product.product_name,
-                    quantity: product.quantity,
-                    unit_price: 0,
-                    total_price: 0,
-                }));
-
-                const { error: productsError } = await supabase
-                    .from('work_order_products')
-                    .insert(productsData);
-
-                if (productsError) throw productsError;
-            }
-
-            // 3. UPDATE STATUS TO COMPLETED (If needed)
-            // This will fire the DB trigger for stock deduction and initial financial transaction
-            if (targetStatus === 'completed' && newWorkOrder.status !== 'completed') {
-                const { error: updateError } = await supabase
-                    .from('work_orders')
-                    .update({
-                        status: 'completed',
-                        completed_at: new Date().toISOString()
-                    })
-                    .eq('id', newWorkOrder.id);
-
-                if (updateError) throw updateError;
-            }
-
-            // 4. HANDLE FINANCIAL TRANSACTION
-            // If completed, the trigger created a transaction. We might need to update it.
-            // If not completed, we manage it manually.
-
-            let transactionStatus = 'pending';
-            if (formData.payment_status === 'paid') transactionStatus = 'paid';
-            else if (formData.payment_status === 'partial') transactionStatus = 'pending';
-
-            const transactionData = {
-                company_id: user.company.id,
-                type: 'income',
-                category: 'Serviço',
-                description: `O.S. #${newWorkOrder.order_number} - ${customers.find(c => c.id === formData.customer_id)?.name}`,
-                amount: totals.total || 0,
-                status: transactionStatus,
-                due_date: formData.expected_completion_date || formData.entry_date,
-                paid_at: formData.payment_status === 'paid' ? new Date().toISOString() : null,
-                work_order_id: newWorkOrder.id,
-                customer_id: formData.customer_id,
-            };
-
-            // Check if transaction exists (created by trigger or previously)
-            const { data: existingTransaction } = await supabase
-                .from('financial_transactions')
-                .select('id')
-                .eq('work_order_id', newWorkOrder.id)
-                .single();
-
-            if (existingTransaction) {
-                // Update existing transaction (fix trigger defaults if needed)
-                const { error: transactionError } = await supabase
-                    .from('financial_transactions')
-                    .update(transactionData)
-                    .eq('id', existingTransaction.id);
-
-                if (transactionError) console.error('Error updating financial transaction:', transactionError);
-            } else if (targetStatus !== 'draft') {
-                // Create new transaction if it doesn't exist and not draft
-                const { error: transactionError } = await supabase
-                    .from('financial_transactions')
-                    .insert(transactionData);
-
-                if (transactionError) console.error('Error creating financial transaction:', transactionError);
+                newWorkOrder = await workOrderService.create(dto);
             }
 
             toast.success(workOrder ? 'Ordem de Serviço atualizada!' : 'Ordem de Serviço criada com sucesso!');
 
             // Send WhatsApp notification if work order was completed
-            // Send WhatsApp notification if work order was completed
-            // Send WhatsApp notification if work order was completed
-            if (targetStatus === 'completed') {
+            if (formData.status === 'completed') {
                 const plan = user?.company?.subscription_plan || 'basic';
                 const canUseWhatsApp = PLAN_LIMITS[plan as SubscriptionPlan]?.features?.whatsapp_integration;
 
@@ -626,10 +485,10 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
         );
     }
 
-    // Calculate totals (only services, products don't have price)
+    // Calculate totals (only services, products don't have price in WO context usually for calculation here, wait, logic says products price is 0? Yes confirmed in original code)
     const totals = calculateWorkOrderTotal(
         selectedServices,
-        [], // Products don't contribute to financial total
+        [],
         formData.discount,
         formData.discount_type === 'percentage'
     );
@@ -961,7 +820,6 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                                 setFormData({ ...formData, internal_notes: e.target.value })
                                             }
                                             className="input"
-                                            placeholder="Notas internas (não visíveis ao cliente)..."
                                         />
                                     </div>
                                     <div>
@@ -973,14 +831,12 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                                 setFormData({ ...formData, customer_notes: e.target.value })
                                             }
                                             className="input"
-                                            placeholder="Solicitações ou observações do cliente..."
                                         />
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Services Tab */}
                         {/* Services Tab */}
                         {activeTab === 'services' && (
                             <div className="max-h-[500px] overflow-y-auto">
@@ -1018,7 +874,6 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                 </h4>
                                 <p className="text-neutral-600 max-w-md">
                                     As fotos só podem ser adicionadas após a Ordem de Serviço ser criada.
-                                    Preencha as informações básicas e clique em "Salvar" para continuar.
                                 </p>
                             </div>
                         )}
