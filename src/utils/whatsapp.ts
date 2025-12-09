@@ -26,10 +26,8 @@ export function sendWhatsAppMessage(phone: string, message: string): void {
     const formattedPhone = formatPhoneForWhatsApp(phone);
     const encodedMessage = encodeURIComponent(message);
 
-    // Use the universal WhatsApp URL (wa.me)
-    // This automatically handles opening the app (Business or Personal) on mobile/desktop
-    // and avoids forcing the Web interface unless the user specifically chooses it generally.
-    const url = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+    // Use api.whatsapp.com to ensure better compatibility with desktop apps and emojis
+    const url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
 
     // Open in new tab
     window.open(url, '_blank', 'noopener,noreferrer');

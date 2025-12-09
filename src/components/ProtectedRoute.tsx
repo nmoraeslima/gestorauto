@@ -50,7 +50,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
 
     // 3. Com sessão, carregando dados (Data Loading)
-    if (dataLoading) {
+    // 3. Com sessão, carregando dados (Data Loading)
+    // Only show spinner if we don't have user data yet (initial load)
+    // If we already have user data (background refresh), keep the UI visible
+    if (dataLoading && !user) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-secondary-50 gap-4">
                 <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
