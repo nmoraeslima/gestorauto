@@ -266,7 +266,11 @@ export default function WorkOrders() {
                             </thead>
                             <tbody>
                                 {filteredWorkOrders.map((wo) => (
-                                    <tr key={wo.id}>
+                                    <tr
+                                        key={wo.id}
+                                        className="hover:bg-gray-50 transition-colors cursor-default"
+                                        onDoubleClick={() => handleEdit(wo)}
+                                    >
                                         <td>
                                             <span className="font-mono text-sm text-neutral-600">
                                                 #{wo.order_number}

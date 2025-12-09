@@ -296,7 +296,11 @@ export const Payables: React.FC<PayablesProps> = ({ onDataChange }) => {
                                         transaction.due_date < new Date().toISOString().split('T')[0];
 
                                     return (
-                                        <tr key={transaction.id} className={isOverdue ? 'bg-red-50' : ''}>
+                                        <tr
+                                            key={transaction.id}
+                                            className={`${isOverdue ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'} transition-colors cursor-default`}
+                                            onDoubleClick={() => handleEdit(transaction)}
+                                        >
                                             <td className="text-sm text-gray-500">
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="h-4 w-4" />

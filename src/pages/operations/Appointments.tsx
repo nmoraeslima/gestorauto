@@ -372,7 +372,11 @@ export default function Appointments() {
                             </thead>
                             <tbody>
                                 {filteredAppointments.map((appointment) => (
-                                    <tr key={appointment.id}>
+                                    <tr
+                                        key={appointment.id}
+                                        className="hover:bg-gray-50 transition-colors cursor-default"
+                                        onDoubleClick={() => handleEdit(appointment)}
+                                    >
                                         <td>
                                             <div className="flex items-center gap-2">
                                                 <CalendarIcon className="w-4 h-4 text-neutral-400" />
