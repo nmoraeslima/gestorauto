@@ -48,7 +48,7 @@ export default function Appointments() {
 
     useEffect(() => {
         loadAppointments();
-    }, [user, statusFilter, dateFilter, searchTerm]); // Trigger load on filters to use service filtering efficiently if needed, or just load once and filter in memory? 
+    }, [user, dateFilter, searchTerm]); // Trigger load on filters to use service filtering efficiently if needed, or just load once and filter in memory? 
     // The previous implementation loaded ONCE and filtered in render. 
     // But now I implemented filtering in the service.
     // Let's stick to the previous pattern of Client-Side filtering for responsiveness unless the dataset is huge, 
@@ -68,8 +68,10 @@ export default function Appointments() {
 
         setLoading(true);
         try {
+            // Fetch ALL statuses to ensure stats are correct
+            // Filter by status only in the UI
             const data = await appointmentService.list(user.company.id, {
-                status: statusFilter,
+                // status: statusFilter, // REMOVED: Fetch all to allow local filtering
                 dateFilter: dateFilter as any,
                 searchTerm: searchTerm
             });
@@ -193,7 +195,7 @@ export default function Appointments() {
         }
     };
 
-    // Filter appointments
+    // Filter appointments locally
     const filteredAppointments = appointments.filter((appointment) => {
         const matchesSearch =
             appointment.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -201,21 +203,18 @@ export default function Appointments() {
 
         const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
 
-        let matchesDate = true;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const appointmentDate = new Date(appointment.scheduled_at);
-        appointmentDate.setHours(0, 0, 0, 0);
+        // Date filtering is handled by the API mostly, but if 'dateFilter' is used in API,
+        // we might not need to filter here again UNLESS search term cleared it.
+        // Actually, the API handles: dateFilter AND searchTerm.
+        // BUT we removed 'status' from API. So we MUST filter status here.
+        // We also passed 'dateFilter' and 'searchTerm' to API.
+        // So the 'appointments' state ALREADY matches date and search.
+        // We only need to filter by 'statusFilter' here.
 
-        if (dateFilter === 'today') {
-            matchesDate = appointmentDate.getTime() === today.getTime();
-        } else if (dateFilter === 'upcoming') {
-            matchesDate = appointmentDate.getTime() >= today.getTime();
-        } else if (dateFilter === 'past') {
-            matchesDate = appointmentDate.getTime() < today.getTime();
-        }
+        // Wait, if we use searchTerm in API, 'appointments' will change when searchTerm changes.
+        // So we just need to filter by status here.
 
-        return matchesSearch && matchesStatus && matchesDate;
+        return matchesStatus;
     });
 
     // Get status badge
@@ -232,17 +231,17 @@ export default function Appointments() {
         return <span className={`badge ${badge.className}`}>{badge.label}</span>;
     };
 
-    // Stats (based on filtered appointments)
+    // Stats (based on FULL LIST 'appointments', not 'filteredAppointments')
     const stats = {
-        total: filteredAppointments.length,
-        pending: filteredAppointments.filter((a) => a.status === 'pending').length,
-        confirmed: filteredAppointments.filter((a) => a.status === 'confirmed').length,
-        cancelled: filteredAppointments.filter((a) => a.status === 'cancelled').length,
-        today: filteredAppointments.filter((a) => {
-            const date = new Date(a.scheduled_at);
-            const today = new Date();
-            return date.toDateString() === today.toDateString();
-        }).length,
+        total: appointments.length,
+        pending: appointments.filter((a) => a.status === 'pending').length,
+        confirmed: appointments.filter((a) => a.status === 'confirmed').length,
+        // We can group 'in_progress' with 'confirmed' for the visual card if desired, or just show strict counts.
+        // Given the request to "revise calculation", I'll enable standard buckets.
+        // If we only have 4 cards, we might miss 'in_progress' and 'completed'.
+        // Let's keep it strict for now but use the Correct Data Source.
+        cancelled: appointments.filter((a) => a.status === 'cancelled').length,
+        completed: appointments.filter((a) => a.status === 'completed').length,
     };
 
     return (
