@@ -49,6 +49,11 @@ export const Services: React.FC = () => {
         }
     };
 
+    const handleEdit = (service: Service) => {
+        setSelectedService(service);
+        setIsModalOpen(true);
+    };
+
     const filteredServices = services.filter(service =>
         service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         service.category?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -113,7 +118,11 @@ export const Services: React.FC = () => {
                                 </tr>
                             ) : (
                                 filteredServices.map((service) => (
-                                    <tr key={service.id} className="hover:bg-secondary-50 transition-colors">
+                                    <tr
+                                        key={service.id}
+                                        className="hover:bg-secondary-50 transition-colors cursor-default"
+                                        onDoubleClick={() => handleEdit(service)}
+                                    >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
@@ -140,10 +149,7 @@ export const Services: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
-                                                onClick={() => {
-                                                    setSelectedService(service);
-                                                    setIsModalOpen(true);
-                                                }}
+                                                onClick={() => handleEdit(service)}
                                                 className="text-primary-600 hover:text-primary-900 mr-4"
                                             >
                                                 <Edit2 className="w-4 h-4" />

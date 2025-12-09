@@ -104,7 +104,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
                         <div>
                             <label className="label">
                                 <Tag className="w-4 h-4 inline mr-2" />
@@ -117,6 +117,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="input"
                                 placeholder="Ex: Lavagem Completa"
+                                autoComplete="off"
                             />
                         </div>
 
@@ -133,7 +134,10 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                                     step="0.01"
                                     value={formData.price}
                                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     className="input"
+                                    placeholder="0.00"
+                                    autoComplete="off"
                                 />
                             </div>
                         </div>

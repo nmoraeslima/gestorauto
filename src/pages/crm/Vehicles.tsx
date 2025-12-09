@@ -165,7 +165,11 @@ export const Vehicles: React.FC = () => {
                             </thead>
                             <tbody>
                                 {filteredVehicles.map((vehicle) => (
-                                    <tr key={vehicle.id}>
+                                    <tr
+                                        key={vehicle.id}
+                                        onDoubleClick={() => handleEdit(vehicle)}
+                                        className="hover:bg-gray-50 transition-colors"
+                                    >
                                         <td>
                                             <div className="font-medium text-gray-900">
                                                 {vehicle.brand} {vehicle.model}
