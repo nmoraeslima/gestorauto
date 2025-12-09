@@ -1,0 +1,12 @@
+{
+    "version": "1.0.0",
+    "title": "Nova Versão Disponível",
+    "description": "Uma nova atualização foi detectada. Confira as novidades:",
+    "notes": [
+        "✨ Implementação de notas de atualização (Release Notes)",
+        "🚀 Melhorias de performance no Dashboard",
+        "📱 Botão de verificação manual de atualizações",
+        "🔧 Correções de bugs e melhorias gerais"
+    ],
+    "date": "2025-12-09"
+}

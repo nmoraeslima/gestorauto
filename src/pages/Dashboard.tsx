@@ -12,9 +12,12 @@ import {
     Calendar,
     ArrowRight,
     Lock,
+    RefreshCw,
 } from 'lucide-react';
 import { DashboardStats } from '@/types/database';
 import { Link } from 'react-router-dom';
+import { usePWA } from '@/hooks/usePWA';
+import { UpdateModal } from '@/components/UpdateModal';
 import {
     AreaChart,
     Area,
@@ -35,6 +38,8 @@ export const Dashboard: React.FC = () => {
     const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
     const [revenueData, setRevenueData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { needRefresh, updateServiceWorker, releaseNote } = usePWA();
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
 
     useEffect(() => {
         loadDashboardData();
@@ -221,17 +226,47 @@ export const Dashboard: React.FC = () => {
         },
     ];
 
+    const handleUpdateClick = () => {
+        if (needRefresh && releaseNote) {
+            setShowUpdateModal(true);
+        } else {
+            updateServiceWorker(needRefresh);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-secondary-900">
-                    Dashboard
-                </h1>
-                <p className="text-base text-secondary-600 mt-1">
-                    Aqui está um resumo do seu negócio hoje.
-                </p>
+            <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-2xl font-bold text-secondary-900">
+                        Dashboard
+                    </h1>
+                    <p className="text-base text-secondary-600 mt-1">
+                        Aqui está um resumo do seu negócio hoje.
+                    </p>
+                </div>
+                {/* PWA Update Button */}
+                <div className="absolute top-6 right-6 lg:static lg:ml-auto">
+                    <button
+                        onClick={handleUpdateClick}
+                        className={`btn ${needRefresh ? 'btn-primary animate-pulse' : 'btn-ghost text-secondary-600'} flex items-center gap-2`}
+                        title={needRefresh ? 'Nova versão disponível!' : 'Verificar atualizações'}
+                    >
+                        <RefreshCw className={`w-4 h-4 ${!needRefresh && 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                        <span className="hidden sm:inline">
+                            {needRefresh ? 'Atualizar App' : 'Verificar Atualização'}
+                        </span>
+                    </button>
+                </div>
             </div>
+
+            <UpdateModal
+                isOpen={showUpdateModal}
+                onClose={() => setShowUpdateModal(false)}
+                onUpdate={() => updateServiceWorker(true)}
+                releaseNote={releaseNote}
+            />
 
             <QuickActions />
 
@@ -240,81 +275,87 @@ export const Dashboard: React.FC = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {statCards.map((stat, index) => {
-                    const Icon = stat.icon;
-                    return (
-                        <div
-                            key={index}
-                            className={`bg-white rounded-xl shadow-card p-6 border border-secondary-100 hover:shadow-soft transition-shadow duration-200 relative overflow-hidden ${stat.restricted ? 'cursor-pointer' : ''}`}
-                            onClick={() => {
-                                if (stat.restricted) {
-                                    // Trigger global upgrade modal event or specific logic
-                                    // ideally use a context or direct prop, but for now we can just use window dispatch or local state if component had it
-                                    // Creating a Custom Event to trigger the modal from Layout
-                                    window.dispatchEvent(new CustomEvent('openUpgradeModal'));
-                                }
-                            }}
-                        >
-                            {stat.restricted && (
-                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-2 text-primary-600 font-semibold group">
-                                    <Lock className="w-8 h-8 mb-2 text-primary-500 group-hover:scale-110 transition-transform" />
-                                    <span className="text-sm">Recurso Premium</span>
-                                </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-secondary-600">
-                                        {stat.title}
-                                    </p>
-                                    <p className="text-2xl font-bold text-secondary-900 mt-2">
-                                        {stat.value}
-                                    </p>
-                                </div>
-                                <div className={`${stat.bgColor} p-3 rounded-lg`}>
-                                    <Icon className={`w-6 h-6 ${stat.textColor}`} />
+                {
+                    statCards.map((stat, index) => {
+                        const Icon = stat.icon;
+                        return (
+                            <div
+                                key={index}
+                                className={`bg-white rounded-xl shadow-card p-6 border border-secondary-100 hover:shadow-soft transition-shadow duration-200 relative overflow-hidden ${stat.restricted ? 'cursor-pointer' : ''}`}
+                                onClick={() => {
+                                    if (stat.restricted) {
+                                        // Trigger global upgrade modal event or specific logic
+                                        // ideally use a context or direct prop, but for now we can just use window dispatch or local state if component had it
+                                        // Creating a Custom Event to trigger the modal from Layout
+                                        window.dispatchEvent(new CustomEvent('openUpgradeModal'));
+                                    }
+                                }}
+                            >
+                                {stat.restricted && (
+                                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-center p-2 text-primary-600 font-semibold group">
+                                        <Lock className="w-8 h-8 mb-2 text-primary-500 group-hover:scale-110 transition-transform" />
+                                        <span className="text-sm">Recurso Premium</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-secondary-600">
+                                            {stat.title}
+                                        </p>
+                                        <p className="text-2xl font-bold text-secondary-900 mt-2">
+                                            {stat.value}
+                                        </p>
+                                    </div>
+                                    <div className={`${stat.bgColor} p-3 rounded-lg`}>
+                                        <Icon className={`w-6 h-6 ${stat.textColor}`} />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })
+                }
+            </div >
 
             {/* Alertas */}
-            {stats && stats.low_stock_products > 0 && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h3 className="text-sm font-semibold text-red-800">
-                                🚨 Alerta de Estoque Baixo
-                            </h3>
-                            <p className="text-sm text-red-700 mt-1">
-                                Você tem {stats.low_stock_products} produto(s) com estoque abaixo
-                                do mínimo. Verifique o estoque para evitar falta de produtos.
-                            </p>
+            {
+                stats && stats.low_stock_products > 0 && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-red-800">
+                                    🚨 Alerta de Estoque Baixo
+                                </h3>
+                                <p className="text-sm text-red-700 mt-1">
+                                    Você tem {stats.low_stock_products} produto(s) com estoque abaixo
+                                    do mínimo. Verifique o estoque para evitar falta de produtos.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Informação do Trial */}
-            {user?.company?.subscription_status === 'trial' && user.company.trial_ends_at && (
-                <div className="bg-primary-50 border-l-4 border-primary-500 p-4 rounded-lg">
-                    <div className="flex items-start gap-3">
-                        <Package className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h3 className="text-sm font-semibold text-primary-800">
-                                Período de Trial
-                            </h3>
-                            <p className="text-sm text-primary-700 mt-1">
-                                Seu trial expira em{' '}
-                                {new Date(user.company.trial_ends_at).toLocaleDateString('pt-BR')}.
-                                Aproveite para explorar todas as funcionalidades!
-                            </p>
+            {
+                user?.company?.subscription_status === 'trial' && user.company.trial_ends_at && (
+                    <div className="bg-primary-50 border-l-4 border-primary-500 p-4 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <Package className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-primary-800">
+                                    Período de Trial
+                                </h3>
+                                <p className="text-sm text-primary-700 mt-1">
+                                    Seu trial expira em{' '}
+                                    {new Date(user.company.trial_ends_at).toLocaleDateString('pt-BR')}.
+                                    Aproveite para explorar todas as funcionalidades!
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -419,6 +460,6 @@ export const Dashboard: React.FC = () => {
             </div>
 
 
-        </div>
+        </div >
     );
 };

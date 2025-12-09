@@ -47,7 +47,7 @@ import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
 import CookiePolicy from './pages/legal/CookiePolicy';
 
-import { ReloadPrompt } from './components/ReloadPrompt';
+
 
 // Placeholder components para páginas ainda não implementadas
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -63,7 +63,6 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <ReloadPrompt />
                 <Toaster
                     position="top-right"
                     toastOptions={{
