@@ -139,7 +139,11 @@ export default function Inventory() {
                                 {filteredProducts.map((product) => {
                                     const isLowStock = (product.quantity || 0) <= (product.min_stock || 0);
                                     return (
-                                        <tr key={product.id} className={isLowStock ? 'bg-red-50' : ''}>
+                                        <tr
+                                            key={product.id}
+                                            className={`${isLowStock ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'} transition-colors cursor-default`}
+                                            onDoubleClick={() => handleMovement(product)}
+                                        >
                                             <td>
                                                 <p className="font-medium text-secondary-900">{product.name}</p>
                                                 <p className="text-xs text-neutral-500">{product.category}</p>

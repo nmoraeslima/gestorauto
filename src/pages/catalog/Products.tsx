@@ -177,7 +177,11 @@ export default function Products() {
                             </thead>
                             <tbody>
                                 {filteredProducts.map((product) => (
-                                    <tr key={product.id}>
+                                    <tr
+                                        key={product.id}
+                                        className="hover:bg-gray-50 transition-colors"
+                                        onDoubleClick={() => handleEdit(product)}
+                                    >
                                         <td>
                                             <div className="flex flex-col gap-1">
                                                 <p className="font-medium text-secondary-900">{product.name}</p>
