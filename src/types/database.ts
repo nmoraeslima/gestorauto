@@ -34,7 +34,8 @@ export enum CustomerType {
 export enum AppointmentStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
+  COMPLETED = 'completed'
 }
 
 export enum WorkOrderStatus {
