@@ -1,12 +1,72 @@
 {
-    "version": "1.0.0",
-    "title": "Nova Versão Disponível",
-    "description": "Uma nova atualização foi detectada. Confira as novidades:",
-    "notes": [
-        "✨ Implementação de notas de atualização (Release Notes)",
-        "🚀 Melhorias de performance no Dashboard",
-        "📱 Botão de verificação manual de atualizações",
-        "🔧 Correções de bugs e melhorias gerais"
-    ],
-    "date": "2025-12-09"
+    "currentVersion": "1.1.0",
+    "releases": [
+        {
+            "version": "1.1.0",
+            "date": "2025-12-09",
+            "title": "Atualização de Dezembro",
+            "description": "Focamos em segurança e transparência nesta versão.",
+            "type": "minor",
+            "notes": [
+                {
+                    "type": "feat",
+                    "text": "Histórico de Versões: Nova página para acompanhar todas as novidades."
+                },
+                {
+                    "type": "sec",
+                    "text": "Correção crítica de duplicidade de clientes no agendamento."
+                },
+                {
+                    "type": "fix",
+                    "text": "Melhoria na performance do Modal de Atualização (PWA)."
+                },
+                {
+                    "type": "ui",
+                    "text": "Ícones atualizados no fluxo de Agendamento Público."
+                }
+            ]
+        },
+        {
+            "version": "1.0.5",
+            "date": "2025-11-28",
+            "title": "Melhorias no Dashboard",
+            "description": "Otimizações de performance e correções visuais.",
+            "type": "patch",
+            "notes": [
+                {
+                    "type": "feat",
+                    "text": "Novos gráficos financeiros no Dashboard."
+                },
+                {
+                    "type": "fix",
+                    "text": "Ajuste na exibição de alertas de estoque baixo."
+                },
+                {
+                    "type": "fix",
+                    "text": "Correção no cálculo de receita mensal."
+                }
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "2025-11-20",
+            "title": "Lançamento Oficial",
+            "description": "A primeira versão estável do GestorAuto está no ar!",
+            "type": "major",
+            "notes": [
+                {
+                    "type": "feat",
+                    "text": "Lançamento do sistema completo."
+                },
+                {
+                    "type": "feat",
+                    "text": "Módulos de Clientes, Veículos e Agendamentos."
+                },
+                {
+                    "type": "feat",
+                    "text": "Integração inicial com WhatsApp."
+                }
+            ]
+        }
+    ]
 }

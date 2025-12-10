@@ -19,7 +19,15 @@ export function usePWA() {
                         const response = await fetch('/release.json');
                         if (response.ok) {
                             const data = await response.json();
-                            setReleaseNote(data);
+                            // Handle both old (single object) and new (array) schema for backward compatibility during transition
+                            if (data.releases && Array.isArray(data.releases) && data.releases.length > 0) {
+                                // New Schema: Take the latest release (first in array or sort by date if needed)
+                                // We assume the JSON is ordered or we take the one matching currentVersion if we had logic for that
+                                setReleaseNote(data.releases[0]);
+                            } else {
+                                // Old Schema fallback
+                                setReleaseNote(data);
+                            }
                         }
                     } catch (error) {
                         console.error('Error fetching release notes:', error);

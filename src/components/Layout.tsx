@@ -20,6 +20,7 @@ import {
     Tag,
     Download,
     Lock,
+    GitBranch,
 } from 'lucide-react';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
@@ -92,10 +93,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="min-h-screen bg-secondary-50">
                 {/* Sidebar Desktop */}
                 <div
-                    className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-20'
+                    className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-white border-r border-secondary-200 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-20'
                         }`}
                 >
-                    <div className="flex flex-col flex-grow bg-white border-r border-secondary-200 pt-5 pb-4 overflow-y-auto overflow-x-hidden">
+                    <div className="flex flex-col flex-grow overflow-y-auto overflow-x-hidden pt-5 pb-4">
                         {/* Header (Logo + Toggle) */}
                         <div className={`flex items-center flex-shrink-0 mb-6 ${sidebarOpen ? 'px-6 justify-between' : 'flex-col gap-4 px-2'}`}>
                             {sidebarOpen ? (
@@ -213,53 +214,62 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 );
                             })}
                         </nav>
+                    </div>
 
-                        {/* User Menu */}
-                        <div className="flex-shrink-0 px-3 pb-2 pt-2 mt-auto border-t border-secondary-200">
-                            {!isInstalled && sidebarOpen && (
-                                <button
-                                    onClick={handleInstallApp}
-                                    className="w-full flex items-center gap-3 px-3 py-2 mb-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 rounded-lg shadow-sm transition-all duration-150"
-                                >
-                                    <Download className="w-5 h-5" />
-                                    Instalar App
-                                </button>
-                            )}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-50 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'justify-center' : ''}`}
-                                >
-                                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                                        {user?.profile?.full_name?.charAt(0).toUpperCase()}
-                                    </div>
-                                    {sidebarOpen && (
-                                        <>
-                                            <div className="flex-1 text-left overflow-hidden">
-                                                <p className="text-sm font-semibold text-secondary-900 truncate">
-                                                    {user?.profile?.full_name}
-                                                </p>
-                                                <p className="text-xs text-secondary-600 truncate">
-                                                    {user?.profile?.role}
-                                                </p>
-                                            </div>
-                                            <ChevronDown className="w-4 h-4 flex-shrink-0" />
-                                        </>
-                                    )}
-                                </button>
-
-                                {userMenuOpen && (
-                                    <div className={`absolute bottom-full mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1 z-50 ${sidebarOpen ? 'left-0 right-0' : 'left-14 w-48'}`}>
-                                        <button
-                                            onClick={handleSignOut}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                            Sair
-                                        </button>
-                                    </div>
+                    {/* User Menu - Fixed at bottom, outside overflow container to prevent clipping */}
+                    <div className="flex-shrink-0 px-3 pb-4 pt-2 border-t border-secondary-200 bg-white">
+                        {!isInstalled && sidebarOpen && (
+                            <button
+                                onClick={handleInstallApp}
+                                className="w-full flex items-center gap-3 px-3 py-2 mb-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 rounded-lg shadow-sm transition-all duration-150"
+                            >
+                                <Download className="w-5 h-5" />
+                                Instalar App
+                            </button>
+                        )}
+                        <div className="relative">
+                            <button
+                                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-50 rounded-lg transition-colors duration-150 ${!sidebarOpen ? 'justify-center' : ''}`}
+                            >
+                                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                                    {user?.profile?.full_name?.charAt(0).toUpperCase()}
+                                </div>
+                                {sidebarOpen && (
+                                    <>
+                                        <div className="flex-1 text-left overflow-hidden">
+                                            <p className="text-sm font-semibold text-secondary-900 truncate">
+                                                {user?.profile?.full_name}
+                                            </p>
+                                            <p className="text-xs text-secondary-600 truncate">
+                                                {user?.profile?.role}
+                                            </p>
+                                        </div>
+                                        <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                                    </>
                                 )}
-                            </div>
+                            </button>
+
+                            {userMenuOpen && (
+                                <div className={`absolute bottom-full mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1 z-50 ${sidebarOpen ? 'left-0 right-0' : 'left-14 w-48'}`}>
+                                    <Link
+                                        to="/settings/releases"
+                                        onClick={() => setUserMenuOpen(false)}
+                                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors duration-150"
+                                    >
+                                        <GitBranch className="w-4 h-4" />
+                                        Versões
+                                    </Link>
+                                    <div className="h-px bg-secondary-100 my-1"></div>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Sair
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -354,7 +364,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                                     {userMenuOpen && (
                                         <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-secondary-200 py-1">
-
+                                            <Link
+                                                to="/settings/releases"
+                                                onClick={() => setUserMenuOpen(false)}
+                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors duration-150"
+                                            >
+                                                <GitBranch className="w-4 h-4" />
+                                                Versões
+                                            </Link>
+                                            <div className="h-px bg-secondary-100 my-1"></div>
                                             <button
                                                 onClick={handleSignOut}
                                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-150"

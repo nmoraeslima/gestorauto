@@ -38,6 +38,7 @@ import { Payables } from './pages/financial/Payables';
 // Settings Pages
 import { CompanySettings } from './pages/settings/CompanySettings';
 import { BookingSettings } from './pages/settings/BookingSettings';
+import { ReleaseHistory } from './pages/settings/ReleaseHistory';
 import { ServiceTracker } from './pages/public/ServiceTracker';
 import PublicBooking from './pages/public/PublicBooking';
 import { Landing } from './pages/Landing';
@@ -157,6 +158,7 @@ function App() {
 
                         <Route path="/settings" element={<CompanySettings />} />
                         <Route path="/settings/booking" element={<BookingSettings />} />
+                        <Route path="/settings/releases" element={<ReleaseHistory />} />
                     </Route>
 
                     {/* 404 */}

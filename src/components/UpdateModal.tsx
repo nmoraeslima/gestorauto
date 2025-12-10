@@ -1,82 +1,74 @@
 import React from 'react';
-import { Sparkles, Rocket, X, DownloadCloud } from 'lucide-react';
+import { Rocket, X, Gift, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ReleaseNote {
     version: string;
     title: string;
     description: string;
-    notes: string[];
     date: string;
 }
 
 interface UpdateModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onUpdate: () => void;
+    onUpdate: () => void; // Kept for interface compatibility but main action is now redirect
     releaseNote: ReleaseNote | null;
 }
 
-export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, onUpdate, releaseNote }) => {
+export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, releaseNote }) => {
+    const navigate = useNavigate();
+
     if (!isOpen || !releaseNote) return null;
+
+    const handleSeeNews = () => {
+        onClose();
+        navigate('/settings/releases');
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white relative">
+                <div className="bg-gradient-to-r from-primary-600 to-purple-600 p-6 text-white relative">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 text-primary-100 hover:text-white transition-colors"
+                        className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-white/20 p-2 rounded-lg">
-                            <Rocket className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold">{releaseNote.title}</h2>
-                            <p className="text-primary-100 text-sm">Versão {releaseNote.version}</p>
-                        </div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <Gift className="w-6 h-6 text-yellow-300" />
+                        <Rocket className="w-5 h-5 text-white" />
+                        <h2 className="text-xl font-bold">Novidades Chegaram!</h2>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                    <p className="text-gray-600 mb-4 text-sm">
-                        {releaseNote.description}
+                <div className="p-6 bg-gradient-to-b from-primary-50 to-white">
+                    <p className="text-secondary-600 mb-6 text-base leading-relaxed">
+                        Temos atualizações incríveis para você! Descubra todas as melhorias e novidades que preparamos para tornar seu trabalho ainda mais eficiente.
                     </p>
-
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 mb-6">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-yellow-500" />
-                            Novidades
-                        </h3>
-                        <ul className="space-y-2.5">
-                            {releaseNote.notes.map((note, index) => (
-                                <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
-                                    <span className="block w-1.5 h-1.5 rounded-full bg-primary-400 mt-1.5 shrink-0" />
-                                    {note}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
 
                     <div className="flex gap-3">
                         <button
+                            onClick={handleSeeNews}
+                            className="flex-1 px-4 py-3 text-secondary-900 bg-yellow-400 hover:bg-yellow-300 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <Gift className="w-4 h-4" />
+                            Ver Novidades
+                        </button>
+                        <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                            className="px-6 py-3 text-secondary-600 bg-white border border-secondary-200 hover:bg-secondary-50 rounded-lg font-medium transition-colors"
                         >
                             Depois
                         </button>
-                        <button
-                            onClick={onUpdate}
-                            className="flex-1 px-4 py-2.5 text-white bg-primary-600 hover:bg-primary-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                            <DownloadCloud className="w-4 h-4" />
-                            Atualizar Agora
-                        </button>
                     </div>
+
+                    <p className="text-center text-xs text-secondary-400 mt-4">
+                        Versão {releaseNote.version} disponível
+                    </p>
                 </div>
             </div>
         </div>
