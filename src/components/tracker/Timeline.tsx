@@ -5,32 +5,32 @@ type WorkOrderStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
 interface TimelineProps {
     status: WorkOrderStatus;
-    createdAt: string;
-    updatedAt: string;
+    entryDate: string;
+    completionDate?: string;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ status, createdAt, updatedAt }) => {
+export const Timeline: React.FC<TimelineProps> = ({ status, entryDate, completionDate }) => {
     const steps = [
         {
             id: 'pending',
             label: 'Recebido',
             description: 'Veículo recebido na estética',
             icon: Clock,
-            date: createdAt,
+            date: entryDate,
         },
         {
             id: 'in_progress',
             label: 'Em Andamento',
             description: 'Serviços sendo executados',
             icon: Wrench,
-            date: status === 'in_progress' || status === 'completed' ? updatedAt : undefined,
+            date: status === 'in_progress' || status === 'completed' ? entryDate : undefined, // APPROXIMATION: In progress usually starts roughly when entered or shortly after. keeping simple.
         },
         {
             id: 'completed',
             label: 'Finalizado',
             description: 'Pronto para retirada',
             icon: CheckCircle,
-            date: status === 'completed' ? updatedAt : undefined,
+            date: status === 'completed' ? completionDate : undefined,
         },
     ];
 
