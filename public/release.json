@@ -1,6 +1,35 @@
 {
-    "currentVersion": "1.1.0",
+    "currentVersion": "1.2.0",
     "releases": [
+        {
+            "version": "1.2.0",
+            "date": "2025-12-10",
+            "title": "Tracker Público 2.0 & Avarias",
+            "description": "Uma revolução na transparência com seu cliente.",
+            "type": "minor",
+            "notes": [
+                {
+                    "type": "feat",
+                    "text": "Link Público 2.0: Nova interface com fotos do checklist (entrada), avarias e galeria renovada."
+                },
+                {
+                    "type": "feat",
+                    "text": "Gestão de Avarias: Nova categoria de fotos exclusiva para documentar danos pré-existentes."
+                },
+                {
+                    "type": "ui",
+                    "text": "Lightbox: Ampliação de fotos em tela cheia (zoom) para melhor visualização."
+                },
+                {
+                    "type": "feat",
+                    "text": "Compartilhamento WhatsApp: Botão direto na lista de O.S. (Mobile/Card)."
+                },
+                {
+                    "type": "sec",
+                    "text": "Blindagem de Dados: Checklist e Link Público auditados para proteção total (GDPR)."
+                }
+            ]
+        },
         {
             "version": "1.1.0",
             "date": "2025-12-09",
