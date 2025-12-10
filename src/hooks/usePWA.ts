@@ -56,8 +56,13 @@ export function usePWA() {
     const updateServiceWorker = async (active: boolean = true) => {
         if (active && registration && registration.waiting) {
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+            // Wait for the new service worker to take control before reloading
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+
             setNeedRefresh(false);
-            window.location.reload();
         } else if (!active && registration) {
             // Manual check for updates
             console.log('Checking for updates manually...');
