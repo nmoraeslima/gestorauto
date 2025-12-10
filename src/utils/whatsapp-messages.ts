@@ -27,7 +27,7 @@ export function generateConfirmationMessage(data: MessageData): string {
     });
 
     const companyName = company?.name || 'GestorAuto';
-    let message = `✅ *Agendamento Confirmado - ${companyName} (by GestorAuto)*\n\n`;
+    let message = `✅ *Agendamento Confirmado - ${companyName}*\n\n`;
     message += `Olá, ${firstName}! 👋\n\n`;
     message += `Seu agendamento foi confirmado:\n\n`;
     message += `📅 *Data:* ${date}\n`;
@@ -79,7 +79,7 @@ export function generateCancellationMessage(
     });
 
     const companyName = data.company?.name || 'GestorAuto';
-    let message = `❌ *Agendamento Cancelado - ${companyName} (by GestorAuto)*\n\n`;
+    let message = `❌ *Agendamento Cancelado - ${companyName}*\n\n`;
     message += `Olá, ${firstName}!\n\n`;
     message += `Infelizmente precisamos cancelar seu agendamento:\n\n`;
     message += `📅 *Data:* ${date}\n`;
@@ -117,7 +117,7 @@ export function generateReminderMessage(data: MessageData): string {
     });
 
     const companyName = data.company?.name || 'GestorAuto';
-    let message = `⏰ *Lembrete de Agendamento - ${companyName} (by GestorAuto)*\n\n`;
+    let message = `⏰ *Lembrete de Agendamento - ${companyName}*\n\n`;
     message += `Olá, ${firstName}!\n\n`;
     message += `Lembramos que você tem um agendamento amanhã:\n\n`;
     message += `📅 ${date} às ${time}\n`;
@@ -152,7 +152,7 @@ export function generateWorkOrderCompletionMessage(
     }).format(workOrder.total);
 
     const companyName = data.company?.name || 'GestorAuto';
-    let message = `✅ *Serviço Concluído - ${companyName} (by GestorAuto)*\n\n`;
+    let message = `✅ *Serviço Concluído - ${companyName}*\n\n`;
     message += `Boa notícia, ${firstName}! Seu veículo está pronto:\n\n`;
 
     if (vehicle) {

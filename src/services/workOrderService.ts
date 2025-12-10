@@ -172,7 +172,9 @@ export class WorkOrderService {
             .from('work_orders')
             .insert({
                 ...workOrderData,
-                order_number: orderNumber
+                order_number: orderNumber,
+                // Ensure completed_at is set if creating as completed
+                completed_at: workOrderData.status === 'completed' ? new Date().toISOString() : null
             } as any)
             .select()
             .single();
@@ -196,13 +198,8 @@ export class WorkOrderService {
             workOrder.status === 'draft'
         );
 
-        // 4. Update status to trigger completion effects if needed
-        if (workOrderData.status === 'completed') {
-            await supabase
-                .from('work_orders')
-                .update({ status: 'completed', completed_at: new Date().toISOString() })
-                .eq('id', workOrder.id);
-        }
+        // 4. Update status done in initial insert if passed
+        // Removed redundant update that was causing race conditions
 
         return workOrder;
     }
@@ -215,7 +212,14 @@ export class WorkOrderService {
 
         const { data: workOrder, error } = await supabase
             .from('work_orders')
-            .update(workOrderData)
+            .update({
+                ...workOrderData,
+                // Ensure completed_at is updated if status is changing to completed
+                // This prevents the trigger from firing with a null date
+                completed_at: (workOrderData.status === 'completed' && existing.status !== 'completed')
+                    ? new Date().toISOString()
+                    : undefined
+            })
             .eq('id', id)
             .select()
             .single();
@@ -246,13 +250,8 @@ export class WorkOrderService {
             effectiveStatus === 'draft'
         );
 
-        // Completion Trigger Logic (if moving to completed)
-        if (data.status === 'completed' && existing.status !== 'completed') {
-            await supabase
-                .from('work_orders')
-                .update({ status: 'completed', completed_at: new Date().toISOString() })
-                .eq('id', workOrder.id);
-        }
+        // Completion Trigger Logic handled in main update above
+        // Redundant update removed to prevent race conditions
 
         return workOrder;
     }
