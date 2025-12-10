@@ -4,7 +4,7 @@ import { validateImageFile, formatFileSize } from '@/utils/imageProcessing';
 import toast from 'react-hot-toast';
 
 interface PhotoUploadZoneProps {
-    category: 'before' | 'after';
+    category: 'before' | 'after' | 'damage';
     onFilesSelected: (files: File[]) => void;
     maxFiles?: number;
     disabled?: boolean;
@@ -89,7 +89,10 @@ export const PhotoUploadZone: React.FC<PhotoUploadZoneProps> = ({
         e.target.value = '';
     }, [handleFiles]);
 
-    const categoryLabel = category === 'before' ? 'Antes do Serviço' : 'Depois do Serviço';
+    const categoryLabel =
+        category === 'before' ? 'Antes do Serviço' :
+            category === 'after' ? 'Depois do Serviço' :
+                'Danos / Avarias';
 
     return (
         <div className="space-y-3">

@@ -113,6 +113,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({
 
     const beforePhotos = photos.filter(p => p.category === 'before');
     const afterPhotos = photos.filter(p => p.category === 'after');
+    const damagePhotos = photos.filter(p => p.category === 'damage');
 
     const isUploadingAny = uploading || Object.keys(uploadProgress).length > 0;
 
@@ -142,6 +143,28 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({
 
                 <PhotoGallery
                     photos={beforePhotos}
+                    onDelete={disabled ? undefined : handleDelete}
+                    onPhotoClick={handlePhotoClick}
+                    loading={loading}
+                />
+            </div>
+
+            {/* Damage Photos (Avarias) */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px bg-gray-200 flex-1"></div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Avarias & Danos</span>
+                    <div className="h-px bg-gray-200 flex-1"></div>
+                </div>
+
+                <PhotoUploadZone
+                    category="damage"
+                    onFilesSelected={(files) => handleFilesSelected(files, 'damage')}
+                    disabled={disabled || isUploadingAny}
+                />
+
+                <PhotoGallery
+                    photos={damagePhotos}
                     onDelete={disabled ? undefined : handleDelete}
                     onPhotoClick={handlePhotoClick}
                     loading={loading}

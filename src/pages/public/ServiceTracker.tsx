@@ -239,6 +239,31 @@ export const ServiceTracker: React.FC = () => {
                                     </p>
                                 </div>
                             )}
+
+                            {/* Damage Photos - Inline in Checklist */}
+                            {data.photos.filter((p: any) => p.category === 'damage').length > 0 && (
+                                <div className="mt-2">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-1">
+                                        Fotos de Avarias:
+                                    </p>
+                                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                                        {data.photos.filter((p: any) => p.category === 'damage').map((photo: any, idx: number) => (
+                                            <div
+                                                key={idx}
+                                                className="aspect-square rounded-md overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer group"
+                                                onClick={() => setSelectedPhoto(photo.url)}
+                                            >
+                                                <img
+                                                    src={photo.url}
+                                                    alt="Avaria"
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {data.workOrder.customer_belongings && (
                                 <div className="text-sm">
                                     <span className="font-medium text-gray-700 block mb-1">Pertences do Cliente:</span>
