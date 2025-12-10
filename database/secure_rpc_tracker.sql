@@ -24,17 +24,58 @@ DECLARE
     v_result JSON;
 BEGIN
     SELECT json_build_object(
-        'workOrder', to_jsonb(wo),
-        'company', to_jsonb(c),
-        'customer', to_jsonb(cust),
-        'vehicle', to_jsonb(v),
+        'workOrder', json_build_object(
+            'id', wo.id,
+            'status', wo.status,
+            'created_at', wo.created_at,
+            'updated_at', wo.updated_at,
+            'entry_date', wo.entry_date,
+            'completed_at', wo.completed_at,
+            'expected_completion_date', wo.expected_completion_date,
+            'fuel_level', wo.fuel_level,
+            'odometer', wo.odometer,
+            'damage_notes', wo.damage_notes,
+            'customer_belongings', wo.customer_belongings,
+            'entry_checklist', wo.entry_checklist, -- Maintain backward compatibility if used
+            'discount', wo.discount,
+            'discount_type', wo.discount_type,
+            'subtotal', wo.subtotal, 
+            'total', wo.total
+        ),
+        'company', json_build_object(
+            'name', c.name,
+            'phone', c.phone,
+            'address', c.address,
+            'logo_url', c.logo_url,
+            'subscription_plan', c.subscription_plan
+        ),
+        'customer', json_build_object(
+            'name', cust.name
+        ),
+        'vehicle', json_build_object(
+            'brand', v.brand,
+            'model', v.model,
+            'license_plate', v.license_plate,
+            'color', v.color
+        ),
         'services', COALESCE((
-            SELECT json_agg(wos)
+            SELECT json_agg(json_build_object(
+                'id', wos.id,
+                'service_name', wos.service_name,
+                'quantity', wos.quantity,
+                'unit_price', wos.unit_price,
+                'total_price', wos.total_price
+            ))
             FROM work_order_services wos
             WHERE wos.work_order_id = wo.id
         ), '[]'::json),
         'photos', COALESCE((
-            SELECT json_agg(wop)
+            SELECT json_agg(json_build_object(
+                'id', wop.id,
+                'file_path', wop.file_path,
+                'category', wop.category,
+                'created_at', wop.created_at
+            ))
             FROM work_order_photos wop
             WHERE wop.work_order_id = wo.id
         ), '[]'::json)

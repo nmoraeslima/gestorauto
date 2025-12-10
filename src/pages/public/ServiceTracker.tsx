@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Timeline } from '@/components/tracker/Timeline';
 import { BeforeAfterSlider } from '@/components/tracker/BeforeAfterSlider';
-import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield, Printer, Camera } from 'lucide-react';
+import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield, Printer, Camera, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
 
 interface TrackerData {
@@ -50,7 +50,7 @@ export const ServiceTracker: React.FC = () => {
 
             // Check Plan Permission
             const plan = company?.subscription_plan || 'basic';
-            const isPremium = plan === 'premium';
+            const isPremium = plan === 'premium'; // Only Premium can verify
 
             if (!isPremium) {
                 setAccessDenied(true);
@@ -58,13 +58,25 @@ export const ServiceTracker: React.FC = () => {
                 return;
             }
 
+            // Transform Photos with Public URL
+            const photosWithUrl = (rpcData.photos || []).map((photo: any) => {
+                // Check if it already has a full URL (legacy) or needs generation
+                if (photo.file_path && !photo.url) {
+                    const { data } = supabase.storage
+                        .from('work-order-photos')
+                        .getPublicUrl(photo.file_path);
+                    return { ...photo, url: data.publicUrl };
+                }
+                return photo;
+            });
+
             setData({
                 workOrder: rpcData.workOrder,
                 company: rpcData.company,
                 customer: rpcData.customer,
                 vehicle: rpcData.vehicle,
                 services: rpcData.services || [],
-                photos: rpcData.photos || []
+                photos: photosWithUrl
             });
 
         } catch (err) {
@@ -101,80 +113,73 @@ export const ServiceTracker: React.FC = () => {
         );
     }
 
-    if (accessDenied) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
-                <div className="bg-white p-8 rounded-2xl shadow-sm max-w-sm">
-                    <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h1 className="text-xl font-bold text-gray-900">Acesso Restrito</h1>
-                    <p className="text-gray-500 mt-2">Esta empresa não possui o módulo de rastreamento online ativo.</p>
-                </div>
-            </div>
-        );
-    }
-
     if (error || !data) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
-                <Car className="w-16 h-16 text-gray-300 mb-4" />
-                <h1 className="text-xl font-bold text-gray-900">Serviço não encontrado</h1>
-                <p className="text-gray-500 mt-2">Verifique o link e tente novamente.</p>
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+                <Shield className="w-12 h-12 text-gray-400 mb-4" />
+                <h1 className="text-xl font-bold text-gray-900 mb-2">Não encontrado</h1>
+                <p className="text-gray-500 text-center">
+                    Não foi possível encontrar as informações deste serviço.
+                    Verifique se o link está correto.
+                </p>
+                {accessDenied && (
+                    <p className="text-red-500 text-sm mt-4 text-center max-w-md bg-red-50 p-4 rounded-lg">
+                        Este recurso é exclusivo para clientes de oficinas parceiras Premium.
+                    </p>
+                )}
             </div>
         );
     }
 
-    // Filter photos for Before/After
-    const beforePhotos = data.photos.filter(p => p.type === 'before');
-    const afterPhotos = data.photos.filter(p => p.type === 'after');
+    // Helper to get photos by category
+    const beforePhotos = data.photos.filter((p: any) => p.category === 'before') || [];
+    const afterPhotos = data.photos.filter((p: any) => p.category === 'after') || [];
     const hasComparison = beforePhotos.length > 0 && afterPhotos.length > 0;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-12">
-            {/* Header / Brand */}
-            <div className="bg-white shadow-sm border-b border-gray-100">
-                <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-                    <div>
-                        <h1 className="font-bold text-lg text-secondary-900">{data.company.name}</h1>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                            <MapPin className="w-3 h-3" />
-                            <span className="truncate max-w-[200px]">{data.company.address || 'Endereço não disponível'}</span>
-                        </div>
+        <div className="min-h-screen bg-gray-50 pb-12 print:bg-white print:pb-0">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-10 print:hidden">
+                <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="font-bold text-lg text-secondary-900 truncate">
+                        {data.company.name}
                     </div>
                     <button
                         onClick={handleShare}
-                        className="p-2 rounded-full bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
+                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
                     >
                         <Share2 className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 space-y-6 mt-6">
-                {/* Vehicle Card */}
-                <div className="bg-white rounded-2xl p-5 shadow-card border border-secondary-100">
-                    <div className="flex items-start justify-between mb-4">
+            <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+                {/* Status Card */}
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100 print:shadow-none print:border">
+                    <div className="flex justify-between items-start mb-4">
                         <div>
-                            <p className="text-xs font-bold text-primary-600 uppercase tracking-wider mb-1">Veículo</p>
-                            <h2 className="text-2xl font-bold text-secondary-900">{data.vehicle.model}</h2>
-                            <p className="text-secondary-600">{data.vehicle.brand} • {data.vehicle.plate}</p>
+                            <h2 className="text-2xl font-bold text-secondary-900">
+                                {data.vehicle.model}
+                            </h2>
+                            <p className="text-secondary-500 font-medium">{data.vehicle.license_plate}</p>
                         </div>
-                        <div className="w-12 h-12 bg-secondary-50 rounded-full flex items-center justify-center text-secondary-400">
-                            <Car className="w-6 h-6" />
+                        <div className={`
+                            px-4 py-1.5 rounded-full text-sm font-bold capitalize
+                            ${data.workOrder.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                data.workOrder.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-yellow-100 text-yellow-700'}
+                        `}>
+                            {data.workOrder.status === 'completed' ? 'Pronto' :
+                                data.workOrder.status === 'in_progress' ? 'Em Andamento' :
+                                    'Pendente'}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-                        <Calendar className="w-4 h-4" />
-                        <span>Entrada: {new Date(data.workOrder.created_at).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                </div>
 
-                {/* Timeline */}
-                <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100">
-                    <h3 className="font-bold text-lg text-secondary-900 mb-6">Status do Serviço</h3>
+                    {/* Timeline */}
                     <Timeline
                         status={data.workOrder.status}
-                        createdAt={data.workOrder.created_at}
-                        updatedAt={data.workOrder.updated_at}
+                        entryDate={data.workOrder.entry_date}
+                        completionDate={data.workOrder.completed_at || data.workOrder.expected_completion_date}
                     />
                 </div>
 
@@ -191,62 +196,59 @@ export const ServiceTracker: React.FC = () => {
                 )}
 
                 {/* Checklist Section */}
-                {data.workOrder.entry_checklist && (
-                    <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100 print:shadow-none print:border">
-                        <h3 className="font-bold text-lg text-secondary-900 mb-4 flex items-center gap-2">
-                            <Shield className="w-5 h-5 text-primary-600" />
-                            Checklist de Entrada
-                        </h3>
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100 print:shadow-none print:border">
+                    <h3 className="font-bold text-lg text-secondary-900 mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-primary-600" />
+                        Checklist de Entrada
+                    </h3>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-gray-50 rounded-xl">
-                                <p className="text-xs text-gray-500 mb-1">Combustível</p>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-primary-500 rounded-full"
-                                            style={{ width: `${(data.workOrder.entry_checklist.fuel_level || 0) * 25}%` }}
-                                        />
-                                    </div>
-                                    <span className="text-sm font-bold text-gray-700">
-                                        {data.workOrder.entry_checklist.fuel_level}/4
-                                    </span>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="p-3 bg-gray-50 rounded-xl">
+                            <p className="text-xs text-gray-500 mb-1">Combustível</p>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary-500 rounded-full"
+                                        style={{ width: `${(data.workOrder.fuel_level || 0)}%` }}
+                                    />
                                 </div>
-                            </div>
-                            <div className="p-3 bg-gray-50 rounded-xl">
-                                <p className="text-xs text-gray-500 mb-1">Quilometragem</p>
-                                <p className="font-bold text-gray-700">
-                                    {data.workOrder.entry_checklist.mileage ? `${data.workOrder.entry_checklist.mileage} km` : 'N/A'}
-                                </p>
+                                <span className="text-sm font-bold text-gray-700">
+                                    {data.workOrder.fuel_level || 0}%
+                                </span>
                             </div>
                         </div>
-
-                        {(data.workOrder.entry_checklist.notes || (data.workOrder.entry_checklist.scratches && data.workOrder.entry_checklist.scratches.length > 0)) && (
-                            <div className="space-y-3">
-                                {data.workOrder.entry_checklist.notes && (
-                                    <div className="text-sm">
-                                        <span className="font-medium text-gray-700">Observações:</span>
-                                        <p className="text-gray-600 mt-1 bg-gray-50 p-3 rounded-lg">
-                                            {data.workOrder.entry_checklist.notes}
-                                        </p>
-                                    </div>
-                                )}
-                                {data.workOrder.entry_checklist.scratches?.length > 0 && (
-                                    <div className="text-sm">
-                                        <span className="font-medium text-gray-700 block mb-2">Avarias Registradas:</span>
-                                        <div className="flex flex-wrap gap-2">
-                                            {data.workOrder.entry_checklist.scratches.map((item: string, idx: number) => (
-                                                <span key={idx} className="px-2 py-1 bg-red-50 text-red-600 rounded text-xs border border-red-100">
-                                                    {item}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        <div className="p-3 bg-gray-50 rounded-xl">
+                            <p className="text-xs text-gray-500 mb-1">Quilometragem</p>
+                            <p className="font-bold text-gray-700">
+                                {data.workOrder.odometer ? `${data.workOrder.odometer} km` : 'N/A'}
+                            </p>
+                        </div>
                     </div>
-                )}
+
+                    {(data.workOrder.damage_notes || data.workOrder.customer_belongings) && (
+                        <div className="space-y-4">
+                            {data.workOrder.damage_notes && (
+                                <div className="text-sm">
+                                    <span className="font-medium text-gray-700 flex items-center gap-1 mb-1">
+                                        <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                        Danos / Avarias:
+                                    </span>
+                                    <p className="text-gray-600 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                        {data.workOrder.damage_notes}
+                                    </p>
+                                </div>
+                            )}
+                            {data.workOrder.customer_belongings && (
+                                <div className="text-sm">
+                                    <span className="font-medium text-gray-700 block mb-1">Pertences do Cliente:</span>
+                                    <p className="text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        {data.workOrder.customer_belongings}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {/* Photos Gallery */}
                 {data.photos.length > 0 && (
@@ -261,7 +263,7 @@ export const ServiceTracker: React.FC = () => {
                             <div className="mb-6">
                                 <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Antes do Serviço</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {beforePhotos.map((photo, idx) => (
+                                    {beforePhotos.map((photo: any, idx: number) => (
                                         <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                                             <img
                                                 src={photo.url}
@@ -279,7 +281,7 @@ export const ServiceTracker: React.FC = () => {
                             <div>
                                 <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Depois do Serviço</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {afterPhotos.map((photo, idx) => (
+                                    {afterPhotos.map((photo: any, idx: number) => (
                                         <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                                             <img
                                                 src={photo.url}
@@ -322,12 +324,13 @@ export const ServiceTracker: React.FC = () => {
                                 const discountValue = data.workOrder.discount || 0;
                                 const subtotal = data.workOrder.subtotal || 0;
 
-                                // Calculate actual discount amount
+                                // Calculate actual discount amount (just for display logic)
                                 const discountAmount = discountType === 'percentage'
                                     ? (subtotal * discountValue) / 100
                                     : discountValue;
 
-                                const total = subtotal - discountAmount;
+                                // Use pre-calculated total from BE
+                                const total = data.workOrder.total;
 
                                 return (
                                     <>
