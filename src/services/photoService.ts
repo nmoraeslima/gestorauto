@@ -8,7 +8,7 @@ import { compressImage, validateImageFile } from '@/utils/imageProcessing';
 
 export interface PhotoUploadOptions {
     workOrderId: string;
-    category: 'before' | 'after';
+    category: 'before' | 'after' | 'damage';
     description?: string;
     companyId: string;
     userId: string;
@@ -20,7 +20,7 @@ export interface PhotoMetadata {
     file_name: string;
     file_size: number;
     mime_type: string;
-    category: 'before' | 'after';
+    category: 'before' | 'after' | 'damage';
     description?: string;
     created_at: string;
 }
