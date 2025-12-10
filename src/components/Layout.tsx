@@ -93,7 +93,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="min-h-screen bg-secondary-50">
                 {/* Sidebar Desktop */}
                 <div
-                    className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-white border-r border-secondary-200 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-20'
+                    className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-white border-r border-secondary-200 transition-all duration-300 ease-in-out z-30 ${sidebarOpen ? 'w-64' : 'w-20'
                         }`}
                 >
                     <div className="flex flex-col flex-grow overflow-y-auto overflow-x-hidden pt-5 pb-4">
@@ -144,22 +144,42 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <div className={`mb-6 ${sidebarOpen ? 'px-6' : 'px-3'}`}>
                             {sidebarOpen ? (
                                 <div className="bg-secondary-50 rounded-lg border border-secondary-200 p-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Building2 className="w-4 h-4 text-secondary-600" />
-                                        <p className="text-sm font-semibold text-secondary-900 truncate">
-                                            {user?.company?.name}
-                                        </p>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        {user?.company?.logo_url ? (
+                                            <img
+                                                src={user.company.logo_url}
+                                                alt={user.company.name}
+                                                className="w-8 h-8 rounded object-contain bg-white border border-secondary-100"
+                                            />
+                                        ) : (
+                                            <div className="bg-white p-1 rounded border border-secondary-100">
+                                                <Building2 className="w-6 h-6 text-secondary-600" />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-secondary-900 truncate">
+                                                {user?.company?.name}
+                                            </p>
+                                            <p className="text-xs text-secondary-600">
+                                                Plano: {user?.company?.subscription_plan}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-secondary-600">
-                                        Plano: {user?.company?.subscription_plan}
-                                    </p>
                                 </div>
                             ) : (
                                 <div
                                     className="flex justify-center px-3 py-2 bg-secondary-50 border border-secondary-200 rounded-lg cursor-default"
                                     title={user?.company?.name}
                                 >
-                                    <Building2 className="w-5 h-5 text-secondary-600" />
+                                    {user?.company?.logo_url ? (
+                                        <img
+                                            src={user.company.logo_url}
+                                            alt={user.company.name}
+                                            className="w-6 h-6 rounded object-contain"
+                                        />
+                                    ) : (
+                                        <Building2 className="w-5 h-5 text-secondary-600" />
+                                    )}
                                 </div>
                             )}
                         </div>

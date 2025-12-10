@@ -128,7 +128,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                             <input
                                 ref={inputRef}
                                 type="text"
-                                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                                className="w-full pl-9 pr-3 py-2 text-base border border-gray-200 rounded-md focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                                 placeholder="Pesquisar..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}

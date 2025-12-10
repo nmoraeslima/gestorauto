@@ -226,6 +226,15 @@ export default function PublicBooking() {
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-10 animate-in slide-in-from-top-4 duration-500">
+                    {company.logo_url && (
+                        <div className="flex justify-center mb-6">
+                            <img
+                                src={company.logo_url}
+                                alt={company.name}
+                                className="h-20 w-auto max-w-[200px] object-contain drop-shadow-sm"
+                            />
+                        </div>
+                    )}
                     <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-secondary-900 to-secondary-700">
                         {company.name}
                     </h1>

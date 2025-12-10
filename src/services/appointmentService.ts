@@ -53,7 +53,11 @@ export class AppointmentService {
             .eq('company_id', companyId);
 
         if (options.status && options.status !== 'all') {
-            query = query.eq('status', options.status);
+            if (options.status.includes(',')) {
+                query = query.in('status', options.status.split(','));
+            } else {
+                query = query.eq('status', options.status);
+            }
         }
 
         if (options.limit) {
@@ -94,7 +98,8 @@ export class AppointmentService {
 
 
     async listOpen(companyId: string): Promise<AppointmentWithDetails[]> {
-        return this.list(companyId, { status: 'scheduled' });
+        // Fetch pending and confirmed appointments
+        return this.list(companyId, { status: 'pending,confirmed' });
     }
 
     async getById(id: string) {
