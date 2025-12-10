@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Timeline } from '@/components/tracker/Timeline';
 import { BeforeAfterSlider } from '@/components/tracker/BeforeAfterSlider';
-import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield, Printer, Camera, AlertTriangle } from 'lucide-react';
+import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield, Printer, Camera, AlertTriangle, X } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
 
 interface TrackerData {
@@ -21,6 +21,7 @@ export const ServiceTracker: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
+    const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -264,7 +265,11 @@ export const ServiceTracker: React.FC = () => {
                                 <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Antes do Serviço</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {beforePhotos.map((photo: any, idx: number) => (
-                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                        <div
+                                            key={idx}
+                                            className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer"
+                                            onClick={() => setSelectedPhoto(photo.url)}
+                                        >
                                             <img
                                                 src={photo.url}
                                                 alt="Antes"
@@ -282,7 +287,11 @@ export const ServiceTracker: React.FC = () => {
                                 <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Depois do Serviço</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {afterPhotos.map((photo: any, idx: number) => (
-                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                        <div
+                                            key={idx}
+                                            className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer"
+                                            onClick={() => setSelectedPhoto(photo.url)}
+                                        >
                                             <img
                                                 src={photo.url}
                                                 alt="Depois"
@@ -382,6 +391,26 @@ export const ServiceTracker: React.FC = () => {
                     <p className="font-bold text-gray-500 mt-1">GestorAuto</p>
                 </div>
             </div>
+            {/* Photo Lightbox */}
+            {selectedPhoto && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity"
+                    onClick={() => setSelectedPhoto(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                        onClick={() => setSelectedPhoto(null)}
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <img
+                        src={selectedPhoto}
+                        alt="Visualização ampliada"
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking image
+                    />
+                </div>
+            )}
         </div>
     );
 };
