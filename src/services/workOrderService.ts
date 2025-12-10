@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { WorkOrder, WorkOrderService as DBWorkOrderService, WorkOrderProduct } from '@/types/database';
 
 export interface WorkOrderWithDetails extends WorkOrder {
-    customer?: { name: string };
+    customer?: { name: string; phone?: string };
     vehicle?: { brand: string; model: string; license_plate: string };
     services?: any[];
     products?: any[];
@@ -50,7 +50,7 @@ export class WorkOrderService {
             .from('work_orders')
             .select(`
                 *,
-                customer:customers(name),
+                customer:customers(name, phone),
                 vehicle:vehicles(brand, model, license_plate)
             `)
             .eq('company_id', companyId)

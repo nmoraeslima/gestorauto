@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Timeline } from '@/components/tracker/Timeline';
 import { BeforeAfterSlider } from '@/components/tracker/BeforeAfterSlider';
-import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield } from 'lucide-react';
+import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield, Printer, Camera } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
 
 interface TrackerData {
@@ -180,18 +180,122 @@ export const ServiceTracker: React.FC = () => {
 
                 {/* Before / After Slider (Wow Factor) */}
                 {hasComparison && (
-                    <div className="space-y-3">
+                    <div className="space-y-3 print:break-inside-avoid">
                         <h3 className="font-bold text-lg text-secondary-900 px-1">Resultado</h3>
                         <BeforeAfterSlider
                             beforeImage={beforePhotos[0].url}
                             afterImage={afterPhotos[0].url}
                         />
-                        <p className="text-center text-xs text-gray-400">Arraste para comparar</p>
+                        <p className="text-center text-xs text-gray-400 print:hidden">Arraste para comparar</p>
+                    </div>
+                )}
+
+                {/* Checklist Section */}
+                {data.workOrder.entry_checklist && (
+                    <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100 print:shadow-none print:border">
+                        <h3 className="font-bold text-lg text-secondary-900 mb-4 flex items-center gap-2">
+                            <Shield className="w-5 h-5 text-primary-600" />
+                            Checklist de Entrada
+                        </h3>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="p-3 bg-gray-50 rounded-xl">
+                                <p className="text-xs text-gray-500 mb-1">Combustível</p>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-primary-500 rounded-full"
+                                            style={{ width: `${(data.workOrder.entry_checklist.fuel_level || 0) * 25}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-bold text-gray-700">
+                                        {data.workOrder.entry_checklist.fuel_level}/4
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-xl">
+                                <p className="text-xs text-gray-500 mb-1">Quilometragem</p>
+                                <p className="font-bold text-gray-700">
+                                    {data.workOrder.entry_checklist.mileage ? `${data.workOrder.entry_checklist.mileage} km` : 'N/A'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {(data.workOrder.entry_checklist.notes || (data.workOrder.entry_checklist.scratches && data.workOrder.entry_checklist.scratches.length > 0)) && (
+                            <div className="space-y-3">
+                                {data.workOrder.entry_checklist.notes && (
+                                    <div className="text-sm">
+                                        <span className="font-medium text-gray-700">Observações:</span>
+                                        <p className="text-gray-600 mt-1 bg-gray-50 p-3 rounded-lg">
+                                            {data.workOrder.entry_checklist.notes}
+                                        </p>
+                                    </div>
+                                )}
+                                {data.workOrder.entry_checklist.scratches?.length > 0 && (
+                                    <div className="text-sm">
+                                        <span className="font-medium text-gray-700 block mb-2">Avarias Registradas:</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {data.workOrder.entry_checklist.scratches.map((item: string, idx: number) => (
+                                                <span key={idx} className="px-2 py-1 bg-red-50 text-red-600 rounded text-xs border border-red-100">
+                                                    {item}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Photos Gallery */}
+                {data.photos.length > 0 && (
+                    <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100 print:break-before-page">
+                        <h3 className="font-bold text-lg text-secondary-900 mb-4 flex items-center gap-2">
+                            <Camera className="w-5 h-5 text-primary-600" />
+                            Galeria de Fotos
+                        </h3>
+
+                        {/* Before Photos */}
+                        {beforePhotos.length > 0 && (
+                            <div className="mb-6">
+                                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Antes do Serviço</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {beforePhotos.map((photo, idx) => (
+                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                            <img
+                                                src={photo.url}
+                                                alt="Antes"
+                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* After Photos */}
+                        {afterPhotos.length > 0 && (
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Depois do Serviço</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {afterPhotos.map((photo, idx) => (
+                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                            <img
+                                                src={photo.url}
+                                                alt="Depois"
+                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* Services List */}
-                <div className="bg-white rounded-2xl overflow-hidden shadow-card border border-secondary-100">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-card border border-secondary-100 print:break-inside-avoid">
                     <div className="p-4 border-b border-gray-100 bg-secondary-50/50">
                         <h3 className="font-bold text-secondary-900">Serviços Contratados</h3>
                     </div>
@@ -258,8 +362,19 @@ export const ServiceTracker: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Print Action */}
+                <div className="flex justify-center pt-4 pb-8 print:hidden">
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-100"
+                    >
+                        <Printer className="w-4 h-4" />
+                        Imprimir / Salvar PDF
+                    </button>
+                </div>
+
                 {/* Footer */}
-                <div className="text-center py-8 text-gray-400 text-sm">
+                <div className="text-center py-8 text-gray-400 text-sm print:hidden">
                     <p>Acompanhamento em tempo real via</p>
                     <p className="font-bold text-gray-500 mt-1">GestorAuto</p>
                 </div>
