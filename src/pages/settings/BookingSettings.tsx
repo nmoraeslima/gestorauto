@@ -27,6 +27,7 @@ interface BookingSettings {
         sunday: WorkingHours;
     };
     blocked_dates: string[];
+    timezone?: string;
 }
 
 const DEFAULT_SETTINGS: BookingSettings = {
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: BookingSettings = {
     max_advance_days: 30,
     slot_duration: 30,
     buffer_minutes: 15,
+    timezone: 'America/Sao_Paulo',
     working_hours: {
         monday: { enabled: true, start: '08:00', end: '18:00' },
         tuesday: { enabled: true, start: '08:00', end: '18:00' },
@@ -47,6 +49,16 @@ const DEFAULT_SETTINGS: BookingSettings = {
     },
     blocked_dates: [],
 };
+
+const TIMEZONES = [
+    { value: 'America/Sao_Paulo', label: 'Horário de Brasília (Brasília, São Paulo, Rio)' },
+    { value: 'America/Manaus', label: 'Horário do Amazonas (Manaus)' },
+    { value: 'America/Rio_Branco', label: 'Horário do Acre (Rio Branco)' },
+    { value: 'America/Campo_Grande', label: 'Horário do MS (Campo Grande)' },
+    { value: 'America/Cuiaba', label: 'Horário do MT (Cuiabá)' },
+    { value: 'America/Belem', label: 'Horário do Pará/Amapá (Belém)' },
+    { value: 'America/Noronha', label: 'Horário de Fernando de Noronha' },
+];
 
 const DAYS_PT = {
     monday: 'Segunda-feira',
@@ -233,6 +245,22 @@ export const BookingSettings: React.FC = () => {
                             />
                             <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-300"></div>
                         </label>
+                    </div>
+
+                    <div>
+                        <label className="label">Fuso Horário</label>
+                        <select
+                            value={settings.timezone || 'America/Sao_Paulo'}
+                            onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                            className="input"
+                        >
+                            {TIMEZONES.map((tz) => (
+                                <option key={tz.value} value={tz.value}>
+                                    {tz.label}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-neutral-500 mt-1">Selecione o fuso horário da sua região para garantir que os agendamentos apareçam corretamente.</p>
                     </div>
 
                     <div className="flex items-center justify-between">
