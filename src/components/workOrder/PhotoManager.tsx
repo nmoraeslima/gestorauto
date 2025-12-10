@@ -49,7 +49,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({
         }
     };
 
-    const handleFilesSelected = async (files: File[], category: 'before' | 'after') => {
+    const handleFilesSelected = async (files: File[], category: 'before' | 'after' | 'damage') => {
         if (!user?.company?.id || !user?.id) {
             toast.error('Usuário não autenticado');
             return;
