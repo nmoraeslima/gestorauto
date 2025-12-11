@@ -43,6 +43,7 @@ export const FinancialDashboard: React.FC = () => {
         overduePayables: 0
     });
     const [recentTransactions, setRecentTransactions] = useState<FinancialTransaction[]>([]);
+    const [lastTap, setLastTap] = useState(0);
 
     useEffect(() => {
         if (user?.company) {
@@ -228,8 +229,8 @@ export const FinancialDashboard: React.FC = () => {
             </div>
 
             {/* Transações Recentes */}
-            <div className="rounded-lg bg-white shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
+            <div>
+                <div className="p-6 border-b border-gray-200 bg-white rounded-t-lg md:rounded-t-lg">
                     <h2 className="text-lg font-semibold text-gray-900">Transações Recentes</h2>
                 </div>
 
@@ -242,55 +243,115 @@ export const FinancialDashboard: React.FC = () => {
                         </p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Descrição</th>
-                                    <th>Categoria</th>
-                                    <th>Tipo</th>
-                                    <th>Valor</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentTransactions.map((transaction) => (
-                                    <tr key={transaction.id}>
-                                        <td className="text-sm text-gray-500">
-                                            {formatDate(transaction.due_date)}
-                                        </td>
-                                        <td className="font-medium text-gray-900">
-                                            {transaction.description}
-                                        </td>
-                                        <td>
-                                            <span className="badge badge-blue">
+                    <>
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-3">
+                            {recentTransactions.map((transaction) => {
+                                const isOverdue = transaction.status === 'pending' &&
+                                    transaction.due_date < new Date().toISOString().split('T')[0];
+
+                                return (
+                                    <div
+                                        key={transaction.id}
+                                        className={`bg-white p-4 rounded-lg shadow-sm border space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99] ${isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                            }`}
+                                        onClick={() => {
+                                            const now = Date.now();
+                                            if (now - lastTap < 300) {
+                                                // Double-tap detected - could navigate to edit
+                                                setLastTap(0);
+                                            } else {
+                                                setLastTap(now);
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900">{transaction.description}</h3>
+                                                <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                                                    <Calendar className="h-4 w-4" />
+                                                    <span>{formatDate(transaction.due_date)}</span>
+                                                </div>
+                                            </div>
+                                            <span className="badge badge-blue text-xs">
                                                 {transaction.category}
                                             </span>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${transaction.type === 'income' ? 'badge-green' : 'badge-red'}`}>
-                                                {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className={`text-2xl font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                                {transaction.type === 'income' ? '+' : '-'} {formatCurrency(Number(transaction.amount))}
                                             </span>
-                                        </td>
-                                        <td className={`font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {transaction.type === 'income' ? '+' : '-'} {formatCurrency(Number(transaction.amount))}
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${transaction.status === 'paid' ? 'badge-green' :
-                                                transaction.status === 'pending' ? 'badge-yellow' :
-                                                    'badge-gray'
-                                                }`}>
-                                                {transaction.status === 'paid' ? 'Pago' :
-                                                    transaction.status === 'pending' ? 'Pendente' :
-                                                        'Cancelado'}
-                                            </span>
-                                        </td>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className={`badge ${transaction.type === 'income' ? 'badge-green' : 'badge-red'}`}>
+                                                    {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                                                </span>
+                                                <span className={`badge text-xs ${transaction.status === 'paid' ? 'badge-green' :
+                                                    transaction.status === 'pending' ? 'badge-yellow' :
+                                                        'badge-gray'
+                                                    }`}>
+                                                    {transaction.status === 'paid' ? 'Pago' :
+                                                        transaction.status === 'pending' ? 'Pendente' :
+                                                            'Cancelado'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block bg-white rounded-b-lg shadow-sm border border-t-0 border-gray-200 overflow-x-auto">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Categoria</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Status</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {recentTransactions.map((transaction) => (
+                                        <tr key={transaction.id}>
+                                            <td className="text-sm text-gray-500">
+                                                {formatDate(transaction.due_date)}
+                                            </td>
+                                            <td className="font-medium text-gray-900">
+                                                {transaction.description}
+                                            </td>
+                                            <td>
+                                                <span className="badge badge-blue">
+                                                    {transaction.category}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${transaction.type === 'income' ? 'badge-green' : 'badge-red'}`}>
+                                                    {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                                                </span>
+                                            </td>
+                                            <td className={`font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                                {transaction.type === 'income' ? '+' : '-'} {formatCurrency(Number(transaction.amount))}
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${transaction.status === 'paid' ? 'badge-green' :
+                                                    transaction.status === 'pending' ? 'badge-yellow' :
+                                                        'badge-gray'
+                                                    }`}>
+                                                    {transaction.status === 'paid' ? 'Pago' :
+                                                        transaction.status === 'pending' ? 'Pendente' :
+                                                            'Cancelado'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
         </>

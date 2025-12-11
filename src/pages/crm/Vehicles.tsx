@@ -22,6 +22,7 @@ export const Vehicles: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+    const [lastTap, setLastTap] = useState(0);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
 
@@ -139,149 +140,155 @@ export const Vehicles: React.FC = () => {
             </div>
 
             {/* Table */}
-            <div className="rounded-lg bg-white shadow-sm">
-                {loading ? (
-                    <div className="flex h-64 items-center justify-center">
-                        <div className="loading-spinner" />
-                    </div>
-                ) : filteredVehicles.length === 0 ? (
-                    <div className="flex h-64 flex-col items-center justify-center text-gray-500">
-                        <p className="text-lg font-medium">Nenhum veículo encontrado</p>
-                        <p className="mt-1 text-sm">
-                            {searchTerm ? 'Tente ajustar a busca' : 'Comece criando seu primeiro veículo'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="w-full">
-                        {/* Mobile Card View */}
-                        <div className="md:hidden space-y-4">
-                            {filteredVehicles.map((vehicle) => (
-                                <div
-                                    key={vehicle.id}
-                                    className="bg-white p-4 rounded-lg shadow-sm space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
-                                    onClick={() => handleEdit(vehicle)}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-2">
-                                            <Car className="h-5 w-5 text-gray-400" />
-                                            <span className="font-semibold text-gray-900 text-lg">
-                                                {vehicle.brand} {vehicle.model}
-                                            </span>
-                                        </div>
-                                        <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 font-mono">
-                                            {maskLicensePlate(vehicle.license_plate)}
+            {loading ? (
+                <div className="flex h-64 items-center justify-center">
+                    <div className="loading-spinner" />
+                </div>
+            ) : filteredVehicles.length === 0 ? (
+                <div className="flex h-64 flex-col items-center justify-center text-gray-500">
+                    <p className="text-lg font-medium">Nenhum veículo encontrado</p>
+                    <p className="mt-1 text-sm">
+                        {searchTerm ? 'Tente ajustar a busca' : 'Comece criando seu primeiro veículo'}
+                    </p>
+                </div>
+            ) : (
+                <>
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                        {filteredVehicles.map((vehicle) => (
+                            <div
+                                key={vehicle.id}
+                                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
+                                onClick={() => {
+                                    const now = Date.now();
+                                    if (now - lastTap < 300) {
+                                        handleEdit(vehicle);
+                                        setLastTap(0);
+                                    } else {
+                                        setLastTap(now);
+                                    }
+                                }}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-2">
+                                        <Car className="h-5 w-5 text-gray-400" />
+                                        <span className="font-semibold text-gray-900 text-lg">
+                                            {vehicle.brand} {vehicle.model}
                                         </span>
                                     </div>
+                                    <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 font-mono">
+                                        {maskLicensePlate(vehicle.license_plate)}
+                                    </span>
+                                </div>
 
-                                    <div className="space-y-2 text-sm text-gray-600">
-                                        {vehicle.customer && (
+                                <div className="space-y-2 text-sm text-gray-600">
+                                    {vehicle.customer && (
+                                        <div className="flex items-center gap-2">
+                                            <User className="h-4 w-4 text-gray-400" />
+                                            <span>{vehicle.customer.name}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-4">
+                                        {vehicle.year && (
                                             <div className="flex items-center gap-2">
-                                                <User className="h-4 w-4 text-gray-400" />
-                                                <span>{vehicle.customer.name}</span>
+                                                <Calendar className="h-4 w-4 text-gray-400" />
+                                                <span>{vehicle.year}</span>
                                             </div>
                                         )}
-                                        <div className="flex items-center gap-4">
-                                            {vehicle.year && (
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4 text-gray-400" />
-                                                    <span>{vehicle.year}</span>
-                                                </div>
-                                            )}
-                                            {vehicle.color && (
-                                                <div className="flex items-center gap-2">
-                                                    <Palette className="h-4 w-4 text-gray-400" />
-                                                    <span>{vehicle.color}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}
-                                            className="p-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-                                        >
-                                            <Edit2 className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(vehicle); }}
-                                            className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+                                        {vehicle.color && (
+                                            <div className="flex items-center gap-2">
+                                                <Palette className="h-4 w-4 text-gray-400" />
+                                                <span>{vehicle.color}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Veículo</th>
-                                        <th>Placa</th>
-                                        <th className="hidden md:table-cell">Cliente</th>
-                                        <th className="hidden md:table-cell">Detalhes</th>
-                                        <th className="text-right">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredVehicles.map((vehicle) => (
-                                        <tr
-                                            key={vehicle.id}
-                                            onDoubleClick={() => handleEdit(vehicle)}
-                                            className="hover:bg-gray-50 transition-colors"
-                                        >
-                                            <td>
-                                                <div className="font-medium text-gray-900">
-                                                    {vehicle.brand} {vehicle.model}
-                                                </div>
-                                                <div className="md:hidden text-sm text-gray-500">
-                                                    {vehicle.customer?.name}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
-                                                    {maskLicensePlate(vehicle.license_plate)}
-                                                </span>
-                                            </td>
-                                            <td className="hidden md:table-cell">
-                                                <div className="text-gray-900">{vehicle.customer?.name}</div>
-                                            </td>
-                                            <td className="hidden md:table-cell">
-                                                <div className="text-sm text-gray-500">
-                                                    {vehicle.year && <span>{vehicle.year}</span>}
-                                                    {vehicle.year && vehicle.color && <span> • </span>}
-                                                    {vehicle.color && <span>{vehicle.color}</span>}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(vehicle)}
-                                                        className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit2 className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteClick(vehicle)}
-                                                        className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                                                        title="Excluir"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}
+                                        className="p-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                                    >
+                                        <Edit2 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(vehicle); }}
+                                        className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                )}
-            </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block card overflow-hidden">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Veículo</th>
+                                    <th>Placa</th>
+                                    <th className="hidden md:table-cell">Cliente</th>
+                                    <th className="hidden md:table-cell">Detalhes</th>
+                                    <th className="text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredVehicles.map((vehicle) => (
+                                    <tr
+                                        key={vehicle.id}
+                                        onDoubleClick={() => handleEdit(vehicle)}
+                                        className="hover:bg-gray-50 transition-colors"
+                                    >
+                                        <td>
+                                            <div className="font-medium text-gray-900">
+                                                {vehicle.brand} {vehicle.model}
+                                            </div>
+                                            <div className="md:hidden text-sm text-gray-500">
+                                                {vehicle.customer?.name}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
+                                                {maskLicensePlate(vehicle.license_plate)}
+                                            </span>
+                                        </td>
+                                        <td className="hidden md:table-cell">
+                                            <div className="text-gray-900">{vehicle.customer?.name}</div>
+                                        </td>
+                                        <td className="hidden md:table-cell">
+                                            <div className="text-sm text-gray-500">
+                                                {vehicle.year && <span>{vehicle.year}</span>}
+                                                {vehicle.year && vehicle.color && <span> • </span>}
+                                                {vehicle.color && <span>{vehicle.color}</span>}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(vehicle)}
+                                                    className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(vehicle)}
+                                                    className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
 
             {/* Stats */}
             <div className="grid grid-cols-1 gap-4">

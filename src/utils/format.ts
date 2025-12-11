@@ -51,3 +51,20 @@ export const formatQuantity = (value: number): string => {
         maximumFractionDigits: 3
     }).format(value);
 };
+
+// Formatação de aniversário (MM-DD para DD/MM)
+export const formatBirthday = (birthDate: string | null | undefined): string => {
+    if (!birthDate) return '-';
+
+    // Se for formato completo (YYYY-MM-DD), extrair apenas MM-DD
+    if (birthDate.length === 10) {
+        birthDate = birthDate.substring(5); // Pega apenas MM-DD
+    }
+
+    // Formato esperado: MM-DD
+    const [month, day] = birthDate.split('-');
+    if (!month || !day) return birthDate; // Retorna original se formato inválido
+
+    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}`;
+};
+

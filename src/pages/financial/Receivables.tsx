@@ -23,6 +23,7 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
     const [endDate, setEndDate] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<FinancialTransaction | null>(null);
+    const [lastTap, setLastTap] = useState(0);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [transactionToDelete, setTransactionToDelete] = useState<FinancialTransaction | null>(null);
 
@@ -242,24 +243,103 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="rounded-lg bg-white shadow-sm border border-gray-200">
-                {loading ? (
-                    <div className="flex h-64 items-center justify-center">
-                        <div className="loading-spinner" />
+            {/* Transactions List */}
+            {loading ? (
+                <div className="flex h-64 items-center justify-center">
+                    <div className="loading-spinner" />
+                </div>
+            ) : filteredTransactions.length === 0 ? (
+                <div className="flex h-64 flex-col items-center justify-center text-gray-500">
+                    <DollarSign className="h-12 w-12 mb-4 text-gray-300" />
+                    <p className="text-lg font-medium">Nenhuma receita encontrada</p>
+                    <p className="text-sm mt-1">
+                        {searchTerm || statusFilter !== 'all' || startDate || endDate
+                            ? 'Tente ajustar os filtros'
+                            : 'Comece criando sua primeira receita'}
+                    </p>
+                </div>
+            ) : (
+                <>
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                        {filteredTransactions.map((transaction) => {
+                            const isOverdue = transaction.status === TransactionStatus.PENDING &&
+                                transaction.due_date < new Date().toISOString().split('T')[0];
+
+                            return (
+                                <div
+                                    key={transaction.id}
+                                    className={`bg-white p-4 rounded-lg shadow-sm border space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99] ${isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                        }`}
+                                    onClick={() => {
+                                        const now = Date.now();
+                                        if (now - lastTap < 300) {
+                                            handleEdit(transaction);
+                                            setLastTap(0);
+                                        } else {
+                                            setLastTap(now);
+                                        }
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">{transaction.description}</h3>
+                                            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                                                <Calendar className="h-4 w-4" />
+                                                <span>{formatDate(transaction.due_date)}</span>
+                                            </div>
+                                        </div>
+                                        <span className="badge badge-blue text-xs">
+                                            {transaction.category}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-2xl font-bold text-green-600">
+                                            {formatCurrency(Number(transaction.amount))}
+                                        </span>
+                                        <span className={`badge ${transaction.status === TransactionStatus.PAID ? 'badge-green' :
+                                            transaction.status === TransactionStatus.PENDING ? 'badge-yellow' :
+                                                'badge-gray'
+                                            }`}>
+                                            {transaction.status === TransactionStatus.PAID ? 'Pago' :
+                                                transaction.status === TransactionStatus.PENDING ? 'Pendente' :
+                                                    'Cancelado'}
+                                        </span>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                                        {transaction.status === TransactionStatus.PENDING && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleMarkAsPaid(transaction); }}
+                                                className="p-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                                                title="Marcar como pago"
+                                            >
+                                                <CheckCircle className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleEdit(transaction); }}
+                                            className="p-2 text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                            title="Editar"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(transaction); }}
+                                            className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                            title="Excluir"
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                ) : filteredTransactions.length === 0 ? (
-                    <div className="flex h-64 flex-col items-center justify-center text-gray-500">
-                        <DollarSign className="h-12 w-12 mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">Nenhuma receita encontrada</p>
-                        <p className="text-sm mt-1">
-                            {searchTerm || statusFilter !== 'all' || startDate || endDate
-                                ? 'Tente ajustar os filtros'
-                                : 'Comece criando sua primeira receita'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block card overflow-hidden">
                         <table className="table">
                             <thead>
                                 <tr>
@@ -342,8 +422,8 @@ export const Receivables: React.FC<ReceivablesProps> = ({ onDataChange }) => {
                             </tbody>
                         </table>
                     </div>
-                )}
-            </div>
+                </>
+            )}
 
             {/* Modal */}
             <TransactionModal

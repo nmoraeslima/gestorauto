@@ -31,6 +31,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [birthMonth, setBirthMonth] = useState<string>('');
+    const [birthDay, setBirthDay] = useState<string>('');
     const [pendingVehicles, setPendingVehicles] = useState<PendingVehicle[]>([]);
     const [newVehicle, setNewVehicle] = useState<PendingVehicle>({
         brand: '',
@@ -80,6 +82,20 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 vip: false,
             });
         }
+
+        // Parse birth_date if exists
+        if (customer?.birth_date) {
+            const birthDate = customer.birth_date;
+            // If format is YYYY-MM-DD, extract MM-DD
+            const dateStr = birthDate.length === 10 ? birthDate.substring(5) : birthDate;
+            const [month, day] = dateStr.split('-');
+            setBirthMonth(month || '');
+            setBirthDay(day || '');
+        } else {
+            setBirthMonth('');
+            setBirthDay('');
+        }
+
         setPendingVehicles([]);
         setNewVehicle({ brand: '', model: '', license_plate: '', color: '' });
     }, [customer, reset, isOpen]);
@@ -127,12 +143,17 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 return;
             }
 
+            // Format birth_date as MM-DD
+            const birthDate = (birthMonth && birthDay)
+                ? `${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`
+                : null;
+
             const customerData = {
                 ...data,
                 company_id: user?.company?.id!,
                 phone: unmask(data.phone),
                 cpf: data.cpf ? unmask(data.cpf) : null,
-                birth_date: data.birth_date || null, // Convert empty string to null
+                birth_date: birthDate,
             };
 
             let customerId = customer?.id;
@@ -290,10 +311,48 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                                 {errors.cpf && <p className="mt-1 text-sm text-red-500">{errors.cpf.message}</p>}
                             </div>
 
-                            {/* Data de Nascimento */}
-                            <div>
-                                <label className="label">Data de Nascimento</label>
-                                <input {...register('birth_date')} type="date" className="input" />
+                            {/* Data de Aniversário */}
+                            <div className="md:col-span-2">
+                                <label className="label">Aniversário</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs text-gray-500 mb-1 block">Dia</label>
+                                        <select
+                                            value={birthDay}
+                                            onChange={(e) => setBirthDay(e.target.value)}
+                                            className="input"
+                                        >
+                                            <option value="">Selecione</option>
+                                            {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                                <option key={day} value={day.toString()}>
+                                                    {day}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 mb-1 block">Mês</label>
+                                        <select
+                                            value={birthMonth}
+                                            onChange={(e) => setBirthMonth(e.target.value)}
+                                            className="input"
+                                        >
+                                            <option value="">Selecione</option>
+                                            <option value="1">Janeiro</option>
+                                            <option value="2">Fevereiro</option>
+                                            <option value="3">Março</option>
+                                            <option value="4">Abril</option>
+                                            <option value="5">Maio</option>
+                                            <option value="6">Junho</option>
+                                            <option value="7">Julho</option>
+                                            <option value="8">Agosto</option>
+                                            <option value="9">Setembro</option>
+                                            <option value="10">Outubro</option>
+                                            <option value="11">Novembro</option>
+                                            <option value="12">Dezembro</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Tipo */}
