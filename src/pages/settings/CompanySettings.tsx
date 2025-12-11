@@ -7,7 +7,9 @@ import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
 import { storageService } from '@/services/storageService';
 import { FileUpload } from '@/components/common/FileUpload';
 
-type TabType = 'company' | 'subscription' | 'users';
+import { BirthdaySettingsPanel } from '@/components/settings/BirthdaySettingsPanel';
+
+type TabType = 'company' | 'subscription' | 'users' | 'notifications';
 
 interface CompanyFormData {
     name: string;
@@ -192,6 +194,7 @@ export const CompanySettings: React.FC = () => {
     const tabs = [
         { id: 'company' as TabType, label: 'Empresa', icon: Building2 },
         { id: 'subscription' as TabType, label: 'Assinatura', icon: CreditCard },
+        { id: 'notifications' as TabType, label: 'Notificações', icon: AlertCircle },
         { id: 'users' as TabType, label: 'Usuários', icon: UsersIcon },
     ];
 
@@ -396,6 +399,13 @@ export const CompanySettings: React.FC = () => {
                     </div>
                 )}
 
+                {/* Notifications Tab */}
+                {activeTab === 'notifications' && (
+                    <div className="p-6">
+                        <BirthdaySettingsPanel />
+                    </div>
+                )}
+
                 {/* Subscription Tab */}
                 {activeTab === 'subscription' && (
                     <div className="p-6 space-y-8">
@@ -580,6 +590,6 @@ export const CompanySettings: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

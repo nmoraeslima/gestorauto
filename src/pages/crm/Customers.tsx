@@ -6,8 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CustomerModal } from '@/components/crm/CustomerModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { customerService } from '@/services/customerService';
+import { birthdayService, BirthdayCustomer } from '@/services/birthdayService';
 import { maskCPF, maskPhone } from '@/utils/masks';
 import toast from 'react-hot-toast';
+import { Cake } from 'lucide-react';
 
 export const Customers: React.FC = () => {
     const { user } = useAuth();
@@ -22,6 +24,7 @@ export const Customers: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [lastTap, setLastTap] = useState(0);
+    const [upcomingBirthdaysMap, setUpcomingBirthdaysMap] = useState<Record<string, BirthdayCustomer>>({});
 
     // Delete confirmation state
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -53,6 +56,16 @@ export const Customers: React.FC = () => {
             setLoading(true);
             const data = await customerService.list(user!.company!.id, showInactive);
             setCustomers(data || []);
+
+            // Load birthdays
+            try {
+                const birthdays = await birthdayService.getUpcomingBirthdays(user!.company!.id);
+                const map: Record<string, BirthdayCustomer> = {};
+                birthdays.forEach(b => map[b.id] = b);
+                setUpcomingBirthdaysMap(map);
+            } catch (err) {
+                console.error("Failed to load birthdays", err);
+            }
         } catch (error: any) {
             console.error('Error loading customers:', error);
             toast.error('Erro ao carregar clientes');
@@ -321,21 +334,23 @@ export const Customers: React.FC = () => {
                                     }
                                 }}
                             >
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-2">
-                                        {customer.vip && <Crown className="h-5 w-5 text-yellow-500" />}
-                                        <span className="font-semibold text-gray-900 text-lg">{customer.name}</span>
-                                    </div>
-                                    <span
-                                        className={`badge ${customer.customer_type === 'corporate'
-                                            ? 'badge-purple'
-                                            : 'badge-blue'
-                                            }`}
-                                    >
-                                        {customer.customer_type === 'corporate' ? 'Corp' : 'Indiv'}
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="font-bold text-gray-900 flex items-center gap-2">
+                                        {customer.name}
+                                        {customer.vip && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                                        {upcomingBirthdaysMap[customer.id] && (
+                                            <Cake
+                                                className={`w-4 h-4 ${upcomingBirthdaysMap[customer.id].is_today ? 'text-pink-500 animate-bounce' : 'text-pink-300'}`}
+                                            />
+                                        )}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${customer.customer_type === 'individual'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-purple-100 text-purple-800'
+                                        }`}>
+                                        {customer.customer_type === 'individual' ? 'PF' : 'PJ'}
                                     </span>
                                 </div>
-
                                 <div className="space-y-2 text-sm text-gray-600">
                                     {customer.phone && (
                                         <div className="flex items-center gap-2">
@@ -411,11 +426,25 @@ export const Customers: React.FC = () => {
                                     >
                                         <td>
                                             <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    {customer.vip && <Crown className="h-4 w-4 text-yellow-500" />}
-                                                    <span className="font-medium text-gray-900">{customer.name}</span>
+                                                <div className="font-medium text-gray-900 flex items-center gap-2">
+                                                    {customer.name}
+                                                    {customer.vip && (
+                                                        <div title="Cliente VIP">
+                                                            <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                        </div>
+                                                    )}
                                                     {!customer.is_active && (
-                                                        <span className="badge badge-gray text-xs">Inativo</span>
+                                                        <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs">Inativo</span>
+                                                    )}
+                                                    {upcomingBirthdaysMap[customer.id] && (
+                                                        <div className="relative group">
+                                                            <Cake
+                                                                className={`w-4 h-4 cursor-help ${upcomingBirthdaysMap[customer.id].is_today ? 'text-pink-500 animate-bounce' : 'text-pink-300'}`}
+                                                            />
+                                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                {upcomingBirthdaysMap[customer.id].is_today ? "Aniversário Hoje!" : `Em ${upcomingBirthdaysMap[customer.id].days_until} dias`}
+                                                            </div>
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="text-sm text-gray-500 mt-0.5">

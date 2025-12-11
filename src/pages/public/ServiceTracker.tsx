@@ -144,7 +144,7 @@ export const ServiceTracker: React.FC = () => {
         } else {
             // Fallback: Copy to clipboard
             navigator.clipboard.writeText(window.location.href);
-            alert('Link copiado para a área de transferência!');
+            toast.success('Link copiado para a área de transferência!');
         }
     };
 

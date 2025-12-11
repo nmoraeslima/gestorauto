@@ -286,6 +286,25 @@ export interface AppNotification {
   created_at: string;
 }
 
+export interface BirthdayNotificationSettings {
+  id: string;
+  company_id: string;
+  enabled: boolean;
+  lead_time_days: number;
+  whatsapp_template: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BirthdayNotificationSent {
+  id: string;
+  company_id: string;
+  customer_id: string;
+  notification_date: string;
+  sent_at: string;
+  channel: string;
+}
+
 // ============================================================================
 // EXTENDED TYPES (com relacionamentos)
 // ============================================================================
