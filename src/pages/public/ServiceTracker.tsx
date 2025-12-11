@@ -27,6 +27,48 @@ export const ServiceTracker: React.FC = () => {
         loadData();
     }, [id]);
 
+    // Update Open Graph meta tags for WhatsApp preview
+    useEffect(() => {
+        if (!data) return;
+
+        // Update page title
+        document.title = `${data.company.name} - Acompanhamento de Serviço`;
+
+        // Helper function to update or create meta tag
+        const updateMetaTag = (property: string, content: string) => {
+            let meta = document.querySelector(`meta[property="${property}"]`);
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute('property', property);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+        };
+
+        // Update Open Graph tags
+        updateMetaTag('og:title', `${data.company.name} - Acompanhamento de Serviço`);
+        updateMetaTag('og:description', `Acompanhe o serviço do ${data.vehicle.model} em tempo real`);
+        updateMetaTag('og:image', data.company.logo_url || '/logo.png');
+        updateMetaTag('og:url', window.location.href);
+        updateMetaTag('og:type', 'website');
+
+        // Twitter Card tags (some apps use these)
+        const updateTwitterTag = (name: string, content: string) => {
+            let meta = document.querySelector(`meta[name="${name}"]`);
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute('name', name);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+        };
+
+        updateTwitterTag('twitter:card', 'summary_large_image');
+        updateTwitterTag('twitter:title', `${data.company.name} - Acompanhamento de Serviço`);
+        updateTwitterTag('twitter:description', `Acompanhe o serviço do ${data.vehicle.model} em tempo real`);
+        updateTwitterTag('twitter:image', data.company.logo_url || '/logo.png');
+    }, [data]);
+
     const loadData = async () => {
         try {
             if (!id) return;
