@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { Building2, CreditCard, Users as UsersIcon, Save, AlertCircle, CheckCircle, Calendar, Star, Clock, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PLAN_LIMITS, SubscriptionPlan } from '@/types/database';
+import { storageService } from '@/services/storageService';
+import { FileUpload } from '@/components/common/FileUpload';
 
 type TabType = 'company' | 'subscription' | 'users';
 
@@ -101,6 +103,42 @@ export const CompanySettings: React.FC = () => {
         setFormData(prev => ({ ...prev, slug: sanitized }));
     };
 
+    const handleLogoUpload = async (file: File): Promise<string> => {
+        if (!user?.company?.id) throw new Error('Empresa não encontrada');
+
+        const result = await storageService.uploadCompanyLogo(user.company.id, file);
+
+        // Update database with new logo URL
+        const { error } = await supabase
+            .from('companies')
+            .update({ logo_url: result.url })
+            .eq('id', user.company.id);
+
+        if (error) throw error;
+
+        // Refresh user data to update logo in sidebar
+        await refreshUserData();
+
+        return result.url;
+    };
+
+    const handleLogoDelete = async () => {
+        if (!user?.company?.id) throw new Error('Empresa não encontrada');
+
+        await storageService.deleteCompanyLogo(user.company.id);
+
+        // Update database to remove logo URL
+        const { error } = await supabase
+            .from('companies')
+            .update({ logo_url: null })
+            .eq('id', user.company.id);
+
+        if (error) throw error;
+
+        // Refresh user data
+        await refreshUserData();
+    };
+
     const handleSaveCompany = async () => {
         if (!user?.company?.id) return;
 
@@ -128,7 +166,6 @@ export const CompanySettings: React.FC = () => {
                     email: formData.email,
                     phone: formData.phone || null,
                     address: formData.address || null,
-                    logo_url: formData.logo_url || null,
                     updated_at: new Date().toISOString(),
                 })
                 .eq('id', user.company.id);
@@ -331,30 +368,16 @@ export const CompanySettings: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Logo URL */}
+                                {/* Logo Upload */}
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-secondary-700 mb-2">
-                                        URL do Logo
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={formData.logo_url}
-                                        onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                                        className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                        placeholder="https://exemplo.com/logo.png"
+                                    <FileUpload
+                                        currentUrl={user?.company?.logo_url}
+                                        onUpload={handleLogoUpload}
+                                        onDelete={handleLogoDelete}
+                                        accept="image/*"
+                                        maxSize={2 * 1024 * 1024}
+                                        label="Logo da Empresa"
                                     />
-                                    {formData.logo_url && (
-                                        <div className="mt-2">
-                                            <img
-                                                src={formData.logo_url}
-                                                alt="Logo preview"
-                                                className="h-16 object-contain"
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>
