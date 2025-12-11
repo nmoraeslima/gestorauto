@@ -41,6 +41,7 @@ export default function WorkOrders() {
     // WhatsApp Modal State
     const [showWhatsAppConfirmation, setShowWhatsAppConfirmation] = useState(false);
     const [completedWorkOrder, setCompletedWorkOrder] = useState<any>(null);
+    const [lastTap, setLastTap] = useState(0);
 
     useEffect(() => {
         loadWorkOrders();
@@ -334,7 +335,19 @@ export default function WorkOrders() {
                             </div>
                         ) : (
                             filteredWorkOrders.map((wo) => (
-                                <div key={wo.id} className="card p-4 space-y-3">
+                                <div
+                                    key={wo.id}
+                                    className="card p-4 space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
+                                    onClick={(e) => {
+                                        const now = Date.now();
+                                        if (now - lastTap < 300) {
+                                            handleEdit(wo);
+                                            setLastTap(0);
+                                        } else {
+                                            setLastTap(now);
+                                        }
+                                    }}
+                                >
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <h3 className="font-semibold text-neutral-800">{wo.customer?.name || 'Cliente sem nome'}</h3>
