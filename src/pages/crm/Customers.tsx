@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, Car, Crown, Check } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Car, Crown, Check, Phone, Mail, FileText } from 'lucide-react';
 import { Customer } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomerModal } from '@/components/crm/CustomerModal';
@@ -304,87 +304,168 @@ export const Customers: React.FC = () => {
                         </p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Nome / Contato</th>
-                                    <th className="hidden md:table-cell">CPF</th>
-                                    <th>Tipo</th>
-                                    <th className="text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCustomers.map((customer) => (
-                                    <tr
-                                        key={customer.id}
-                                        onDoubleClick={() => handleEdit(customer)}
-                                        className="hover:bg-gray-50 transition-colors"
-                                    >
-                                        <td>
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    {customer.vip && <Crown className="h-4 w-4 text-yellow-500" />}
-                                                    <span className="font-medium text-gray-900">{customer.name}</span>
-                                                    {!customer.is_active && (
-                                                        <span className="badge badge-gray text-xs">Inativo</span>
+                    <div className="w-full">
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-4">
+                            {filteredCustomers.map((customer) => (
+                                <div
+                                    key={customer.id}
+                                    className="bg-white p-4 rounded-lg shadow-sm space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
+                                    onClick={() => handleEdit(customer)}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2">
+                                            {customer.vip && <Crown className="h-5 w-5 text-yellow-500" />}
+                                            <span className="font-semibold text-gray-900 text-lg">{customer.name}</span>
+                                        </div>
+                                        <span
+                                            className={`badge ${customer.customer_type === 'corporate'
+                                                ? 'badge-purple'
+                                                : 'badge-blue'
+                                                }`}
+                                        >
+                                            {customer.customer_type === 'corporate' ? 'Corp' : 'Indiv'}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        {customer.phone && (
+                                            <div className="flex items-center gap-2">
+                                                <Phone className="h-4 w-4 text-gray-400" />
+                                                <span>{maskPhone(customer.phone)}</span>
+                                            </div>
+                                        )}
+                                        {customer.email && (
+                                            <div className="flex items-center gap-2">
+                                                <Mail className="h-4 w-4 text-gray-400" />
+                                                <span className="truncate">{customer.email}</span>
+                                            </div>
+                                        )}
+                                        {customer.cpf && (
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4 text-gray-400" />
+                                                <span>{maskCPF(customer.cpf)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                                        <div>
+                                            {!customer.is_active && (
+                                                <span className="badge badge-gray text-xs">Inativo</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
+                                                className="p-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </button>
+                                            {customer.is_active ? (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(customer); }}
+                                                    className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleActivate(customer); }}
+                                                    className="p-2 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                                                >
+                                                    <Check className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome / Contato</th>
+                                        <th className="hidden md:table-cell">CPF</th>
+                                        <th>Tipo</th>
+                                        <th className="text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredCustomers.map((customer) => (
+                                        <tr
+                                            key={customer.id}
+                                            onDoubleClick={() => handleEdit(customer)}
+                                            className="hover:bg-gray-50 transition-colors"
+                                        >
+                                            <td>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        {customer.vip && <Crown className="h-4 w-4 text-yellow-500" />}
+                                                        <span className="font-medium text-gray-900">{customer.name}</span>
+                                                        {!customer.is_active && (
+                                                            <span className="badge badge-gray text-xs">Inativo</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500 mt-0.5">
+                                                        {maskPhone(customer.phone)}
+                                                    </div>
+                                                    {customer.email && (
+                                                        <div className="text-xs text-gray-400 hidden md:block">
+                                                            {customer.email}
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-gray-500 mt-0.5">
-                                                    {maskPhone(customer.phone)}
-                                                </div>
-                                                {customer.email && (
-                                                    <div className="text-xs text-gray-400 hidden md:block">
-                                                        {customer.email}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="text-sm text-gray-500 hidden md:table-cell">
-                                            {customer.cpf ? maskCPF(customer.cpf) : '-'}
-                                        </td>
-                                        <td>
-                                            <span
-                                                className={`badge ${customer.customer_type === 'corporate'
-                                                    ? 'badge-purple'
-                                                    : 'badge-blue'
-                                                    }`}
-                                            >
-                                                {customer.customer_type === 'corporate' ? 'Corporativo' : 'Individual'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleEdit(customer)}
-                                                    className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-                                                    title="Editar"
+                                            </td>
+                                            <td className="text-sm text-gray-500 hidden md:table-cell">
+                                                {customer.cpf ? maskCPF(customer.cpf) : '-'}
+                                            </td>
+                                            <td>
+                                                <span
+                                                    className={`badge ${customer.customer_type === 'corporate'
+                                                        ? 'badge-purple'
+                                                        : 'badge-blue'
+                                                        }`}
                                                 >
-                                                    <Edit2 className="h-4 w-4" />
-                                                </button>
-                                                {customer.is_active ? (
+                                                    {customer.customer_type === 'corporate' ? 'Corporativo' : 'Individual'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => handleDeleteClick(customer)}
-                                                        className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                                                        title="Excluir"
+                                                        onClick={() => handleEdit(customer)}
+                                                        className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                                                        title="Editar"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <Edit2 className="h-4 w-4" />
                                                     </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleActivate(customer)}
-                                                        className="rounded-lg p-2 text-green-600 hover:bg-green-50"
-                                                        title="Ativar"
-                                                    >
-                                                        <Check className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                                    {customer.is_active ? (
+                                                        <button
+                                                            onClick={() => handleDeleteClick(customer)}
+                                                            className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                                                            title="Excluir"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleActivate(customer)}
+                                                            className="rounded-lg p-2 text-green-600 hover:bg-green-50"
+                                                            title="Ativar"
+                                                        >
+                                                            <Check className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>
