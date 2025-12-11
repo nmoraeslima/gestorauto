@@ -1,12 +1,15 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Bell, Check, Info, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
+import { Bell, Check, Info, AlertTriangle, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { usePWAContext } from '@/contexts/PWAContext';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const NotificationCenter: React.FC = () => {
-    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+    const { notifications, unreadCount: apiUnreadCount, markAsRead, markAllAsRead } = useNotifications();
+    const { updateAvailable, handleUpdate } = usePWAContext();
+    const unreadCount = apiUnreadCount + (updateAvailable ? 1 : 0);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -88,13 +91,45 @@ export const NotificationCenter: React.FC = () => {
                     </div>
 
                     <div className="max-h-[400px] overflow-y-auto">
-                        {notifications.length === 0 ? (
+                        {notifications.length === 0 && !updateAvailable ? (
                             <div className="p-8 text-center text-secondary-500">
                                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
                                 <p className="text-sm">Nenhuma notificação no momento</p>
                             </div>
                         ) : (
                             <div className="divide-y divide-secondary-100">
+                                {updateAvailable && (
+                                    <div
+                                        onClick={handleUpdate}
+                                        className="p-4 hover:bg-primary-50 cursor-pointer transition-colors bg-white border-l-4 border-primary-500"
+                                    >
+                                        <div className="flex gap-3">
+                                            <div className="flex-shrink-0 mt-1">
+                                                <RefreshCw className="w-5 h-5 text-primary-600 animate-spin-slow" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-secondary-900">
+                                                    Nova versão disponível! 🎉
+                                                </p>
+                                                <p className="text-sm text-secondary-600 mt-0.5">
+                                                    Uma nova versão do app está pronta.
+                                                </p>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleUpdate();
+                                                    }}
+                                                    className="mt-2 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-md transition-colors"
+                                                >
+                                                    Atualizar agora
+                                                </button>
+                                            </div>
+                                            <div className="flex-shrink-0 self-center">
+                                                <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 {notifications.map((notification) => (
                                     <div
                                         key={notification.id}

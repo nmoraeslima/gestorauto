@@ -11,7 +11,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { usePWA } from '@/hooks/usePWA';
+import { usePWAContext } from '@/contexts/PWAContext';
 
 interface ReleaseNote {
     version: string;
@@ -25,10 +25,10 @@ interface ReleaseNote {
 export const ReleaseHistory: React.FC = () => {
     const [releases, setReleases] = useState<ReleaseNote[]>([]);
     const [openVersions, setOpenVersions] = useState<string[]>([]);
-    const { needRefresh, updateServiceWorker } = usePWA();
+    const { needRefresh, updateServiceWorker } = usePWAContext();
 
     useEffect(() => {
-        fetch('/release.json')
+        fetch('/version.json')
             .then(res => res.json())
             .then(data => {
                 if (data.releases) {
@@ -130,7 +130,7 @@ export const ReleaseHistory: React.FC = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => updateServiceWorker(true)}
+                        onClick={() => updateServiceWorker()}
                         className="btn btn-primary"
                     >
                         Atualizar Agora

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { DashboardStats } from '@/types/database';
 import { Link } from 'react-router-dom';
-import { usePWA } from '@/hooks/usePWA';
+import { usePWAContext } from '@/contexts/PWAContext';
 import { UpdateModal } from '@/components/UpdateModal';
 import {
     AreaChart,
@@ -38,7 +38,7 @@ export const Dashboard: React.FC = () => {
     const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
     const [revenueData, setRevenueData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const { needRefresh, updateServiceWorker, releaseNote } = usePWA();
+    const { needRefresh, updateServiceWorker, releaseNote } = usePWAContext();
     const [showUpdateModal, setShowUpdateModal] = useState(false);
 
     useEffect(() => {
@@ -230,7 +230,7 @@ export const Dashboard: React.FC = () => {
         if (needRefresh && releaseNote) {
             setShowUpdateModal(true);
         } else {
-            updateServiceWorker(needRefresh);
+            updateServiceWorker();
         }
     };
 
@@ -264,7 +264,7 @@ export const Dashboard: React.FC = () => {
             <UpdateModal
                 isOpen={showUpdateModal}
                 onClose={() => setShowUpdateModal(false)}
-                onUpdate={() => updateServiceWorker(true)}
+                onUpdate={() => updateServiceWorker()}
                 releaseNote={releaseNote}
             />
 

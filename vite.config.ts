@@ -7,9 +7,12 @@ import path from 'path'
 export default defineConfig({
     plugins: [
         VitePWA({
+            strategies: 'injectManifest',
+            srcDir: 'src',
+            filename: 'sw.js',
             registerType: 'prompt',
             injectRegister: 'auto',
-            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'version.json'],
             manifest: {
                 name: 'GestorAuto',
                 short_name: 'GestorAuto',
@@ -18,6 +21,8 @@ export default defineConfig({
                 background_color: '#ffffff',
                 display: 'standalone',
                 start_url: '/',
+                // @ts-ignore
+                version: process.env.npm_package_version, // Will be replaced by vite define or we rely on the manifest generator
                 icons: [
                     {
                         src: '/logo.png',
@@ -29,9 +34,10 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-                cleanupOutdatedCaches: true,
-                skipWaiting: false,
-                clientsClaim: false,
+                // Don't cleanup outdated caches automatically here, because we handle it in SW manually for strict control
+                // But we can leave it true for assets managed by workbox
+                cleanupOutdatedCaches: false,
+                sourcemap: true
             },
             devOptions: {
                 enabled: true,

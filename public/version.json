@@ -1,0 +1,68 @@
+{
+  "version": "1.0.1",
+  "releaseDate": "2025-12-11",
+  "releases": [
+    {
+      "version": "1.0.1",
+      "date": "2025-12-11",
+      "title": "Sistema de Auto-Atualização PWA",
+      "description": "Implementação completa do sistema de atualização automática para PWA com suporte iOS Safari",
+      "type": "minor",
+      "notes": [
+        {
+          "type": "feat",
+          "text": "Sistema de auto-atualização PWA com detecção a cada 5 minutos"
+        },
+        {
+          "type": "feat",
+          "text": "Notificação visual de nova versão disponível"
+        },
+        {
+          "type": "feat",
+          "text": "Atualização com um clique sem necessidade de reinstalação"
+        },
+        {
+          "type": "feat",
+          "text": "Service Worker com estratégia Network First para melhor confiabilidade"
+        },
+        {
+          "type": "fix",
+          "text": "Corrigido loop infinito de reloads em modo de desenvolvimento"
+        },
+        {
+          "type": "fix",
+          "text": "Prevenção de falsos positivos de atualização em localhost"
+        }
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-11-20",
+      "title": "Lançamento Inicial",
+      "description": "Primeira versão estável do GestorAuto com funcionalidades completas de gestão",
+      "type": "major",
+      "notes": [
+        {
+          "type": "feat",
+          "text": "Sistema completo de gestão de clientes e veículos"
+        },
+        {
+          "type": "feat",
+          "text": "Agendamentos com notificações automáticas"
+        },
+        {
+          "type": "feat",
+          "text": "Ordens de serviço com fotos e acompanhamento"
+        },
+        {
+          "type": "feat",
+          "text": "Gestão financeira integrada"
+        },
+        {
+          "type": "feat",
+          "text": "Controle de estoque de produtos"
+        }
+      ]
+    }
+  ]
+}

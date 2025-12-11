@@ -1,110 +1,131 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { Workbox } from 'workbox-window';
 
 export function usePWA() {
-    const [needRefresh, setNeedRefresh] = useState(false);
-    const [offlineReady, setOfflineReady] = useState(false);
-    const [releaseNote, setReleaseNote] = useState<any>(null);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
+    const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
     const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+    const [wb, setWb] = useState<Workbox | null>(null);
 
+    // Function to handle the actual update
+    const handleUpdate = useCallback(async () => {
+        // Set flag to show success message after reload
+        localStorage.setItem('pwa-update-pending', 'true');
+
+        if (waitingWorker) {
+            console.log('[PWA] Sending SKIP_WAITING to waiting worker');
+            waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+
+            // Wait a bit for the SW to activate, then reload
+            setTimeout(() => {
+                console.log('[PWA] Reloading page after update');
+                window.location.reload();
+            }, 500);
+        } else if (wb) {
+            // Fallback for workbox instance if we have it
+            wb.messageSkipWaiting();
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } else if (registration && registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+    }, [waitingWorker, registration, wb]);
+
+    // Check for update success flag on mount
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-            // Register event listeners
-            navigator.serviceWorker.ready.then((reg) => {
-                setRegistration(reg);
-
-                // Function to check for release notes
-                const checkReleaseNotes = async () => {
-                    try {
-                        const response = await fetch('/release.json');
-                        if (response.ok) {
-                            const data = await response.json();
-                            // Handle both old (single object) and new (array) schema for backward compatibility during transition
-                            if (data.releases && Array.isArray(data.releases) && data.releases.length > 0) {
-                                // New Schema: Take the latest release (first in array or sort by date if needed)
-                                // We assume the JSON is ordered or we take the one matching currentVersion if we had logic for that
-                                setReleaseNote(data.releases[0]);
-                            } else {
-                                // Old Schema fallback
-                                setReleaseNote(data);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error fetching release notes:', error);
-                    }
-                };
-
-                // Initial check
-                if (reg.waiting) {
-                    setNeedRefresh(true);
-                    checkReleaseNotes();
-                }
-
-                // Listen for updates
-                reg.addEventListener('updatefound', () => {
-                    const newWorker = reg.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    setNeedRefresh(true);
-                                    toast.success('Nova atualização disponível!');
-                                    checkReleaseNotes();
-                                } else {
-                                    setOfflineReady(true);
-                                }
-                            }
-                        });
-                    }
-                });
+        const updatePending = localStorage.getItem('pwa-update-pending');
+        if (updatePending === 'true') {
+            localStorage.removeItem('pwa-update-pending');
+            // Show success toast
+            toast.success('✨ App atualizado com sucesso!', {
+                duration: 5000,
+                icon: '🎉',
             });
         }
     }, []);
 
-    const updateServiceWorker = async (active: boolean = true) => {
-        if (active && registration && registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    const [releaseNote, setReleaseNote] = useState<any>(null);
 
-            // Wait for the new service worker to take control before reloading
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
+    useEffect(() => {
+        // Fetch version.json for release notes
+        fetch('/version.json')
+            .then(res => res.json())
+            .then(data => {
+                if (data.releases && data.releases.length > 0) {
+                    setReleaseNote(data.releases[0]);
+                }
+            })
+            .catch(console.error);
 
-            setNeedRefresh(false);
-        } else if (!active && registration) {
-            // Manual check for updates
-            console.log('Checking for updates manually...');
-            try {
-                // If an update is found, the 'updatefound' event will fire, setting needRefresh to true.
-                // We can't easily await the result of "found" vs "not found" from update() directly
-                // because it resolves void.
-                // However, we can use a slight delay or check state.
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
 
-                await registration.update();
+            // Initialize Workbox (simplifies some listeners)
+            // But since we are using injectManifest and manual sw.js, we should be careful.
+            // However, configured plugins in vite.config used injectManifest, so we can still use workbox-window
+            // to interact with it if the SW uses workbox-sw (which we didn't explicitly import in our SW, we wrote native code for most parts).
+            // But workbox-window is useful for the client side.
 
-                // We'll give a short delay to let the event loop process any found updates
-                setTimeout(() => {
-                    if (registration.waiting) {
-                        // Already handled by effect/state
-                        setNeedRefresh(true);
-                    } else {
-                        // Manually fetch release notes even if no update, just to be safe or maybe user clicked button
-                        // But strictly if no update, we show "up to date"
-                        toast.success('Você já está na versão mais recente!');
-                    }
-                }, 500);
+            // Let's use native API primarily as our SW is native-ish, but check if we should leverage workbox-window for the user code.
+            // The user code in prompt used 'updatefound' manually.
 
-            } catch (error) {
-                console.error('Error checking for updates:', error);
-                toast.error('Erro ao verificar atualizações');
-            }
+            const loadSW = async () => {
+                const { Workbox } = await import('workbox-window');
+                const wbInstance = new Workbox('/sw.js');
+                setWb(wbInstance);
+
+                wbInstance.addEventListener('waiting', (event) => {
+                    console.log('[PWA] New update waiting');
+                    setUpdateAvailable(true);
+                    setWaitingWorker(event.sw || null);
+                });
+
+                // DO NOT add 'controlling' listener here - it causes automatic reloads
+                // The reload will happen manually when user clicks "Update Now"
+
+                const reg = await wbInstance.register();
+                setRegistration(reg || null);
+
+                // Check for updates every 5 minutes (only in production)
+                // In development, Vite constantly rebuilds the SW, causing false positives
+                const isDevelopment = import.meta.env.DEV;
+
+                if (!isDevelopment) {
+                    setInterval(async () => {
+                        console.log('[PWA] Checking for updates (5m interval)...');
+                        try {
+                            await wbInstance.update();
+                        } catch (e) {
+                            // ignore update errors (offline etc)
+                            console.debug('[PWA] Update check failed', e);
+                        }
+                    }, 5 * 60 * 1000);
+                }
+
+                // Also check immediately on load if there's one waiting
+                // But skip this in development to avoid false positives
+                if (reg && reg.waiting && !isDevelopment) {
+                    setUpdateAvailable(true);
+                    setWaitingWorker(reg.waiting);
+                }
+            };
+
+            loadSW();
+
+            // DO NOT add controllerchange listener - it causes infinite reload loops
+            // The reload will be triggered manually by handleUpdate after user confirmation
         }
-    };
+    }, []);
 
     return {
-        needRefresh,
-        offlineReady,
-        updateServiceWorker,
+        updateAvailable,
+        needRefresh: updateAvailable, // Alias for legacy support if needed, but updated components use updateAvailable
+        handleUpdate,
+        updateServiceWorker: handleUpdate, // Alias for legacy support
         registration,
         releaseNote
     };

@@ -58,114 +58,117 @@ const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     </div>
 );
 
+import { PWAProvider } from './contexts/PWAContext';
+
 function App() {
     // Service Worker is now handled by vite-plugin-pwa
-
     return (
-        <BrowserRouter>
-            <AuthProvider>
-                <Toaster
-                    position="top-right"
-                    toastOptions={{
-                        duration: 4000,
-                        style: {
-                            background: '#fff',
-                            color: '#0f172a',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '0.75rem',
-                            padding: '1rem',
-                        },
-                        success: {
-                            iconTheme: {
-                                primary: '#22c55e',
-                                secondary: '#fff',
+        <PWAProvider>
+            <BrowserRouter>
+                <AuthProvider>
+                    <Toaster
+                        position="top-right"
+                        toastOptions={{
+                            duration: 4000,
+                            style: {
+                                background: '#fff',
+                                color: '#0f172a',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.75rem',
+                                padding: '1rem',
                             },
-                        },
-                        error: {
-                            iconTheme: {
-                                primary: '#ef4444',
-                                secondary: '#fff',
+                            success: {
+                                iconTheme: {
+                                    primary: '#22c55e',
+                                    secondary: '#fff',
+                                },
                             },
-                        },
-                    }}
-                />
-
-                <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/signin" element={<SignIn />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/tracker/:id" element={<ServiceTracker />} />
-                    <Route path="/book/:company_slug" element={<PublicBooking />} />
-
-                    {/* Legal Pages */}
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/terms-of-service" element={<TermsOfService />} />
-                    <Route path="/cookie-policy" element={<CookiePolicy />} />
-
-                    {/* Subscription Route (accessible even with expired subscription) */}
-                    <Route path="/subscription/renew" element={<SubscriptionRenew />} />
-                    <Route path="/subscription/plans" element={<Plans />} />
-
-                    {/* TV Dashboard - Restricted to Premium */}
-                    <Route
-                        path="/tv-dashboard"
-                        element={
-                            <ProtectedFeatureRoute feature="tv_panel">
-                                <TVDashboard />
-                            </ProtectedFeatureRoute>
-                        }
+                            error: {
+                                iconTheme: {
+                                    primary: '#ef4444',
+                                    secondary: '#fff',
+                                },
+                            },
+                        }}
                     />
 
-                    {/* Protected Routes */}
-                    <Route element={<ProtectedLayout />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/customers" element={<Customers />} />
-                        <Route path="/vehicles" element={<Vehicles />} />
-                        <Route path="/services" element={<Services />} />
-                        <Route path="/appointments" element={<Appointments />} />
-                        <Route path="/work-orders" element={<WorkOrders />} />
-                        <Route path="/products" element={<Products />} />
-                        <Route path="/inventory" element={<Inventory />} />
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<Landing />} />
+                        <Route path="/signin" element={<SignIn />} />
+                        <Route path="/signup" element={<SignUp />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/tracker/:id" element={<ServiceTracker />} />
+                        <Route path="/book/:company_slug" element={<PublicBooking />} />
 
-                        {/* Financial Pages - Restricted to Pro/Premium */}
+                        {/* Legal Pages */}
+                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                        <Route path="/terms-of-service" element={<TermsOfService />} />
+                        <Route path="/cookie-policy" element={<CookiePolicy />} />
+
+                        {/* Subscription Route (accessible even with expired subscription) */}
+                        <Route path="/subscription/renew" element={<SubscriptionRenew />} />
+                        <Route path="/subscription/plans" element={<Plans />} />
+
+                        {/* TV Dashboard - Restricted to Premium */}
                         <Route
-                            path="/financial"
+                            path="/tv-dashboard"
                             element={
-                                <ProtectedFeatureRoute feature="financial">
-                                    <FinancialDashboard />
-                                </ProtectedFeatureRoute>
-                            }
-                        />
-                        <Route
-                            path="/financial/receivables"
-                            element={
-                                <ProtectedFeatureRoute feature="financial">
-                                    <Receivables />
-                                </ProtectedFeatureRoute>
-                            }
-                        />
-                        <Route
-                            path="/financial/payables"
-                            element={
-                                <ProtectedFeatureRoute feature="financial">
-                                    <Payables />
+                                <ProtectedFeatureRoute feature="tv_panel">
+                                    <TVDashboard />
                                 </ProtectedFeatureRoute>
                             }
                         />
 
-                        <Route path="/settings" element={<CompanySettings />} />
-                        <Route path="/settings/booking" element={<BookingSettings />} />
-                        <Route path="/settings/releases" element={<ReleaseHistory />} />
-                    </Route>
+                        {/* Protected Routes */}
+                        <Route element={<ProtectedLayout />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/customers" element={<Customers />} />
+                            <Route path="/vehicles" element={<Vehicles />} />
+                            <Route path="/services" element={<Services />} />
+                            <Route path="/appointments" element={<Appointments />} />
+                            <Route path="/work-orders" element={<WorkOrders />} />
+                            <Route path="/products" element={<Products />} />
+                            <Route path="/inventory" element={<Inventory />} />
 
-                    {/* 404 */}
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-            </AuthProvider>
-        </BrowserRouter>
+                            {/* Financial Pages - Restricted to Pro/Premium */}
+                            <Route
+                                path="/financial"
+                                element={
+                                    <ProtectedFeatureRoute feature="financial">
+                                        <FinancialDashboard />
+                                    </ProtectedFeatureRoute>
+                                }
+                            />
+                            <Route
+                                path="/financial/receivables"
+                                element={
+                                    <ProtectedFeatureRoute feature="financial">
+                                        <Receivables />
+                                    </ProtectedFeatureRoute>
+                                }
+                            />
+                            <Route
+                                path="/financial/payables"
+                                element={
+                                    <ProtectedFeatureRoute feature="financial">
+                                        <Payables />
+                                    </ProtectedFeatureRoute>
+                                }
+                            />
+
+                            <Route path="/settings" element={<CompanySettings />} />
+                            <Route path="/settings/booking" element={<BookingSettings />} />
+                            <Route path="/settings/releases" element={<ReleaseHistory />} />
+                        </Route>
+
+                        {/* 404 */}
+                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    </Routes>
+                </AuthProvider>
+            </BrowserRouter>
+        </PWAProvider>
     );
 }
 
