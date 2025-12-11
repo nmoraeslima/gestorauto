@@ -83,7 +83,7 @@ export default function Inventory() {
             </div>
 
             {/* Filters */}
-            <div className="card p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-secondary-200 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -92,7 +92,7 @@ export default function Inventory() {
                             placeholder="Buscar produto..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         />
                     </div>
                     <div className="relative">
@@ -100,7 +100,7 @@ export default function Inventory() {
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value as any)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         >
                             <option value="all">Todos os Status</option>
                             <option value="low">Estoque Baixo</option>
@@ -111,18 +111,77 @@ export default function Inventory() {
             </div>
 
             {/* Inventory List */}
-            <div className="card overflow-hidden">
-                {loading ? (
-                    <div className="p-8 text-center">
-                        <div className="spinner mx-auto mb-4"></div>
-                        <p className="text-neutral-500">Carregando estoque...</p>
-                    </div>
-                ) : filteredProducts.length === 0 ? (
-                    <div className="p-8 text-center text-neutral-500">
-                        <Package className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                        <p>Nenhum produto encontrado</p>
-                    </div>
-                ) : (
+            <div className="w-full">
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                    {loading ? (
+                        <div className="text-center text-secondary-500 py-4">Carregando estoque...</div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="text-center text-secondary-500 py-4">
+                            <Package className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                            <p>Nenhum produto encontrado</p>
+                        </div>
+                    ) : (
+                        filteredProducts.map((product) => {
+                            const isLowStock = (product.quantity || 0) <= (product.min_stock || 0);
+                            return (
+                                <div
+                                    key={product.id}
+                                    className={`p-4 rounded-lg shadow-sm border space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99] ${isLowStock ? 'bg-red-50 border-red-200' : 'bg-white border-secondary-200'}`}
+                                    onClick={() => handleMovement(product)}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${isLowStock ? 'bg-red-100 text-red-600' : 'bg-primary-100 text-primary-600'}`}>
+                                                <Package className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-secondary-900">{product.name}</h3>
+                                                <p className="text-xs text-secondary-500">{product.category}</p>
+                                            </div>
+                                        </div>
+                                        {isLowStock && (
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                Baixo
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-secondary-600">Estoque:</span>
+                                            <div className={`flex items-center gap-1 font-bold ${isLowStock ? 'text-red-700' : 'text-secondary-900'}`}>
+                                                {product.quantity} {product.unit}
+                                            </div>
+                                        </div>
+                                        <div className="text-secondary-500 text-xs">
+                                            Min: {product.min_stock} {product.unit}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-secondary-100 flex items-center justify-end gap-2">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleMovement(product); }}
+                                            className="btn btn-sm btn-secondary flex items-center gap-1 bg-white"
+                                        >
+                                            <ArrowRightLeft className="w-4 h-4" />
+                                            Ajustar
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleHistory(product); }}
+                                            className="btn btn-sm btn-ghost text-neutral-500 hover:text-secondary-600"
+                                        >
+                                            <History className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="table">
                             <thead>
@@ -194,7 +253,7 @@ export default function Inventory() {
                             </tbody>
                         </table>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Modals */}
