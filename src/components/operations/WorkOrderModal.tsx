@@ -516,7 +516,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                                         const customerName = customers.find(c => c.id === workOrder.customer_id)?.name || 'Cliente';
                                         const vehicleModel = vehicles.find(v => v.id === workOrder.vehicle_id)?.model || 'seu veículo';
 
-                                        const message = `Olá ${customerName}! 🚗\n\nAcompanhe o serviço do ${vehicleModel} em tempo real pelo nosso link exclusivo:\n\n${url}\n\nQualquer dúvida, estamos à disposição!`;
+                                        const message = `Olá ${customerName}! 🚗\n\nAcesse o checklist e acompanhe o serviço do ${vehicleModel} em tempo real pelo nosso link exclusivo:\n\n${url}\n\nQualquer dúvida, estamos à disposição!`;
 
                                         // Get customer phone if available
                                         const customer = customers.find(c => c.id === workOrder.customer_id);
@@ -595,10 +595,10 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 space-y-4 sm:space-y-6">
                         {/* Basic Information Tab */}
                         {activeTab === 'basic' && (
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                            <div className="space-y-4 flex-1 overflow-y-auto pr-2">
                                 {/* Creation Mode Toggle */}
                                 {!workOrder && (
                                     <div className="flex flex-col sm:flex-row gap-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
@@ -834,7 +834,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
                         {/* Services Tab */}
                         {activeTab === 'services' && (
-                            <div className="max-h-[500px] overflow-y-auto">
+                            <div className="flex-1 overflow-y-auto pr-2">
                                 <ServiceSelector
                                     selectedServices={selectedServices}
                                     onChange={setSelectedServices}
@@ -844,7 +844,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
                         {/* Products Tab */}
                         {activeTab === 'products' && (
-                            <div className="max-h-[500px] overflow-y-auto">
+                            <div className="flex-1 overflow-y-auto pr-2">
                                 <ProductSelector
                                     selectedProducts={selectedProducts}
                                     onProductsChange={setSelectedProducts}
@@ -853,7 +853,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                         )}
                         {/* Photos Tab */}
                         {activeTab === 'photos' && workOrder?.id && (
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                            <div className="space-y-4 flex-1 overflow-y-auto pr-2">
                                 <PhotoManager
                                     workOrderId={workOrder.id}
                                     disabled={loading}
@@ -875,7 +875,7 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
                         {/* Financial Tab */}
                         {activeTab === 'financial' && (
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                            <div className="space-y-4 flex-1 overflow-y-auto pr-2">
                                 {/* Discount */}
                                 <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
                                     <h4 className="font-medium text-secondary-600 mb-4">Desconto</h4>

@@ -15,7 +15,8 @@ import {
     List as ListIcon,
     Loader2,
     Link as LinkIcon,
-    Lock
+    Lock,
+    Share2
 } from 'lucide-react';
 import { WorkOrderModal } from '@/components/operations/WorkOrderModal';
 import WorkOrderWhatsAppModal from '@/components/whatsapp/WorkOrderWhatsAppModal';
@@ -114,7 +115,7 @@ export default function WorkOrders() {
         const customerName = workOrder.customer?.name || 'Cliente';
         const vehicleModel = workOrder.vehicle?.model || 'seu veículo';
 
-        const message = `Olá ${customerName}! 🚗\n\nAcompanhe o serviço do ${vehicleModel} em tempo real pelo nosso link exclusivo:\n\n${url}\n\nQualquer dúvida, estamos à disposição!`;
+        const message = `Olá ${customerName}! 🚗\n\nAcesse o checklist e acompanhe o serviço do ${vehicleModel} em tempo real pelo nosso link exclusivo:\n\n${url}\n\nQualquer dúvida, estamos à disposição!`;
 
         const phone = workOrder.customer?.phone?.replace(/\D/g, '');
         const whatsappUrl = phone
@@ -393,8 +394,8 @@ export default function WorkOrders() {
                                                 className="btn btn-secondary text-xs py-1 px-3 flex items-center gap-2"
                                                 title={user?.company?.subscription_plan === 'basic' ? 'Disponível no plano Profissional' : 'Enviar Link por WhatsApp'}
                                             >
-                                                <LinkIcon className="w-3 h-3" />
-                                                Whatsapp
+                                                <Share2 className="w-3 h-3" />
+                                                Enviar Link
                                                 {user?.company?.subscription_plan === 'basic' && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
                                             </button>
                                             <button
