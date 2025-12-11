@@ -142,8 +142,21 @@ export const ServiceTracker: React.FC = () => {
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10 print:hidden">
                 <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="font-bold text-lg text-secondary-900 truncate">
-                        {data.company.name}
+                    <div className="flex items-center gap-3">
+                        {data.company.logo_url ? (
+                            <img
+                                src={data.company.logo_url}
+                                alt={data.company.name}
+                                className="h-10 w-10 object-contain rounded"
+                            />
+                        ) : (
+                            <div className="h-10 w-10 bg-primary-100 rounded flex items-center justify-center">
+                                <Car className="h-6 w-6 text-primary-600" />
+                            </div>
+                        )}
+                        <div className="font-bold text-lg text-secondary-900 truncate">
+                            {data.company.name}
+                        </div>
                     </div>
                     <button
                         onClick={handleShare}
