@@ -246,19 +246,6 @@ export const Dashboard: React.FC = () => {
                         Aqui está um resumo do seu negócio hoje.
                     </p>
                 </div>
-                {/* PWA Update Button */}
-                <div className="flex items-center">
-                    <button
-                        onClick={handleUpdateClick}
-                        className={`btn ${needRefresh ? 'btn-primary animate-pulse' : 'btn-ghost text-secondary-600'} flex items-center gap-2`}
-                        title={needRefresh ? 'Nova versão disponível!' : 'Verificar atualizações'}
-                    >
-                        <RefreshCw className={`w-4 h-4 ${!needRefresh && 'group-hover:rotate-180 transition-transform duration-500'}`} />
-                        <span className="hidden sm:inline">
-                            {needRefresh ? 'Atualizar App' : 'Verificar Atualização'}
-                        </span>
-                    </button>
-                </div>
             </div>
 
             <UpdateModal

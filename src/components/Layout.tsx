@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { usePWAContext } from '@/contexts/PWAContext';
 import {
     LayoutDashboard,
     Users,
@@ -21,6 +22,7 @@ import {
     Download,
     Lock,
     GitBranch,
+    RefreshCw,
 } from 'lucide-react';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
@@ -48,6 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const { isInstallable, isInstalled, isIOS, install, showManualInstructions, getManualInstructions } = usePWAInstall();
     const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+    const { needRefresh, updateServiceWorker } = usePWAContext();
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -433,6 +436,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* PWA Update Button */}
+                            <button
+                                onClick={() => updateServiceWorker()}
+                                className={`p-2 rounded-lg transition-all duration-200 ${needRefresh
+                                        ? 'bg-primary-600 text-white hover:bg-primary-700 animate-pulse shadow-lg'
+                                        : 'text-secondary-600 hover:bg-secondary-100'
+                                    }`}
+                                title={needRefresh ? 'Nova versão disponível!' : 'Verificar atualizações'}
+                            >
+                                <RefreshCw className={`w-5 h-5 ${!needRefresh && 'hover:rotate-180 transition-transform duration-500'}`} />
+                            </button>
                             <NotificationCenter />
                         </div>
                     </div>

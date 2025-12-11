@@ -5,10 +5,31 @@
     {
       "version": "1.0.2",
       "date": "2025-12-11",
-      "title": "Atualização Automática",
-      "description": "Versão atualizada automaticamente",
+      "title": "Melhorias de UX e Posicionamento",
+      "description": "Otimizações na experiência do usuário com reposicionamento do botão de atualização e melhorias no sistema de notificações",
       "type": "patch",
-      "notes": []
+      "notes": [
+        {
+          "type": "ui",
+          "text": "Botão de atualização movido para o header global, ao lado do sino de notificações"
+        },
+        {
+          "type": "feat",
+          "text": "Toast de sucesso após atualização do aplicativo"
+        },
+        {
+          "type": "feat",
+          "text": "Sistema de release notes automático com script interativo"
+        },
+        {
+          "type": "fix",
+          "text": "Prevenção de detecção falsa de atualizações em modo de desenvolvimento"
+        },
+        {
+          "type": "ui",
+          "text": "Ícone de atualização com animação de rotação ao passar o mouse"
+        }
+      ]
     },
     {
       "version": "1.0.1",
