@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { birthdayService } from '@/services/birthdayService';
-import { BirthdaySettings } from '@/types/database';
+import { BirthdayNotificationSettings } from '@/types/database';
 import { Cake, Save, MessageCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const BirthdaySettingsPanel: React.FC = () => {
     const { user } = useAuth();
-    const [settings, setSettings] = useState<BirthdaySettings | null>(null);
+    const [settings, setSettings] = useState<BirthdayNotificationSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 

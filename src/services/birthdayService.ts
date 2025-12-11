@@ -1,12 +1,5 @@
 import { supabase } from '@/lib/supabase';
-
-export interface BirthdaySettings {
-    id: string;
-    company_id: string;
-    enabled: boolean;
-    lead_time_days: number;
-    whatsapp_template: string;
-}
+import { BirthdayNotificationSettings } from '@/types/database';
 
 export interface BirthdayCustomer {
     id: string;
@@ -22,7 +15,7 @@ class BirthdayNotificationService {
     /**
      * Get company settings or create default if not exists
      */
-    async getSettings(companyId: string): Promise<BirthdaySettings> {
+    async getSettings(companyId: string): Promise<BirthdayNotificationSettings> {
         try {
             const { data, error } = await supabase
                 .from('birthday_notification_settings')
@@ -53,7 +46,7 @@ class BirthdayNotificationService {
     /**
      * Update settings
      */
-    async updateSettings(settings: Partial<BirthdaySettings>, companyId: string): Promise<void> {
+    async updateSettings(settings: Partial<BirthdayNotificationSettings>, companyId: string): Promise<void> {
         const { error } = await supabase
             .from('birthday_notification_settings')
             .update(settings)

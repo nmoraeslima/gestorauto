@@ -5,6 +5,7 @@ import { Timeline } from '@/components/tracker/Timeline';
 import { BeforeAfterSlider } from '@/components/tracker/BeforeAfterSlider';
 import { Car, MapPin, Phone, Share2, Loader2, Calendar, Shield, Printer, Camera, AlertTriangle, X } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
+import toast from 'react-hot-toast';
 
 interface TrackerData {
     workOrder: any;
