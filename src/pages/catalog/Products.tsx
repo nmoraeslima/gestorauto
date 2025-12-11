@@ -123,7 +123,7 @@ export default function Products() {
             </div>
 
             {/* Filters */}
-            <div className="card p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-secondary-200 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -132,7 +132,7 @@ export default function Products() {
                             placeholder="Buscar por nome, SKU ou categoria..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         />
                     </div>
                     <div className="relative">
@@ -140,7 +140,7 @@ export default function Products() {
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         >
                             <option value="all">Todas as Categorias</option>
                             {categories.map((cat) => (
@@ -154,18 +154,75 @@ export default function Products() {
             </div>
 
             {/* Products List */}
-            <div className="card overflow-hidden">
-                {loading ? (
-                    <div className="p-8 text-center">
-                        <div className="spinner mx-auto mb-4"></div>
-                        <p className="text-neutral-500">Carregando produtos...</p>
-                    </div>
-                ) : filteredProducts.length === 0 ? (
-                    <div className="p-8 text-center text-neutral-500">
-                        <Package className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                        <p>Nenhum produto encontrado</p>
-                    </div>
-                ) : (
+            <div className="w-full">
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                    {loading ? (
+                        <div className="text-center text-secondary-500 py-4">Carregando produtos...</div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="text-center text-secondary-500 py-4">
+                            <Package className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                            <p>Nenhum produto encontrado</p>
+                        </div>
+                    ) : (
+                        filteredProducts.map((product) => (
+                            <div
+                                key={product.id}
+                                className="bg-white p-4 rounded-lg shadow-sm border border-secondary-200 space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
+                                onClick={() => handleEdit(product)}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
+                                            <Package className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-secondary-900">{product.name}</h3>
+                                            {product.sku && (
+                                                <p className="text-xs text-secondary-500 font-mono mt-0.5">SKU: {product.sku}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {product.category && (
+                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary-100 text-secondary-800">
+                                            {product.category}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-secondary-600">Estoque:</span>
+                                        <div className={`flex items-center gap-1 font-medium ${(product.quantity || 0) <= (product.min_stock || 0) ? 'text-danger-600' : 'text-green-600'}`}>
+                                            {formatQuantity(product.quantity || 0)} {product.unit}
+                                            {(product.quantity || 0) <= (product.min_stock || 0) && (
+                                                <AlertTriangle className="w-4 h-4" />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-3 border-t border-secondary-100 flex items-center justify-end gap-2">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
+                                        className="p-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}
+                                        className="p-2 text-danger-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="table">
                             <thead>
@@ -176,67 +233,82 @@ export default function Products() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredProducts.map((product) => (
-                                    <tr
-                                        key={product.id}
-                                        className="hover:bg-gray-50 transition-colors"
-                                        onDoubleClick={() => handleEdit(product)}
-                                    >
-                                        <td>
-                                            <div className="flex flex-col gap-1">
-                                                <p className="font-medium text-secondary-900">{product.name}</p>
-                                                {product.category && (
-                                                    <span className="self-start inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-600">
-                                                        {product.category}
-                                                    </span>
-                                                )}
-                                                {product.sku && (
-                                                    <p className="text-xs text-neutral-500">SKU: {product.sku}</p>
-                                                )}
-                                            </div>
-                                        </td>
-
-                                        <td>
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className={`font-medium ${(product.quantity || 0) <= (product.min_stock || 0)
-                                                        ? 'text-red-600'
-                                                        : 'text-green-600'
-                                                        }`}
-                                                >
-                                                    {formatQuantity(product.quantity || 0)} {product.unit}
-                                                </span>
-                                                {(product.quantity || 0) <= (product.min_stock || 0) && (
-                                                    <div title="Estoque Baixo">
-                                                        <AlertTriangle className="w-4 h-4 text-red-500" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleEdit(product)}
-                                                    className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
-                                                    title="Editar"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(product.id)}
-                                                    className="text-red-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={3} className="p-8 text-center text-neutral-500">
+                                            Carregando produtos...
                                         </td>
                                     </tr>
-                                ))}
+                                ) : filteredProducts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={3} className="p-8 text-center text-neutral-500">
+                                            <Package className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                                            <p>Nenhum produto encontrado</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredProducts.map((product) => (
+                                        <tr
+                                            key={product.id}
+                                            className="hover:bg-gray-50 transition-colors"
+                                            onDoubleClick={() => handleEdit(product)}
+                                        >
+                                            <td>
+                                                <div className="flex flex-col gap-1">
+                                                    <p className="font-medium text-secondary-900">{product.name}</p>
+                                                    {product.category && (
+                                                        <span className="self-start inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-600">
+                                                            {product.category}
+                                                        </span>
+                                                    )}
+                                                    {product.sku && (
+                                                        <p className="text-xs text-neutral-500">SKU: {product.sku}</p>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className={`font-medium ${(product.quantity || 0) <= (product.min_stock || 0)
+                                                            ? 'text-red-600'
+                                                            : 'text-green-600'
+                                                            }`}
+                                                    >
+                                                        {formatQuantity(product.quantity || 0)} {product.unit}
+                                                    </span>
+                                                    {(product.quantity || 0) <= (product.min_stock || 0) && (
+                                                        <div title="Estoque Baixo">
+                                                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(product)}
+                                                        className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(product.id)}
+                                                        className="text-red-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Modal */}
