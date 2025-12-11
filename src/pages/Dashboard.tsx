@@ -247,7 +247,7 @@ export const Dashboard: React.FC = () => {
                     </p>
                 </div>
                 {/* PWA Update Button */}
-                <div className="absolute top-6 right-6 lg:static lg:ml-auto">
+                <div className="flex items-center">
                     <button
                         onClick={handleUpdateClick}
                         className={`btn ${needRefresh ? 'btn-primary animate-pulse' : 'btn-ghost text-secondary-600'} flex items-center gap-2`}
