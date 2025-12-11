@@ -27,6 +27,7 @@ export default function Products() {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [lastTap, setLastTap] = useState(0);
 
     useEffect(() => {
         loadProducts();
@@ -169,7 +170,15 @@ export default function Products() {
                             <div
                                 key={product.id}
                                 className="bg-white p-4 rounded-lg shadow-sm border border-secondary-200 space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
-                                onClick={() => handleEdit(product)}
+                                onClick={(e) => {
+                                    const now = Date.now();
+                                    if (now - lastTap < 300) {
+                                        handleEdit(product);
+                                        setLastTap(0);
+                                    } else {
+                                        setLastTap(now);
+                                    }
+                                }}
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-3">
