@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.0.2';
+const CACHE_VERSION = 'v1.0.3';
 const CACHE_NAME = `gestorauto-${CACHE_VERSION}`;
 
 // Assets to always cache immediately

@@ -1,7 +1,36 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "releaseDate": "2025-12-11",
   "releases": [
+    {
+      "version": "1.0.3",
+      "date": "2025-12-11",
+      "title": "Melhorias de UX Mobile e CRM",
+      "description": "Padronização completa da experiência mobile com cards interativos, melhorias no campo de aniversário e destaque para contas vencidas",
+      "type": "patch",
+      "notes": [
+        {
+          "type": "ui",
+          "text": "Padronização completa de cards mobile em todas as páginas (Clientes, Veículos, Serviços, Produtos e Financeiro)"
+        },
+        {
+          "type": "ui",
+          "text": "Implementação de double-tap para abrir detalhes em dispositivos móveis"
+        },
+        {
+          "type": "ui",
+          "text": "Remoção de fundo branco entre cards para visual mais limpo"
+        },
+        {
+          "type": "ui",
+          "text": "Destaque visual em vermelho para contas vencidas no financeiro"
+        },
+        {
+          "type": "feat",
+          "text": "Campo de aniversário reformulado para armazenar apenas dia e mês"
+        }
+      ]
+    },
     {
       "version": "1.0.2",
       "date": "2025-12-11",
