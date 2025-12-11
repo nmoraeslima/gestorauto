@@ -45,6 +45,7 @@ export default function Appointments() {
     // Delete confirmation
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
+    const [lastTap, setLastTap] = useState(0);
 
     useEffect(() => {
         loadAppointments();
@@ -307,7 +308,7 @@ export default function Appointments() {
             </div>
 
             {/* Filters */}
-            <div className="card p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-secondary-200 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -316,7 +317,7 @@ export default function Appointments() {
                             placeholder="Buscar por cliente ou placa..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         />
                     </div>
                     <div className="relative">
@@ -324,7 +325,7 @@ export default function Appointments() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         >
                             <option value="all">Todos os Status</option>
                             <option value="pending">Pendente</option>
@@ -337,7 +338,7 @@ export default function Appointments() {
                         <select
                             value={dateFilter}
                             onChange={(e) => setDateFilter(e.target.value)}
-                            className="input pl-10"
+                            className="input pl-10 w-full"
                         >
                             <option value="all">Todas as Datas</option>
                             <option value="today">Hoje</option>
@@ -349,18 +350,104 @@ export default function Appointments() {
             </div>
 
             {/* Appointments List */}
-            <div className="card overflow-hidden">
-                {loading ? (
-                    <div className="p-8 text-center">
-                        <div className="spinner mx-auto mb-4"></div>
-                        <p className="text-neutral-500">Carregando agendamentos...</p>
-                    </div>
-                ) : filteredAppointments.length === 0 ? (
-                    <div className="p-8 text-center text-neutral-500">
-                        <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                        <p>Nenhum agendamento encontrado</p>
-                    </div>
-                ) : (
+            <div className="w-full">
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                    {loading ? (
+                        <div className="text-center text-secondary-500 py-4">Carregando agendamentos...</div>
+                    ) : filteredAppointments.length === 0 ? (
+                        <div className="text-center text-secondary-500 py-4">
+                            <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                            <p>Nenhum agendamento encontrado</p>
+                        </div>
+                    ) : (
+                        filteredAppointments.map((appointment) => (
+                            <div
+                                key={appointment.id}
+                                className="bg-white p-4 rounded-lg shadow-sm border border-secondary-200 space-y-3 cursor-pointer select-none ring-offset-2 focus:ring-2 focus:ring-primary-500 transition-all active:scale-[0.99]"
+                                onClick={(e) => {
+                                    const now = Date.now();
+                                    if (now - lastTap < 300) {
+                                        handleEdit(appointment);
+                                        setLastTap(0);
+                                    } else {
+                                        setLastTap(now);
+                                    }
+                                }}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
+                                            <CalendarIcon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold text-secondary-900 flex items-center gap-2">
+                                                {formatDate(appointment.scheduled_at)}
+                                                <span className="text-xs font-normal text-secondary-500">• {formatTime(appointment.scheduled_at)}</span>
+                                            </div>
+                                            <div className="mt-1">
+                                                {getStatusBadge(appointment.status)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-secondary-100 pt-3 space-y-2">
+                                    <div className="flex items-center gap-2 text-sm text-secondary-700">
+                                        <User className="w-4 h-4 text-secondary-400" />
+                                        <span className="font-medium">{appointment.customer?.name || '-'}</span>
+                                    </div>
+                                    {appointment.vehicle && (
+                                        <div className="flex items-center gap-2 text-sm text-secondary-600">
+                                            <Car className="w-4 h-4 text-secondary-400" />
+                                            <span>
+                                                {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="pt-3 border-t border-secondary-100 flex items-center justify-end gap-2">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(appointment); }}
+                                        className="p-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+
+                                    {appointment.status === 'confirmed' && appointment.customer?.phone && user?.company && (
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <QuickWhatsAppButton
+                                                appointment={{ ...appointment, company: user.company } as any}
+                                                type="confirmation"
+                                                size="sm"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {appointment.status !== 'cancelled' && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleCancelClick(appointment); }}
+                                            className="p-2 text-danger-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                        >
+                                            <XIcon className="w-4 h-4" />
+                                        </button>
+                                    )}
+
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(appointment.id); }}
+                                        className="p-2 text-danger-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block bg-white rounded-lg shadow-sm border border-secondary-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="table">
                             <thead>
@@ -371,87 +458,102 @@ export default function Appointments() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredAppointments.map((appointment) => (
-                                    <tr
-                                        key={appointment.id}
-                                        className="hover:bg-gray-50 transition-colors cursor-default"
-                                        onDoubleClick={() => handleEdit(appointment)}
-                                    >
-                                        <td>
-                                            <div className="flex items-center gap-2">
-                                                <CalendarIcon className="w-4 h-4 text-neutral-400" />
-                                                <div>
-                                                    <p className="font-medium">
-                                                        {formatDate(appointment.scheduled_at)}
-                                                    </p>
-                                                    <p className="text-sm text-neutral-500">
-                                                        {formatTime(appointment.scheduled_at)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex flex-col gap-1">
-                                                <p className="font-medium text-secondary-900">
-                                                    {appointment.customer?.name || '-'}
-                                                </p>
-                                                {appointment.vehicle && (
-                                                    <div className="flex items-center gap-1.5 text-sm text-neutral-600">
-                                                        <Car className="w-3.5 h-3.5 text-neutral-400" />
-                                                        <span>
-                                                            {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                <div className="mt-1">
-                                                    {getStatusBadge(appointment.status)}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleEdit(appointment)}
-                                                    className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
-                                                    title="Editar"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-
-                                                {appointment.status === 'confirmed' && appointment.customer?.phone && user?.company && (
-                                                    <QuickWhatsAppButton
-                                                        appointment={{ ...appointment, company: user.company } as any}
-                                                        type="confirmation"
-                                                        size="sm"
-                                                    />
-                                                )}
-
-                                                {/* Cancel Button */}
-                                                {appointment.status !== 'cancelled' && (
-                                                    <button
-                                                        onClick={() => handleCancelClick(appointment)}
-                                                        className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
-                                                        title="Cancelar agendamento"
-                                                    >
-                                                        <XIcon className="w-4 h-4" />
-                                                    </button>
-                                                )}
-
-                                                <button
-                                                    onClick={() => handleDeleteClick(appointment.id)}
-                                                    className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={3} className="p-8 text-center text-neutral-500">
+                                            Carregando agendamentos...
                                         </td>
                                     </tr>
-                                ))}
+                                ) : filteredAppointments.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={3} className="p-8 text-center text-neutral-500">
+                                            <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+                                            <p>Nenhum agendamento encontrado</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredAppointments.map((appointment) => (
+                                        <tr
+                                            key={appointment.id}
+                                            className="hover:bg-gray-50 transition-colors cursor-default"
+                                            onDoubleClick={() => handleEdit(appointment)}
+                                        >
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <CalendarIcon className="w-4 h-4 text-neutral-400" />
+                                                    <div>
+                                                        <p className="font-medium">
+                                                            {formatDate(appointment.scheduled_at)}
+                                                        </p>
+                                                        <p className="text-sm text-neutral-500">
+                                                            {formatTime(appointment.scheduled_at)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex flex-col gap-1">
+                                                    <p className="font-medium text-secondary-900">
+                                                        {appointment.customer?.name || '-'}
+                                                    </p>
+                                                    {appointment.vehicle && (
+                                                        <div className="flex items-center gap-1.5 text-sm text-neutral-600">
+                                                            <Car className="w-3.5 h-3.5 text-neutral-400" />
+                                                            <span>
+                                                                {appointment.vehicle.brand} {appointment.vehicle.model} - {appointment.vehicle.license_plate}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <div className="mt-1">
+                                                        {getStatusBadge(appointment.status)}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(appointment)}
+                                                        className="text-primary-300 hover:text-primary-400 p-2 hover:bg-primary-50 rounded-lg transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+
+                                                    {appointment.status === 'confirmed' && appointment.customer?.phone && user?.company && (
+                                                        <QuickWhatsAppButton
+                                                            appointment={{ ...appointment, company: user.company } as any}
+                                                            type="confirmation"
+                                                            size="sm"
+                                                        />
+                                                    )}
+
+                                                    {/* Cancel Button */}
+                                                    {appointment.status !== 'cancelled' && (
+                                                        <button
+                                                            onClick={() => handleCancelClick(appointment)}
+                                                            className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                                                            title="Cancelar agendamento"
+                                                        >
+                                                            <XIcon className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        onClick={() => handleDeleteClick(appointment.id)}
+                                                        className="text-danger-600 hover:text-danger-700 p-2 hover:bg-danger-50 rounded-lg transition-colors"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Appointment Modal */}
