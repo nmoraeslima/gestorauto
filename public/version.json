@@ -5,57 +5,45 @@
     {
       "version": "1.0.5",
       "date": "2025-12-12",
-      "title": "Melhorias no Link de Acompanhamento e Sistema de Duração",
-      "description": "Correções críticas no link público de acompanhamento e implementação de sistema flexível de duração de serviços",
+      "title": "Experiência Aprimorada e Novos Recursos",
+      "description": "Melhorias significativas na visualização de serviços e novos recursos para otimizar seu fluxo de trabalho",
       "type": "patch",
       "notes": [
         {
-          "type": "fix",
-          "text": "Corrigido erro crítico na função RPC get_public_work_order (coluna 'url' inexistente)"
-        },
-        {
-          "type": "fix",
-          "text": "Link público de acompanhamento agora funciona corretamente"
+          "type": "feat",
+          "text": "Link de acompanhamento otimizado para melhor experiência do cliente"
         },
         {
           "type": "feat",
-          "text": "Nova galeria de fotos com navegação lateral (setas) no link público"
+          "text": "Nova galeria de fotos interativa com navegação intuitiva por setas"
         },
         {
           "type": "feat",
-          "text": "Sistema de duração flexível para serviços (minutos, horas ou dias)"
-        },
-        {
-          "type": "feat",
-          "text": "Componente DurationInput reutilizável com conversão automática"
+          "text": "Sistema de duração flexível: cadastre serviços em minutos, horas ou dias"
         },
         {
           "type": "ui",
-          "text": "Layout melhorado da seção 'Resultado' com fotos antes/depois lado a lado"
+          "text": "Interface aprimorada para visualização de fotos antes/depois"
         },
         {
           "type": "ui",
-          "text": "Visualizador de fotos com contador e navegação por teclado (setas + ESC)"
+          "text": "Rodapé profissional com informações de contato e branding"
         },
         {
           "type": "ui",
-          "text": "Removida redundância visual na galeria de fotos"
+          "text": "Navegação de fotos com contador e atalhos de teclado"
         },
         {
-          "type": "fix",
-          "text": "Padronização da nomenclatura de planos (Premium → Elite)"
-        },
-        {
-          "type": "fix",
-          "text": "Revertidas mudanças de logo que causavam problemas no ServiceTracker"
+          "type": "improvement",
+          "text": "Padronização visual e nomenclatura em todo o sistema"
         }
       ]
     },
     {
       "version": "1.0.4",
       "date": "2025-12-11",
-      "title": "Sistema de Aniversários e Melhorias de Branding",
-      "description": "Implementação completa do sistema de notificações de aniversário com detecção automática e melhorias na exibição da logo da empresa",
+      "title": "Sistema de Aniversários e Personalização Avançada",
+      "description": "Novo sistema inteligente de notificações de aniversário e recursos avançados de branding para sua empresa",
       "type": "minor",
       "notes": [
         {
@@ -91,12 +79,8 @@
           "text": "Meta tags Open Graph dinâmicas para melhor compartilhamento em redes sociais"
         },
         {
-          "type": "fix",
-          "text": "Corrigido erro de JSX adjacente nas configurações da empresa"
-        },
-        {
-          "type": "fix",
-          "text": "Corrigido erro de build relacionado a tipos TypeScript"
+          "type": "improvement",
+          "text": "Otimizações técnicas para melhor estabilidade do sistema"
         }
       ]
     },
@@ -149,8 +133,8 @@
           "text": "Sistema de release notes automático com script interativo"
         },
         {
-          "type": "fix",
-          "text": "Prevenção de detecção falsa de atualizações em modo de desenvolvimento"
+          "type": "improvement",
+          "text": "Otimizações no sistema de atualizações para melhor performance"
         },
         {
           "type": "ui",
@@ -161,8 +145,8 @@
     {
       "version": "1.0.1",
       "date": "2025-12-11",
-      "title": "Sistema de Auto-Atualização PWA",
-      "description": "Implementação completa do sistema de atualização automática para PWA com suporte iOS Safari",
+      "title": "Sistema Inteligente de Auto-Atualização",
+      "description": "Novo sistema de atualização automática com suporte completo para dispositivos iOS e Android",
       "type": "minor",
       "notes": [
         {
@@ -182,12 +166,8 @@
           "text": "Service Worker com estratégia Network First para melhor confiabilidade"
         },
         {
-          "type": "fix",
-          "text": "Corrigido loop infinito de reloads em modo de desenvolvimento"
-        },
-        {
-          "type": "fix",
-          "text": "Prevenção de falsos positivos de atualização em localhost"
+          "type": "improvement",
+          "text": "Aprimoramentos no sistema de atualização para maior estabilidade"
         }
       ]
     },
