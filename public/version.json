@@ -1,7 +1,56 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "releaseDate": "2025-12-11",
   "releases": [
+    {
+      "version": "1.0.4",
+      "date": "2025-12-11",
+      "title": "Sistema de Aniversários e Melhorias de Branding",
+      "description": "Implementação completa do sistema de notificações de aniversário com detecção automática e melhorias na exibição da logo da empresa",
+      "type": "minor",
+      "notes": [
+        {
+          "type": "feat",
+          "text": "Sistema de notificações de aniversário com configuração por empresa"
+        },
+        {
+          "type": "feat",
+          "text": "Detecção automática de aniversários próximos com antecedência configurável (0 a 7 dias)"
+        },
+        {
+          "type": "feat",
+          "text": "Indicador visual de aniversário (🎂) nos cards de clientes no CRM"
+        },
+        {
+          "type": "feat",
+          "text": "Animação especial para aniversários do dia"
+        },
+        {
+          "type": "feat",
+          "text": "Template personalizável de mensagem de WhatsApp com variáveis dinâmicas"
+        },
+        {
+          "type": "feat",
+          "text": "Nova aba 'Notificações' nas configurações da empresa"
+        },
+        {
+          "type": "feat",
+          "text": "Logo da empresa agora aparece no cabeçalho do link público de acompanhamento de serviço"
+        },
+        {
+          "type": "feat",
+          "text": "Meta tags Open Graph dinâmicas para melhor compartilhamento em redes sociais"
+        },
+        {
+          "type": "fix",
+          "text": "Corrigido erro de JSX adjacente nas configurações da empresa"
+        },
+        {
+          "type": "fix",
+          "text": "Corrigido erro de build relacionado a tipos TypeScript"
+        }
+      ]
+    },
     {
       "version": "1.0.3",
       "date": "2025-12-11",
