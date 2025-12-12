@@ -1,7 +1,56 @@
 {
-  "version": "1.0.4",
-  "releaseDate": "2025-12-11",
+  "version": "1.0.5",
+  "releaseDate": "2025-12-12",
   "releases": [
+    {
+      "version": "1.0.5",
+      "date": "2025-12-12",
+      "title": "Melhorias no Link de Acompanhamento e Sistema de Duração",
+      "description": "Correções críticas no link público de acompanhamento e implementação de sistema flexível de duração de serviços",
+      "type": "patch",
+      "notes": [
+        {
+          "type": "fix",
+          "text": "Corrigido erro crítico na função RPC get_public_work_order (coluna 'url' inexistente)"
+        },
+        {
+          "type": "fix",
+          "text": "Link público de acompanhamento agora funciona corretamente"
+        },
+        {
+          "type": "feat",
+          "text": "Nova galeria de fotos com navegação lateral (setas) no link público"
+        },
+        {
+          "type": "feat",
+          "text": "Sistema de duração flexível para serviços (minutos, horas ou dias)"
+        },
+        {
+          "type": "feat",
+          "text": "Componente DurationInput reutilizável com conversão automática"
+        },
+        {
+          "type": "ui",
+          "text": "Layout melhorado da seção 'Resultado' com fotos antes/depois lado a lado"
+        },
+        {
+          "type": "ui",
+          "text": "Visualizador de fotos com contador e navegação por teclado (setas + ESC)"
+        },
+        {
+          "type": "ui",
+          "text": "Removida redundância visual na galeria de fotos"
+        },
+        {
+          "type": "fix",
+          "text": "Padronização da nomenclatura de planos (Premium → Elite)"
+        },
+        {
+          "type": "fix",
+          "text": "Revertidas mudanças de logo que causavam problemas no ServiceTracker"
+        }
+      ]
+    },
     {
       "version": "1.0.4",
       "date": "2025-12-11",
