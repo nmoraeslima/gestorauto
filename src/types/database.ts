@@ -19,6 +19,20 @@ export enum SubscriptionPlan {
   PREMIUM = 'premium'
 }
 
+/**
+ * Get user-friendly display name for subscription plan
+ * @param plan - Subscription plan enum value
+ * @returns Localized plan name
+ */
+export function getPlanDisplayName(plan: SubscriptionPlan | string): string {
+  const names: Record<string, string> = {
+    'basic': 'Starter',
+    'intermediate': 'Profissional',
+    'premium': 'Elite'
+  };
+  return names[plan] || plan;
+}
+
 export enum UserRole {
   OWNER = 'owner',
   ADMIN = 'admin',

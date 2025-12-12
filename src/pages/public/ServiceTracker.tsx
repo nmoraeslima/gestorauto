@@ -28,48 +28,6 @@ export const ServiceTracker: React.FC = () => {
         loadData();
     }, [id]);
 
-    // Update Open Graph meta tags for WhatsApp preview
-    useEffect(() => {
-        if (!data) return;
-
-        // Update page title
-        document.title = `${data.company.name} - Acompanhamento de Serviço`;
-
-        // Helper function to update or create meta tag
-        const updateMetaTag = (property: string, content: string) => {
-            let meta = document.querySelector(`meta[property="${property}"]`);
-            if (!meta) {
-                meta = document.createElement('meta');
-                meta.setAttribute('property', property);
-                document.head.appendChild(meta);
-            }
-            meta.setAttribute('content', content);
-        };
-
-        // Update Open Graph tags
-        updateMetaTag('og:title', `${data.company.name} - Acompanhamento de Serviço`);
-        updateMetaTag('og:description', `Acompanhe o serviço do ${data.vehicle.model} em tempo real`);
-        updateMetaTag('og:image', data.company.logo_url || '/logo.png');
-        updateMetaTag('og:url', window.location.href);
-        updateMetaTag('og:type', 'website');
-
-        // Twitter Card tags (some apps use these)
-        const updateTwitterTag = (name: string, content: string) => {
-            let meta = document.querySelector(`meta[name="${name}"]`);
-            if (!meta) {
-                meta = document.createElement('meta');
-                meta.setAttribute('name', name);
-                document.head.appendChild(meta);
-            }
-            meta.setAttribute('content', content);
-        };
-
-        updateTwitterTag('twitter:card', 'summary_large_image');
-        updateTwitterTag('twitter:title', `${data.company.name} - Acompanhamento de Serviço`);
-        updateTwitterTag('twitter:description', `Acompanhe o serviço do ${data.vehicle.model} em tempo real`);
-        updateTwitterTag('twitter:image', data.company.logo_url || '/logo.png');
-    }, [data]);
-
     const loadData = async () => {
         try {
             if (!id) return;
@@ -94,7 +52,7 @@ export const ServiceTracker: React.FC = () => {
 
             // Check Plan Permission
             const plan = company?.subscription_plan || 'basic';
-            const isPremium = plan === 'premium'; // Only Premium can verify
+            const isPremium = plan === 'premium'; // Only Elite plan can access public links
 
             if (!isPremium) {
                 setAccessDenied(true);
@@ -168,7 +126,8 @@ export const ServiceTracker: React.FC = () => {
                 </p>
                 {accessDenied && (
                     <p className="text-red-500 text-sm mt-4 text-center max-w-md bg-red-50 p-4 rounded-lg">
-                        Este recurso é exclusivo para clientes de oficinas parceiras Premium.
+                        ⚠️ Este recurso está disponível apenas para empresas com plano <strong>Elite</strong>.
+                        Entre em contato para fazer upgrade.
                     </p>
                 )}
             </div>
@@ -186,17 +145,9 @@ export const ServiceTracker: React.FC = () => {
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10 print:hidden">
                 <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        {data.company.logo_url ? (
-                            <img
-                                src={data.company.logo_url}
-                                alt={data.company.name}
-                                className="h-10 w-10 object-contain rounded"
-                            />
-                        ) : (
-                            <div className="h-10 w-10 bg-primary-100 rounded flex items-center justify-center">
-                                <Car className="h-6 w-6 text-primary-600" />
-                            </div>
-                        )}
+                        <div className="h-10 w-10 bg-primary-100 rounded flex items-center justify-center">
+                            <Car className="h-6 w-6 text-primary-600" />
+                        </div>
                         <div className="font-bold text-lg text-secondary-900 truncate">
                             {data.company.name}
                         </div>
