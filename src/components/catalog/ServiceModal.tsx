@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { X, Tag, DollarSign, Clock, FileText, Info } from 'lucide-react';
 import type { Service } from '@/types/database';
 import { catalogService } from '@/services/catalogService';
+import { DurationInput } from '@/components/common/DurationInput';
 import toast from 'react-hot-toast';
 
 interface ServiceModalProps {
@@ -143,21 +144,12 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="label">
-                                    <Clock className="w-4 h-4 inline mr-2" />
-                                    Duração (min) *
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="5"
-                                    step="5"
-                                    value={formData.duration_minutes}
-                                    onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 0 })}
-                                    className="input"
-                                />
-                            </div>
+                            <DurationInput
+                                value={formData.duration_minutes}
+                                onChange={(minutes) => setFormData({ ...formData, duration_minutes: minutes })}
+                                label="Duração"
+                                required
+                            />
                             <div>
                                 <label className="label">
                                     <Clock className="w-4 h-4 inline mr-2" />
