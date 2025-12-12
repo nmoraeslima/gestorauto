@@ -191,15 +191,62 @@ export const ServiceTracker: React.FC = () => {
                     />
                 </div>
 
-                {/* Before / After Slider (Wow Factor) */}
+                {/* Photo Gallery - Before & After */}
                 {hasComparison && (
                     <div className="space-y-3 print:break-inside-avoid">
                         <h3 className="font-bold text-lg text-secondary-900 px-1">Resultado</h3>
-                        <BeforeAfterSlider
-                            beforeImage={beforePhotos[0].url}
-                            afterImage={afterPhotos[0].url}
-                        />
-                        <p className="text-center text-xs text-gray-400 print:hidden">Arraste para comparar</p>
+
+                        {/* Before Photos Gallery */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Antes</span>
+                                <span className="text-xs text-gray-500">{beforePhotos.length} {beforePhotos.length === 1 ? 'foto' : 'fotos'}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {beforePhotos.map((photo: any, index: number) => (
+                                    <div
+                                        key={photo.id || index}
+                                        onClick={() => setSelectedPhoto(photo.url)}
+                                        className="relative aspect-square rounded-xl overflow-hidden cursor-pointer group"
+                                    >
+                                        <img
+                                            src={photo.url}
+                                            alt={`Antes ${index + 1}`}
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                            <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* After Photos Gallery */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Depois</span>
+                                <span className="text-xs text-gray-500">{afterPhotos.length} {afterPhotos.length === 1 ? 'foto' : 'fotos'}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {afterPhotos.map((photo: any, index: number) => (
+                                    <div
+                                        key={photo.id || index}
+                                        onClick={() => setSelectedPhoto(photo.url)}
+                                        className="relative aspect-square rounded-xl overflow-hidden cursor-pointer group"
+                                    >
+                                        <img
+                                            src={photo.url}
+                                            alt={`Depois ${index + 1}`}
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                            <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -423,26 +470,98 @@ export const ServiceTracker: React.FC = () => {
                     <p className="font-bold text-gray-500 mt-1">GestorAuto</p>
                 </div>
             </div>
-            {/* Photo Lightbox */}
-            {selectedPhoto && (
-                <div
-                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity"
-                    onClick={() => setSelectedPhoto(null)}
-                >
-                    <button
-                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            {/* Photo Lightbox with Navigation */}
+            {selectedPhoto && (() => {
+                // Get all photos (before + after)
+                const allPhotos = [...beforePhotos, ...afterPhotos];
+                const currentIndex = allPhotos.findIndex(p => p.url === selectedPhoto);
+                const hasPrevious = currentIndex > 0;
+                const hasNext = currentIndex < allPhotos.length - 1;
+
+                const goToPrevious = () => {
+                    if (hasPrevious) {
+                        setSelectedPhoto(allPhotos[currentIndex - 1].url);
+                    }
+                };
+
+                const goToNext = () => {
+                    if (hasNext) {
+                        setSelectedPhoto(allPhotos[currentIndex + 1].url);
+                    }
+                };
+
+                // Keyboard navigation
+                const handleKeyDown = (e: React.KeyboardEvent) => {
+                    if (e.key === 'ArrowLeft') goToPrevious();
+                    if (e.key === 'ArrowRight') goToNext();
+                    if (e.key === 'Escape') setSelectedPhoto(null);
+                };
+
+                return (
+                    <div
+                        className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
                         onClick={() => setSelectedPhoto(null)}
+                        onKeyDown={handleKeyDown}
+                        tabIndex={0}
                     >
-                        <X className="w-6 h-6" />
-                    </button>
-                    <img
-                        src={selectedPhoto}
-                        alt="Visualização ampliada"
-                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking image
-                    />
-                </div>
-            )}
+                        {/* Close Button */}
+                        <button
+                            className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+                            onClick={() => setSelectedPhoto(null)}
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        {/* Photo Counter */}
+                        <div className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium">
+                            {currentIndex + 1} / {allPhotos.length}
+                        </div>
+
+                        {/* Previous Arrow */}
+                        {hasPrevious && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goToPrevious();
+                                }}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all hover:scale-110 z-10"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                        )}
+
+                        {/* Photo */}
+                        <img
+                            src={selectedPhoto}
+                            alt={`Foto ${currentIndex + 1}`}
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+
+                        {/* Next Arrow */}
+                        {hasNext && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goToNext();
+                                }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all hover:scale-110 z-10"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        )}
+
+                        {/* Swipe hint for mobile */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-xs">
+                            ← Deslize ou use as setas →
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };
