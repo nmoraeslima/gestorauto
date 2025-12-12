@@ -330,60 +330,6 @@ export const ServiceTracker: React.FC = () => {
                     )}
                 </div>
 
-                {/* Photos Gallery */}
-                {data.photos.length > 0 && (
-                    <div className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100 print:break-before-page">
-                        <h3 className="font-bold text-lg text-secondary-900 mb-4 flex items-center gap-2">
-                            <Camera className="w-5 h-5 text-primary-600" />
-                            Galeria de Fotos
-                        </h3>
-
-                        {/* Before Photos */}
-                        {beforePhotos.length > 0 && (
-                            <div className="mb-6">
-                                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Antes do Serviço</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {beforePhotos.map((photo: any, idx: number) => (
-                                        <div
-                                            key={idx}
-                                            className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer"
-                                            onClick={() => setSelectedPhoto(photo.url)}
-                                        >
-                                            <img
-                                                src={photo.url}
-                                                alt="Antes"
-                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* After Photos */}
-                        {afterPhotos.length > 0 && (
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Depois do Serviço</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {afterPhotos.map((photo: any, idx: number) => (
-                                        <div
-                                            key={idx}
-                                            className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer"
-                                            onClick={() => setSelectedPhoto(photo.url)}
-                                        >
-                                            <img
-                                                src={photo.url}
-                                                alt="Depois"
-                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
                 {/* Services List */}
                 <div className="bg-white rounded-2xl overflow-hidden shadow-card border border-secondary-100 print:break-inside-avoid">
                     <div className="p-4 border-b border-gray-100 bg-secondary-50/50">
