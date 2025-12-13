@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Car, Loader2, Copy, Check } from 'lucide-react';
 import { portalService } from '@/services/portalService';
+import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
 export default function PortalLogin() {
@@ -33,10 +34,43 @@ export default function PortalLogin() {
         try {
             const decryptedId = portalService.decryptCustomerId(encryptedId);
             setCustomerId(decryptedId);
+
+            // Buscar dados da empresa para mostrar logo
+            fetchCompanyData(decryptedId);
         } catch {
             toast.error('Link inválido');
         }
     }, [searchParams, navigate]);
+
+    const fetchCompanyData = async (custId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('customers')
+                .select(`
+                    id,
+                    name,
+                    company:companies (
+                        id,
+                        name,
+                        logo_url,
+                        phone
+                    )
+                `)
+                .eq('id', custId)
+                .single();
+
+            if (error) throw error;
+
+            if (data) {
+                setCustomerData({
+                    customer: { id: data.id, name: data.name },
+                    company: data.company
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching company data:', error);
+        }
+    };
 
     const handleGenerateCode = async () => {
         if (!customerId) return;
@@ -91,10 +125,23 @@ export default function PortalLogin() {
             <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-                        <Car className="w-8 h-8 text-primary-600" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900">Portal do Cliente</h1>
+                    {/* Logo da Empresa */}
+                    {customerData?.company?.logo_url ? (
+                        <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+                            <img
+                                src={customerData.company.logo_url}
+                                alt={customerData.company.name}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                    ) : (
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
+                            <Car className="w-8 h-8 text-primary-600" />
+                        </div>
+                    )}
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        {customerData?.company?.name || 'Portal do Cliente'}
+                    </h1>
                     <p className="text-gray-500 mt-2">Acesse seu histórico de serviços</p>
                 </div>
 
