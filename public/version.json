@@ -1,7 +1,60 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "releaseDate": "2025-12-12",
   "releases": [
+    {
+      "version": "1.0.6",
+      "date": "2025-12-12",
+      "title": "Portal do Cliente Elite",
+      "description": "Funcionalidade exclusiva que transforma a experiência dos seus clientes com acesso premium ao histórico completo de serviços",
+      "type": "minor",
+      "notes": [
+        {
+          "type": "feat",
+          "text": "Portal do Cliente com autenticação segura por código temporário"
+        },
+        {
+          "type": "feat",
+          "text": "Dashboard personalizado com logo da empresa e badges de conquista"
+        },
+        {
+          "type": "feat",
+          "text": "Histórico completo de serviços com galeria de fotos antes/depois"
+        },
+        {
+          "type": "feat",
+          "text": "Navegação intuitiva de fotos com setas e atalhos de teclado"
+        },
+        {
+          "type": "feat",
+          "text": "CTAs estratégicos para conversão (banner, botões e WhatsApp flutuante)"
+        },
+        {
+          "type": "feat",
+          "text": "Gamificação com badges Cliente VIP e Cliente Fiel"
+        },
+        {
+          "type": "feat",
+          "text": "Alertas inteligentes 'Hora de Renovar!' para reengajamento"
+        },
+        {
+          "type": "ui",
+          "text": "Design profissional com gradientes modernos e ícones Lucide"
+        },
+        {
+          "type": "ui",
+          "text": "Foco em marketing: removidos valores, destacadas transformações visuais"
+        },
+        {
+          "type": "improvement",
+          "text": "Filtro automático de fotos de avarias (apenas antes/depois no portal)"
+        },
+        {
+          "type": "security",
+          "text": "Códigos temporários de 15 minutos com sessões seguras de 2 horas"
+        }
+      ]
+    },
     {
       "version": "1.0.5",
       "date": "2025-12-12",
