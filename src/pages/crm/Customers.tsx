@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, Car, Crown, Check, Phone, Mail, FileText } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Car, Crown, Check, Phone, Mail, FileText, ExternalLink } from 'lucide-react';
 import { Customer } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomerModal } from '@/components/crm/CustomerModal';
@@ -10,6 +10,7 @@ import { birthdayService, BirthdayCustomer } from '@/services/birthdayService';
 import { maskCPF, maskPhone } from '@/utils/masks';
 import toast from 'react-hot-toast';
 import { Cake } from 'lucide-react';
+import { portalService } from '@/services/portalService';
 
 export const Customers: React.FC = () => {
     const { user } = useAuth();
@@ -134,6 +135,28 @@ export const Customers: React.FC = () => {
         } catch (error: any) {
             console.error('Error checking dependencies:', error);
             toast.error('Erro ao verificar dependências do cliente');
+        }
+    };
+
+    const handleSendPortalLink = (customer: Customer) => {
+        try {
+            // Criptografar customer_id
+            const encryptedId = portalService.encryptCustomerId(customer.id);
+
+            // Gerar link do portal
+            const portalLink = `${window.location.origin}/portal/login?c=${encryptedId}`;
+
+            // Mensagem para WhatsApp
+            const message = `Olá ${customer.name}! 👋\n\nAcesse seu portal exclusivo para ver o histórico completo dos seus serviços:\n\n🔗 ${portalLink}\n\nVocê receberá um código de acesso para confirmar sua identidade.\n\nQualquer dúvida, estamos à disposição!`;
+
+            // Abrir WhatsApp
+            const whatsappUrl = `https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+
+            toast.success('Link do portal copiado para WhatsApp!');
+        } catch (error) {
+            console.error('Error sending portal link:', error);
+            toast.error('Erro ao gerar link do portal');
         }
     };
 
@@ -385,6 +408,13 @@ export const Customers: React.FC = () => {
                                         >
                                             <Edit2 className="h-4 w-4" />
                                         </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleSendPortalLink(customer); }}
+                                            className="p-2 text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                                            title="Enviar Portal do Cliente"
+                                        >
+                                            <ExternalLink className="h-4 w-4" />
+                                        </button>
                                         {customer.is_active ? (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleDeleteClick(customer); }}
@@ -478,6 +508,13 @@ export const Customers: React.FC = () => {
                                                     title="Editar"
                                                 >
                                                     <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSendPortalLink(customer)}
+                                                    className="rounded-lg p-2 text-primary-600 hover:bg-primary-50"
+                                                    title="Enviar Portal do Cliente"
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
                                                 </button>
                                                 {customer.is_active ? (
                                                     <button

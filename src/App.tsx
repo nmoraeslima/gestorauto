@@ -43,6 +43,11 @@ import { ServiceTracker } from './pages/public/ServiceTracker';
 import PublicBooking from './pages/public/PublicBooking';
 import { Landing } from './pages/Landing';
 
+// Portal Pages
+import PortalLogin from './pages/portal/PortalLogin';
+import PortalDashboard from './pages/portal/PortalDashboard';
+import PortalTest from './pages/portal/PortalTest';
+
 // Legal Pages
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfService from './pages/legal/TermsOfService';
@@ -106,6 +111,11 @@ function App() {
                         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                         <Route path="/terms-of-service" element={<TermsOfService />} />
                         <Route path="/cookie-policy" element={<CookiePolicy />} />
+
+                        {/* Portal Routes (Public) */}
+                        <Route path="/portal/login" element={<PortalLogin />} />
+                        <Route path="/portal/dashboard" element={<PortalDashboard />} />
+                        <Route path="/portal/test" element={<PortalTest />} />
 
                         {/* Subscription Route (accessible even with expired subscription) */}
                         <Route path="/subscription/renew" element={<SubscriptionRenew />} />
